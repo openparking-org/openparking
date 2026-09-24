@@ -1,0 +1,7 @@
+name = "openparking-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+
+[vars]
+API_ORIGIN = "http://localhost:5000"
+ENVIRONMENT = "production"
