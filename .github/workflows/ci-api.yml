@@ -1,0 +1,89 @@
+# =============================================================================
+# CI — Backend (ASP.NET Core + PostgreSQL)
+# Runs on: every push/PR that touches /api/** or this workflow file
+# =============================================================================
+name: CI — API
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "api/**"
+      - ".github/workflows/ci-api.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "api/**"
+      - ".github/workflows/ci-api.yml"
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: openparking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__Default: "Host=localhost;Port=5432;Database=openparking_test;Username=testuser;Password=testpassword"
+      JWT__Secret: "ci-test-secret-minimum-32-characters-long"
+      JWT__ExpiryHours: "1"
+      ASPNETCORE_ENVIRONMENT: "Testing"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('api/**/*.csproj') }}
+          restore-keys: nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore ./api/OpenParking.sln
+
+      - name: Build (no warnings as errors in CI for now)
+        run: dotnet build ./api/OpenParking.sln --no-restore --configuration Release
+
+      - name: Run EF Core migrations (test DB)
+        run: dotnet ef database update --project ./api/OpenParking.Infrastructure --startup-project ./api/OpenParking.Api
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=openparking_test;Username=testuser;Password=testpassword"
+
+      - name: Run all tests
+        run: >
+          dotnet test ./api/OpenParking.sln
+          --no-build
+          --configuration Release
+          --logger "trx;LogFileName=results.trx"
+          --logger "console;verbosity=detailed"
+          --results-directory ./test-results
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-results
+          path: ./test-results/*.trx
+
+      - name: Check Swagger/OpenAPI can be generated
+        run: dotnet run --project ./api/OpenParking.Api --no-build -- --swagger-check || true

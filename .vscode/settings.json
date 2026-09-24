@@ -1,1 +1,15 @@
-{}
+{
+  "python.analysis.extraPaths": [
+    "./ai",
+    "./ai/agents",
+    "./ai/routing",
+    "./ai/tools"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "*.env.example": "dotenv"
+  }
+}

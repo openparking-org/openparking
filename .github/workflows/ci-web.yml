@@ -1,0 +1,61 @@
+# =============================================================================
+# CI — React Web App
+# Runs on: every push/PR that touches /web/**
+# =============================================================================
+name: CI — Web
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "web/**"
+      - ".github/workflows/ci-web.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "web/**"
+      - ".github/workflows/ci-web.yml"
+
+jobs:
+  build-and-test:
+    name: Build & Test (React / Node 20)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Type check (TypeScript)
+        run: npm run type-check
+
+      - name: Run tests (Vitest)
+        run: npm run test -- --reporter=verbose --coverage
+
+      - name: Build (production)
+        run: npm run build
+        env:
+          VITE_API_URL: "https://api.openparking.example.com"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-coverage
+          path: web/coverage/

@@ -1,0 +1,93 @@
+# =============================================================================
+# CI — Flutter Mobile App
+# Runs on: every push/PR that touches /mobile/**
+# =============================================================================
+name: CI — Mobile
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/ci-mobile.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/ci-mobile.yml"
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test (Flutter 3)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze (flutter analyze)
+        run: flutter analyze --fatal-infos
+
+      - name: Run unit & widget tests
+        run: flutter test --coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-coverage
+          path: mobile/coverage/
+
+  build-apk:
+    name: Build APK (Release)
+    runs-on: ubuntu-latest
+    # Only build the APK on pushes to main (not on every PR)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: analyze-and-test
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openparking-release-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
