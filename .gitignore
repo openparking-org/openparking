@@ -9,6 +9,7 @@ todos.md
 .env
 .env.local
 .env.*.local
+.dotnet_cli/
 
 # -----------------------------------------------------------------------
 # ASP.NET Core / .NET

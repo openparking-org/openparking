@@ -1,0 +1,33 @@
+services:
+  api:
+    image: ghcr.io/openparking-org/api:latest
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ConnectionStrings__Default=${NEON_DATABASE_URL}
+      - JWT__Secret=${JWT_SECRET}
+      - JWT__ExpiryHours=24
+      - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AI_SERVICE_URL=http://ai:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  ai:
+    image: ghcr.io/openparking-org/ai:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID}
+      - CF_AI_TOKEN=${CF_AI_TOKEN}
+      - DATABASE_URL=${NEON_DATABASE_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
