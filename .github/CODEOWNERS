@@ -1,0 +1,48 @@
+# =============================================================================
+# CODEOWNERS — OpenParking GitHub Organization
+# =============================================================================
+# Each line maps a path pattern to one or more GitHub handles.
+# The listed owners are auto-requested as reviewers on every PR that touches
+# the matching path. Replace the placeholders with real GitHub usernames.
+#
+# Org team handles format: @openparking-org/team-name
+# Individual handles format: @github-username
+# =============================================================================
+
+# --- Fallback: all maintainers review anything not explicitly listed ---
+*                                           @openparking-org/maintainers
+
+# --- Component 1: User & Access (Student 1) ---
+/api/src/Modules/UserAccess/               @openparking-org/student1
+/web/src/modules/user-access/              @openparking-org/student1
+/mobile/lib/modules/user_access/           @openparking-org/student1
+/ai/agents/validator/                      @openparking-org/student1
+
+# --- Component 2: Space & Availability (Student 2) ---
+/api/src/Modules/SpaceAvailability/        @openparking-org/student2
+/web/src/modules/space-availability/       @openparking-org/student2
+/mobile/lib/modules/space_availability/    @openparking-org/student2
+/ai/agents/analyzer/                       @openparking-org/student2
+
+# --- Component 3: Booking & Payment (Student 3) ---
+/api/src/Modules/Booking/                  @openparking-org/student3
+/web/src/modules/booking/                  @openparking-org/student3
+/mobile/lib/modules/booking/               @openparking-org/student3
+/ai/agents/action/                         @openparking-org/student3
+
+# --- Component 4: Enforcement & AI Orchestration (Student 4) ---
+/api/src/Modules/Enforcement/              @openparking-org/student4
+/web/src/modules/enforcement/              @openparking-org/student4
+/mobile/lib/modules/enforcement/           @openparking-org/student4
+/ai/agents/planner/                        @openparking-org/student4
+/ai/orchestration/                         @openparking-org/student4
+
+# --- Shared infrastructure — all maintainers review ---
+/api/src/Core/                             @openparking-org/maintainers
+/docker-compose.yml                        @openparking-org/maintainers
+/.github/                                  @openparking-org/maintainers
+/Makefile                                  @openparking-org/maintainers
+/.devcontainer/                            @openparking-org/maintainers
+
+# --- Cloudflare Worker (edge gateway) — all maintainers ---
+/worker/                                   @openparking-org/maintainers

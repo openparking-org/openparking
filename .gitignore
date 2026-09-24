@@ -1,0 +1,103 @@
+# =============================================================================
+# OpenParking — Root .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------
+# Local-only files (never commit these)
+# -----------------------------------------------------------------------
+todos.md
+.env
+.env.local
+.env.*.local
+
+# -----------------------------------------------------------------------
+# ASP.NET Core / .NET
+# -----------------------------------------------------------------------
+api/bin/
+api/obj/
+api/**/*.user
+api/**/*.suo
+api/.vs/
+api/**/appsettings.Development.json
+api/**/appsettings.Local.json
+*.nupkg
+*.snupkg
+
+# -----------------------------------------------------------------------
+# React / Node
+# -----------------------------------------------------------------------
+web/node_modules/
+web/dist/
+web/.vite/
+web/coverage/
+web/.env
+web/.env.local
+
+# -----------------------------------------------------------------------
+# Cloudflare Worker
+# -----------------------------------------------------------------------
+worker/node_modules/
+worker/dist/
+worker/.wrangler/
+worker/.dev.vars          # local Wrangler secrets
+
+# -----------------------------------------------------------------------
+# Python / AI Service
+# -----------------------------------------------------------------------
+ai/__pycache__/
+ai/**/__pycache__/
+ai/.venv/
+ai/venv/
+ai/.pytest_cache/
+ai/.mypy_cache/
+ai/.ruff_cache/
+ai/test-results/
+ai/*.egg-info/
+ai/dist/
+
+# -----------------------------------------------------------------------
+# Flutter / Dart
+# -----------------------------------------------------------------------
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/.pub-cache/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/**/*.g.dart          # generated files
+mobile/**/*.freezed.dart    # generated files
+
+# -----------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.prod.yml.local
+
+# -----------------------------------------------------------------------
+# OS & editor cruft
+# -----------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/settings.json       # keep extensions.json but not personal settings
+.idea/
+
+# -----------------------------------------------------------------------
+# Test output
+# -----------------------------------------------------------------------
+test-results/
+coverage/
+*.trx
+lcov.info
+
+# -----------------------------------------------------------------------
+# Certificates & keys (safety net — secrets should never be here anyway)
+# -----------------------------------------------------------------------
+*.pem
+*.key
+*.p12
+*.pfx
