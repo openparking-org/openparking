@@ -15,6 +15,8 @@ todos.md
 # ASP.NET Core / .NET
 # -----------------------------------------------------------------------
 api/bin/
+**/bin/
+**/obj/
 api/obj/
 api/**/*.user
 api/**/*.suo
