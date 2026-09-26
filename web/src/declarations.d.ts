@@ -58,6 +58,12 @@ declare module 'lucide-react' {
   export const Map: any;
   export const CalendarCheck: any;
   export const ShieldCheck: any;
+  export const AlertTriangle: any;
+  export const Activity: any;
+  export const Lock: any;
+  export const Key: any;
+  export const ArrowUpRight: any;
+  export const BarChart3: any;
 }
 
 declare module 'zustand' {
