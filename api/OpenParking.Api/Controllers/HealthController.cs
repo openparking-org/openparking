@@ -1,26 +1,60 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OpenParking.Core.Models;
+using OpenParking.Infrastructure.Data;
 
 namespace OpenParking.Api.Controllers;
 
+/// <summary>
+/// /health — used by Docker health checks, Cloudflare Tunnel, and the admin dashboard.
+/// Returns database connectivity status so infra issues are immediately visible.
+/// </summary>
 [ApiController]
 [Route("[controller]")]
-public class HealthController : ControllerBase
+public class HealthController(AppDbContext db, ILogger<HealthController> logger) : ControllerBase
 {
     [HttpGet]
-    public IActionResult Get()
+    public async Task<ActionResult<ApiResponse<HealthDto>>> Get()
     {
-        return Ok(new
+        bool dbOk;
+        try
         {
-            status = "Healthy",
-            timestamp = DateTime.UtcNow,
-            version = "1.0.0",
-            modules = new[]
-            {
-                new { name = "User & Access (Student 1)", status = "Healthy" },
-                new { name = "Space & Availability (Student 2)", status = "Healthy" },
-                new { name = "Booking & Payment (Student 3)", status = "Healthy" },
-                new { name = "Enforcement & AI Orchestration (Student 4)", status = "Healthy" }
-            }
-        });
+            dbOk = await db.Database.CanConnectAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Health check: database connectivity test failed.");
+            dbOk = false;
+        }
+
+        var result = new HealthDto
+        {
+            Status    = dbOk ? "Healthy" : "Degraded",
+            Timestamp = DateTime.UtcNow,
+            Version   = "1.0.0",
+            Database  = dbOk ? "Connected" : "Unreachable",
+            Modules   =
+            [
+                new("User & Access",              dbOk ? "Healthy" : "Degraded"),
+                new("Space & Availability",        dbOk ? "Healthy" : "Degraded"),
+                new("Booking & Payment",           dbOk ? "Healthy" : "Degraded"),
+                new("Enforcement & AI Orchestration", dbOk ? "Healthy" : "Degraded")
+            ]
+        };
+
+        // Return 503 if degraded — allows load balancers to stop routing here
+        var statusCode = dbOk ? 200 : 503;
+        return StatusCode(statusCode, ApiResponse<HealthDto>.Ok(result, HttpContext.TraceIdentifier));
     }
 }
+
+public class HealthDto
+{
+    public string Status { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public string Version { get; set; } = string.Empty;
+    public string Database { get; set; } = string.Empty;
+    public List<ModuleHealth> Modules { get; set; } = [];
+}
+
+public record ModuleHealth(string Name, string Status);

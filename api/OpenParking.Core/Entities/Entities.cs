@@ -54,6 +54,27 @@ public enum SlotStatus
     Maintenance
 }
 
+// ── Penalty ──────────────────────────────────────────────
+public enum PenaltyStatus
+{
+    Proposed,
+    PendingApproval,
+    Approved,
+    Rejected,
+    Collected,
+    Waived
+}
+
+// ── Workflow Status ───────────────────────────────────────
+public enum WorkflowStatus
+{
+    Running,
+    AwaitingApproval,
+    Approved,
+    Rejected,
+    Failed
+}
+
 public class Slot
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -68,7 +89,10 @@ public class Slot
     public double? CanvasY { get; set; }
     public double? CanvasWidth { get; set; }
     public double? CanvasHeight { get; set; }
+    // Audit fields (design.md §9: every table must have these)
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
 }
 
 public class FloorPlan
@@ -171,14 +195,63 @@ public class SystemSetting
 public class AgentWorkflowRun
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>OVERSTAY | SURGE_PRICING — matches design.md §8.2</summary>
     public string WorkflowType { get; set; } = string.Empty;
-    public string Status { get; set; } = "PENDING_APPROVAL"; // AUTO_APPROVED, PENDING_APPROVAL, REJECTED
+    public WorkflowStatus Status { get; set; } = WorkflowStatus.Running;
     public Guid? ZoneId { get; set; }
     public Guid? SessionId { get; set; }
-    public string InputPayloadJson { get; set; } = "{}";
-    public string ExecutionSummaryJson { get; set; } = "{}";
+    /// <summary>Objective string passed to the Planner Agent.</summary>
+    public string Objective { get; set; } = string.Empty;
+    /// <summary>Full LangGraph plan returned by Planner — stored as JSONB.</summary>
+    public string PlanJson { get; set; } = "{}";
+    /// <summary>Per-step results from Analyzer/Action/Validator agents — JSONB.</summary>
+    public string StepResultsJson { get; set; } = "{}";
     public string DecisionReason { get; set; } = string.Empty;
-    public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
+    public string? ErrorLog { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ApprovedAt { get; set; }
+    public Guid? ApprovedBy { get; set; }
+}
+
+/// <summary>
+/// Enforcement module — represents a concrete penalty issued to a driver.
+/// Created by the Action Agent after APPROVED workflow run (design.md §8.3 step 7).
+/// </summary>
+public class Penalty
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid SessionId { get; set; }
+    public ParkingSession? Session { get; set; }
+    public Guid UserId { get; set; }
+    public User? User { get; set; }
+    public Guid? WorkflowRunId { get; set; }
+    public AgentWorkflowRun? WorkflowRun { get; set; }
+    public decimal Amount { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public PenaltyStatus Status { get; set; } = PenaltyStatus.Proposed;
+    public string? DisputeNotes { get; set; }
+    public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ResolvedAt { get; set; }
-    public string? ResolvedBy { get; set; }
+    public string CreatedBy { get; set; } = "System";
+}
+
+/// <summary>
+/// Immutable audit trail entry. Append-only — never updated or deleted.
+/// Required by design.md §9 (Enforcement module scope).
+/// </summary>
+public class AuditLog
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>Entity type affected, e.g. "Booking", "Penalty", "AgentWorkflowRun".</summary>
+    public string EntityType { get; set; } = string.Empty;
+    public Guid? EntityId { get; set; }
+    /// <summary>e.g. CREATE, UPDATE, APPROVE, REJECT, CHECKIN, CHECKOUT</summary>
+    public string Action { get; set; } = string.Empty;
+    /// <summary>JSON snapshot of changes (before/after or payload).</summary>
+    public string PayloadJson { get; set; } = "{}";
+    public Guid? ActorUserId { get; set; }
+    public string ActorEmail { get; set; } = "System";
+    public string IpAddress { get; set; } = string.Empty;
+    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
 }
