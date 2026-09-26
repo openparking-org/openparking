@@ -22,6 +22,9 @@ public static class SystemSettingsSeeder
             new() { Key = "overstay.penalty_fixed_amount", Value = "50.00", Description = "Fixed base fine applied the moment an overstay is detected", Category = "Overstay" },
             new() { Key = "overstay.warning_lead_minutes", Value = "10", Description = "Minutes before booking end to send expiry push notification", Category = "Overstay" },
             new() { Key = "overstay.escalation_threshold_hours", Value = "2", Description = "Hours of overstay after which the penalty doubles", Category = "Overstay" },
+            // --- Compatibility aliases for documented design.md keys ---
+            new() { Key = "overstay.grace_period_minutes", Value = "15", Description = "Minutes after booking end before overstay triggers (alias)", Category = "Overstay" },
+            new() { Key = "overstay.penalty_per_extra_hour", Value = "25.00", Description = "Hourly penalty fee for overstaying (alias)", Category = "Overstay" },
             new() { Key = "permits.auto_approve_confidence", Value = "0.90", Description = "AI confidence threshold for auto-approving permits", Category = "Permits" }
 
         };

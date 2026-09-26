@@ -107,10 +107,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.HasKey(e => e.Id);
 
-            // Indexes for pending-approval list and analytics filtering
+            // Indexes for pending-approval list, analytics filtering, and session lookup
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.WorkflowType);
             entity.HasIndex(e => e.TriggeredAt);
+            entity.HasIndex(e => e.SessionId);
 
             // Constrained text columns
             entity.Property(e => e.Objective).IsRequired().HasMaxLength(500);

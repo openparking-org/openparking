@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -283,6 +283,11 @@ namespace OpenParking.Infrastructure.Migrations
                 name: "IX_AgentWorkflowRuns_ApprovedBy",
                 table: "AgentWorkflowRuns",
                 column: "ApprovedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AgentWorkflowRuns_SessionId",
+                table: "AgentWorkflowRuns",
+                column: "SessionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AgentWorkflowRuns_Status",
