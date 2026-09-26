@@ -44,4 +44,67 @@ public class CoreTests
         Assert.Equal("General", setting.Category);
         Assert.Equal("System", setting.UpdatedBy);
     }
+
+    // -----------------------------------------------------------------------
+    // Issue #24 — AgentWorkflowRun & ZonePricingRule entity defaults
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void AgentWorkflowRun_Defaults_Are_Safe_For_Persistence()
+    {
+        var run = new AgentWorkflowRun
+        {
+            Objective = "Detect overstay for session sess-001",
+            WorkflowType = "OVERSTAY_ENFORCEMENT"
+        };
+
+        // Status must start as PENDING_APPROVAL so it appears in the approval queue
+        Assert.Equal("PENDING_APPROVAL", run.Status);
+
+        // All JSONB columns must default to "{}" — not null — to avoid DB constraint errors
+        Assert.Equal("{}", run.PlanJson);
+        Assert.Equal("{}", run.StepResultsJson);
+        Assert.Equal("{}", run.InputPayloadJson);
+        Assert.Equal("{}", run.ExecutionSummaryJson);
+        Assert.Equal("{}", run.ErrorLogJson);
+
+        // Optional FK fields must be null until explicitly set
+        Assert.Null(run.ApprovedBy);
+        Assert.Null(run.ResolvedAt);
+        Assert.Null(run.ZoneId);
+        Assert.Null(run.SessionId);
+    }
+
+    [Fact]
+    public void ZonePricingRule_Multiplier_Defaults_To_One()
+    {
+        var rule = new ZonePricingRule
+        {
+            ZoneId = Guid.NewGuid(),
+            Reason = "Peak hour AI surge"
+        };
+
+        // Default multiplier is 1.00 (no surge) — must never be 0 or negative
+        Assert.Equal(1.00m, rule.Multiplier);
+
+        // FK links must start null until approval assigns them
+        Assert.Null(rule.ApprovedBy);
+        Assert.Null(rule.WorkflowRunId);
+        Assert.Null(rule.ActiveUntil);
+    }
+
+    [Fact]
+    public void ParkingSession_Starts_With_Active_Status_And_Zero_Overstay()
+    {
+        var session = new ParkingSession
+        {
+            BookingId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            SlotId = Guid.NewGuid()
+        };
+
+        Assert.Equal(SessionStatus.Active, session.Status);
+        Assert.Equal(0, session.OverstayMinutes);
+        Assert.Equal(0m, session.PenaltyFee);
+    }
 }

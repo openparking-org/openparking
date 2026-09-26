@@ -129,10 +129,13 @@ public class ParkingSession
     public DateTime CheckInTime { get; set; } = DateTime.UtcNow;
     public DateTime? CheckOutTime { get; set; }
     public SessionStatus Status { get; set; } = SessionStatus.Active;
+    /// <summary>Minutes beyond booking end time (0 when no overstay).</summary>
     public int OverstayMinutes { get; set; }
     public decimal TotalFee { get; set; }
     public decimal PenaltyFee { get; set; }
     public string? ReceiptPdfUrl { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public enum PermitStatus
@@ -168,17 +171,85 @@ public class SystemSetting
     public string UpdatedBy { get; set; } = "System";
 }
 
+/// <summary>
+/// Persists the full state of a LangGraph multi-agent workflow run.
+/// Statuses: RUNNING | PENDING_APPROVAL | AUTO_APPROVED | APPROVED | REJECTED | FAILED
+/// </summary>
 public class AgentWorkflowRun
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    // --- Core workflow identity ---
+    /// <summary>Human-readable goal string passed to the Planner Agent.</summary>
+    public string Objective { get; set; } = string.Empty;
+    /// <summary>Workflow domain: OVERSTAY_ENFORCEMENT | DYNAMIC_PRICING | PERMIT_VALIDATION</summary>
     public string WorkflowType { get; set; } = string.Empty;
-    public string Status { get; set; } = "PENDING_APPROVAL"; // AUTO_APPROVED, PENDING_APPROVAL, REJECTED
+
+    // --- Scoping (nullable — not all workflows relate to a zone or session) ---
     public Guid? ZoneId { get; set; }
     public Guid? SessionId { get; set; }
+
+    // --- Execution state (JSONB columns) ---
+    /// <summary>Structured ExecutionPlan produced by the Planner Agent (JSONB).</summary>
+    public string PlanJson { get; set; } = "{}";
+    /// <summary>Name of the currently executing agent step (e.g. "ANALYZER", "VALIDATOR").</summary>
+    public string CurrentStep { get; set; } = string.Empty;
+    /// <summary>Per-step outputs keyed by agent name (JSONB).</summary>
+    public string StepResultsJson { get; set; } = "{}";
+    /// <summary>Raw input payload forwarded to the AI service (JSONB).</summary>
     public string InputPayloadJson { get; set; } = "{}";
+    /// <summary>Final execution summary returned by the AI service (JSONB).</summary>
     public string ExecutionSummaryJson { get; set; } = "{}";
+    /// <summary>Serialised error details if Status == FAILED (JSONB).</summary>
+    public string ErrorLogJson { get; set; } = "{}";
+
+    // --- Decision ---
+    /// <summary>RUNNING | PENDING_APPROVAL | AUTO_APPROVED | APPROVED | REJECTED | FAILED</summary>
+    public string Status { get; set; } = "PENDING_APPROVAL";
     public string DecisionReason { get; set; } = string.Empty;
+
+    // --- Human approval audit ---
+    /// <summary>FK to the User who approved/rejected (nullable — null when AUTO_APPROVED or RUNNING).</summary>
+    public Guid? ApprovedBy { get; set; }
+    public User? ApprovedByUser { get; set; }
+
+    // --- Timestamps ---
     public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
     public DateTime? ResolvedAt { get; set; }
+    /// <summary>Free-text actor identifier (email/name) for cases before full auth is wired.</summary>
     public string? ResolvedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Active surge pricing rules set by an approved AI DYNAMIC_PRICING workflow.
+/// A zone's active rule overrides the system-wide base hourly rate.
+/// (design.md §19.1)
+/// </summary>
+public class ZonePricingRule
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    public Guid ZoneId { get; set; }
+    public Zone? Zone { get; set; }
+
+    /// <summary>Surge multiplier to apply (e.g. 1.50 = 50% surge). Must be >= 1.00.</summary>
+    public decimal Multiplier { get; set; } = 1.00m;
+
+    /// <summary>AI-generated justification for this surge rule.</summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>FK to the admin User who approved the workflow that created this rule (nullable).</summary>
+    public Guid? ApprovedBy { get; set; }
+    public User? ApprovedByUser { get; set; }
+
+    /// <summary>FK to the AgentWorkflowRun that produced this rule.</summary>
+    public Guid? WorkflowRunId { get; set; }
+    public AgentWorkflowRun? WorkflowRun { get; set; }
+
+    public DateTime ActiveFrom { get; set; } = DateTime.UtcNow;
+    /// <summary>NULL means the rule is indefinite until manually deactivated.</summary>
+    public DateTime? ActiveUntil { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
