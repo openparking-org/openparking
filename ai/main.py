@@ -1,10 +1,11 @@
 import os
 from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from routing.astar import astar
-from agents.planner import PlannerAgent, WorkflowState
+from agents.planner import PlannerAgent, WorkflowState, ExecutionPlan
+from tools.workflow_persistence import fetch_workflow
 
 app = FastAPI(
     title="OpenParking AI Service",
@@ -37,12 +38,26 @@ class RoutingResponse(BaseModel):
     coordinates: List[Coordinate]
     distancePx: float
 
+class PlanRequest(BaseModel):
+    workflow_id: str
+    workflow_type: str
+    objective: Optional[str] = None
+    input_data: Dict[str, Any] = Field(default_factory=dict)
+
 class WorkflowRequest(BaseModel):
     workflow_id: str
     workflow_type: str
+    objective: Optional[str] = None
     zone_id: Optional[str] = None
     session_id: Optional[str] = None
     input_data: Dict[str, Any] = Field(default_factory=dict)
+    plan: Optional[Dict[str, Any]] = None
+
+class ResumeWorkflowRequest(BaseModel):
+    workflow_id: str
+    decision: str = "APPROVE"
+    approved_by: Optional[str] = None
+    reason: Optional[str] = None
 
 # ---------------------------------------------------------
 # API Endpoints
@@ -79,29 +94,84 @@ async def calculate_route(req: RoutingRequest) -> RoutingResponse:
         distancePx=round(total_dist, 2)
     )
 
+@app.post("/workflows/plan", response_model=Dict[str, Any])
+async def create_workflow_plan(req: PlanRequest) -> Dict[str, Any]:
+    """Generates a structured multi-step ExecutionPlan for an objective."""
+    try:
+        plan = planner.create_plan(
+            workflow_id=req.workflow_id,
+            workflow_type=req.workflow_type,
+            objective=req.objective or f"Execute {req.workflow_type} workflow",
+            input_data=req.input_data
+        )
+        return plan.model_dump()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post("/workflows/execute")
 async def execute_workflow(req: WorkflowRequest) -> Dict[str, Any]:
-    state: WorkflowState = {
-        "workflow_id": req.workflow_id,
-        "workflow_type": req.workflow_type,
-        "zone_id": req.zone_id,
-        "session_id": req.session_id,
-        "input_data": req.input_data,
-        "analysis": None,
-        "action_proposal": None,
-        "validation": None,
-        "final_decision": None,
-        "reason": None
-    }
+    """
+    Executes a multi-agent workflow run. Decomposes into a structured ExecutionPlan,
+    executes steps, validates outputs, and pauses if human approval is required.
+    (design.md §8.1, §8.3)
+    """
+    try:
+        if req.plan:
+            plan = ExecutionPlan(**req.plan)
+        else:
+            plan = planner.create_plan(
+                workflow_id=req.workflow_id,
+                workflow_type=req.workflow_type,
+                objective=req.objective or f"Execute {req.workflow_type} workflow",
+                input_data=req.input_data
+            )
 
-    if req.workflow_type == "OVERSTAY_ENFORCEMENT":
-        result = await planner.execute_overstay_flow(state)
-    elif req.workflow_type == "DYNAMIC_PRICING":
-        result = await planner.execute_pricing_flow(state)
-    else:
-        raise HTTPException(status_code=400, detail=f"Unsupported workflow type: {req.workflow_type}")
+        state: WorkflowState = {
+            "workflow_id": req.workflow_id,
+            "workflow_type": req.workflow_type,
+            "zone_id": req.zone_id,
+            "session_id": req.session_id,
+            "input_data": req.input_data,
+            "analysis": None,
+            "action_proposal": None,
+            "validation": None,
+            "final_decision": None,
+            "reason": None,
+            "plan": plan.model_dump(),
+            "current_step": None,
+            "step_results": {},
+            "status": "RUNNING"
+        }
 
-    return result
+        result = await planner.execute_plan(plan, state)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/workflows/resume")
+async def resume_workflow(req: ResumeWorkflowRequest) -> Dict[str, Any]:
+    """
+    Resumes a paused workflow run after human administrator approval/rejection.
+    (design.md §8.3)
+    """
+    try:
+        result = await planner.resume_workflow(
+            workflow_id=req.workflow_id,
+            decision=req.decision,
+            approved_by=req.approved_by,
+            reason=req.reason
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/workflows/{workflow_id}")
+async def get_workflow_status(workflow_id: str) -> Dict[str, Any]:
+    """Fetches the latest execution state and step results of a workflow run."""
+    wf = await fetch_workflow(workflow_id)
+    if not wf:
+        raise HTTPException(status_code=404, detail=f"Workflow '{workflow_id}' not found.")
+    return wf
 
 if __name__ == "__main__":
     import uvicorn
