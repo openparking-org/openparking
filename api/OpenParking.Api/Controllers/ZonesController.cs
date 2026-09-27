@@ -9,7 +9,7 @@ namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ZonesController(IZoneService zoneService) : ControllerBase
+public class ZonesController(IZoneService zoneService, ISettingsService settingsService) : ControllerBase
 {
     // GET /api/zones — public, used by Flutter to list nearby lots
     [HttpGet]
@@ -17,6 +17,7 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
     {
         var result = await zoneService.ListZonesAsync(query);
 
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         var dtos = result.Items.Select(z => new ZoneDto
         {
             Id          = z.Id,
@@ -26,7 +27,8 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
             Longitude   = z.Longitude,
             BaseHourlyRate = z.BaseHourlyRate,
             TotalCapacity  = z.TotalCapacity,
-            AvailableCount = z.Slots.Count(s => s.Status == SlotStatus.Available)
+            AvailableCount = z.Slots.Count(s => s.Status == SlotStatus.Available),
+            Currency = currency
         }).ToList();
 
         return Ok(ApiResponse<List<ZoneDto>>.Ok(dtos, HttpContext.TraceIdentifier));
@@ -37,7 +39,8 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
     public async Task<ActionResult<ApiResponse<ZoneDetailDto>>> GetZone(Guid id)
     {
         var zone = await zoneService.GetZoneAsync(id);
-        return Ok(ApiResponse<ZoneDetailDto>.Ok(ZoneDetailDto.From(zone), HttpContext.TraceIdentifier));
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
+        return Ok(ApiResponse<ZoneDetailDto>.Ok(ZoneDetailDto.From(zone, currency), HttpContext.TraceIdentifier));
     }
 
     // POST /api/zones — ParkingAdmin or SystemAdmin only
@@ -63,6 +66,7 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
 
         var createdZone = await zoneService.CreateZoneAsync(zone, actorId);
 
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         var dto = new ZoneDto
         {
             Id = createdZone.Id, 
@@ -72,7 +76,8 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
             Longitude = createdZone.Longitude,
             BaseHourlyRate = createdZone.BaseHourlyRate, 
             TotalCapacity = createdZone.TotalCapacity,
-            AvailableCount = 0
+            AvailableCount = 0,
+            Currency = currency
         };
 
         return CreatedAtAction(nameof(GetZone), new { id = createdZone.Id },
@@ -87,6 +92,7 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
         var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
         var updatedZone = await zoneService.UpdateZoneAsync(id, req, actorId);
         
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         var dto = new ZoneDto
         {
             Id = updatedZone.Id, 
@@ -96,7 +102,8 @@ public class ZonesController(IZoneService zoneService) : ControllerBase
             Longitude = updatedZone.Longitude,
             BaseHourlyRate = updatedZone.BaseHourlyRate, 
             TotalCapacity = updatedZone.TotalCapacity,
-            AvailableCount = 0
+            AvailableCount = 0,
+            Currency = currency
         };
 
         return Ok(ApiResponse<ZoneDto>.Ok(dto, HttpContext.TraceIdentifier));
@@ -265,6 +272,7 @@ public class ZoneDto
     public decimal BaseHourlyRate { get; set; }
     public int TotalCapacity { get; set; }
     public int AvailableCount { get; set; }
+    public string Currency { get; set; } = "USD";
 }
 
 public class ZoneDetailDto : ZoneDto
@@ -272,7 +280,7 @@ public class ZoneDetailDto : ZoneDto
     public List<SlotSummaryDto> Slots { get; set; } = [];
     public List<FloorPlanSummaryDto> FloorPlans { get; set; } = [];
 
-    public static ZoneDetailDto From(Zone zone) => new()
+    public static ZoneDetailDto From(Zone zone, string currency) => new()
     {
         Id             = zone.Id,
         Name           = zone.Name,
@@ -282,6 +290,7 @@ public class ZoneDetailDto : ZoneDto
         BaseHourlyRate = zone.BaseHourlyRate,
         TotalCapacity  = zone.TotalCapacity,
         AvailableCount = zone.Slots.Count(s => s.Status == SlotStatus.Available),
+        Currency       = currency,
         Slots = zone.Slots.Select(s => new SlotSummaryDto
         {
             Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString()

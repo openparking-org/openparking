@@ -210,6 +210,8 @@ using (var scope = app.Services.CreateScope())
     {
         await db.Database.MigrateAsync();
         await SystemSettingsSeeder.SeedAsync(db);
+        await UserSeeder.SeedAsync(db);
+        await ZoneSeeder.SeedAsync(db);
         logger.LogInformation("Database migration and seeding completed.");
     }
     catch (Exception ex)

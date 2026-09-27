@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenParking.Core.Entities;
+using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
 using OpenParking.Infrastructure.Data;
 using System.Security.Claims;

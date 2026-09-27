@@ -25,8 +25,14 @@ public static class SystemSettingsSeeder
             // --- Compatibility aliases for documented design.md keys ---
             new() { Key = "overstay.grace_period_minutes", Value = "15", Description = "Minutes after booking end before overstay triggers (alias)", Category = "Overstay" },
             new() { Key = "overstay.penalty_per_extra_hour", Value = "25.00", Description = "Hourly penalty fee for overstaying (alias)", Category = "Overstay" },
-            new() { Key = "permits.auto_approve_confidence", Value = "0.90", Description = "AI confidence threshold for auto-approving permits", Category = "Permits" }
-
+            new() { Key = "permits.auto_approve_confidence", Value = "0.90", Description = "AI confidence threshold for auto-approving permits", Category = "Permits" },
+            
+            // --- Phase 6 additional keys ---
+            new() { Key = "overstay_check_interval_minutes", Value = "5", Description = "Interval in minutes for the overstay background check", Category = "Overstay" },
+            new() { Key = "max_penalty_amount", Value = "100.00", Description = "Absolute maximum penalty that can be issued", Category = "Overstay" },
+            new() { Key = "surge_price_limit_multiplier", Value = "3.0", Description = "Hard limit on surge pricing multiplier", Category = "Pricing" },
+            new() { Key = "admin_email_notifications", Value = "true", Description = "Whether to email admins on workflow approval requests", Category = "General" },
+            new() { Key = "pricing.default_currency", Value = "USD", Description = "System-wide default currency code (e.g., USD, EUR, LKR)", Category = "Pricing" }
         };
 
         foreach (var setting in defaultSettings)

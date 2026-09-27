@@ -24,12 +24,14 @@ public class AnalyticsSummaryDto
     public int TotalWorkflowsCount { get; set; }
     public DateTime From { get; set; }
     public DateTime To { get; set; }
+    public string Currency { get; set; } = "USD";
 }
 
 public class DailyRevenueDto
 {
     public string Date { get; set; } = string.Empty;
     public decimal Revenue { get; set; }
+    public string Currency { get; set; } = "USD";
 }
 
 public class ZoneOccupancyDto

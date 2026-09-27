@@ -7,7 +7,7 @@ namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SessionsController(IBookingService bookingService) : ControllerBase
+public class SessionsController(IBookingService bookingService, ISettingsService settingsService) : ControllerBase
 {
     [HttpPost("check-in")]
     public async Task<ActionResult<ApiResponse<SessionDto>>> CheckIn([FromBody] CheckInRequest request)
@@ -20,7 +20,8 @@ public class SessionsController(IBookingService bookingService) : ControllerBase
         }
 
         var session = await bookingService.CheckInAsync(request, ip);
-        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot), HttpContext.TraceIdentifier));
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
+        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
     }
 
     [HttpPost("check-out")]
@@ -28,9 +29,10 @@ public class SessionsController(IBookingService bookingService) : ControllerBase
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var result = await bookingService.CheckOutAsync(request, ip);
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         
         return Ok(ApiResponse<SessionDto>.Ok(
-            SessionDto.FromEntity(result.Session!, result.Session!.Booking, result.Session!.Slot), 
+            SessionDto.FromEntity(result.Session!, result.Session!.Booking, result.Session!.Slot, currency), 
             HttpContext.TraceIdentifier));
     }
 
@@ -43,14 +45,16 @@ public class SessionsController(IBookingService bookingService) : ControllerBase
         if (session == null)
             throw new AppException(ErrorCodes.NotFound, "No active parking session found.", 404);
 
-        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot), HttpContext.TraceIdentifier));
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
+        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApiResponse<SessionDto>>> GetSessionById(Guid id)
     {
         var session = await bookingService.GetSessionAsync(id);
-        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot), HttpContext.TraceIdentifier));
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
+        return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
     }
 
     private Guid? GetCurrentUserId()
@@ -78,8 +82,9 @@ public class SessionDto
     public decimal PenaltyFee { get; set; }
     public string? ReceiptPdfUrl { get; set; }
     public decimal HourlyRate { get; set; }
+    public string Currency { get; set; } = "USD";
 
-    public static SessionDto FromEntity(OpenParking.Core.Entities.ParkingSession s, OpenParking.Core.Entities.Booking? b, OpenParking.Core.Entities.Slot? slot)
+    public static SessionDto FromEntity(OpenParking.Core.Entities.ParkingSession s, OpenParking.Core.Entities.Booking? b, OpenParking.Core.Entities.Slot? slot, string currency)
     {
         return new SessionDto
         {
@@ -97,7 +102,8 @@ public class SessionDto
             TotalFee = s.TotalFee,
             PenaltyFee = s.PenaltyFee,
             ReceiptPdfUrl = s.ReceiptPdfUrl,
-            HourlyRate = slot?.Zone?.BaseHourlyRate ?? 5.00m
+            HourlyRate = slot?.Zone?.BaseHourlyRate ?? 5.00m,
+            Currency = currency
         };
     }
 }

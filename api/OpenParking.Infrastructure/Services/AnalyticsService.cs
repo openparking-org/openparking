@@ -6,7 +6,7 @@ using OpenParking.Infrastructure.Data;
 
 namespace OpenParking.Infrastructure.Services;
 
-public class AnalyticsService(AppDbContext db) : IAnalyticsService
+public class AnalyticsService(AppDbContext db, ISettingsService settingsService) : IAnalyticsService
 {
     public async Task<AnalyticsSummaryDto> GetSummaryAsync(int days = 30, DateTime? from = null, DateTime? to = null)
     {
@@ -55,7 +55,8 @@ public class AnalyticsService(AppDbContext db) : IAnalyticsService
             PendingWorkflowsCount = pendingWorkflows,
             TotalWorkflowsCount = totalWorkflows,
             From = startDate,
-            To = endDate
+            To = endDate,
+            Currency = await settingsService.GetStringAsync("pricing.default_currency", "USD")
         };
     }
 
@@ -77,12 +78,15 @@ public class AnalyticsService(AppDbContext db) : IAnalyticsService
         var current = startDate.Date;
         var end = endDate.Date;
 
+        var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
+
         while (current <= end)
         {
             dailyList.Add(new DailyRevenueDto
             {
                 Date = current.ToString("yyyy-MM-dd"),
-                Revenue = revenueByDate.TryGetValue(current, out var rev) ? rev : 0m
+                Revenue = revenueByDate.TryGetValue(current, out var rev) ? rev : 0m,
+                Currency = currency
             });
             current = current.AddDays(1);
         }

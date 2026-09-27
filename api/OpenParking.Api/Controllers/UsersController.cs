@@ -110,7 +110,7 @@ public class UsersController(IUserService userService) : ControllerBase
         Email = user.Email,
         FullName = user.FullName,
         Role = user.Role.ToString(),
-        HasDisabilityPermit = user.DisabilityPermits.Any(p => p.Status == PermitStatus.Approved && p.ExpiryDate > DateTime.UtcNow)
+        HasDisabilityPermit = user.HasDisabilityPermit
     };
 }
 
