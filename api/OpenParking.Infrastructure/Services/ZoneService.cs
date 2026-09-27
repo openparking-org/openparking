@@ -41,7 +41,10 @@ public class ZoneService(
 
     public async Task<PagedResult<Zone>> ListZonesAsync(PaginatedQuery query)
     {
-        var q = db.Zones.AsNoTracking().AsQueryable();
+        var q = db.Zones
+            .Include(z => z.Slots)
+            .AsNoTracking()
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Search))
             q = q.Where(z => z.Name.Contains(query.Search) || z.Code.Contains(query.Search));
@@ -58,7 +61,11 @@ public class ZoneService(
 
     public async Task<Zone> GetZoneAsync(Guid zoneId)
     {
-        return await db.Zones.AsNoTracking().FirstOrDefaultAsync(z => z.Id == zoneId)
+        return await db.Zones
+            .Include(z => z.Slots)
+            .Include(z => z.FloorPlans)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(z => z.Id == zoneId)
             ?? throw new AppException(ErrorCodes.NotFound, $"Zone '{zoneId}' not found.", 404);
     }
 

@@ -16,6 +16,7 @@ namespace OpenParking.Infrastructure.Services;
 public class BookingService(
     AppDbContext db,
     IEmailService emailService,
+    IRealtimeNotifier realtimeNotifier,
     ILogger<BookingService> logger) : IBookingService
 {
     // ── IParkingModule ─────────────────────────────────────────────────────
@@ -191,132 +192,217 @@ public class BookingService(
 
     // ── QR Session Lifecycle ───────────────────────────────────────────────
 
-    public async Task<ParkingSession> CheckInAsync(string qrContent, string ipAddress)
+    public async Task<ParkingSession> CheckInAsync(CheckInRequest request, string ipAddress)
     {
-        // Parse bookingId from QR: "openparking://session/start?bookingId=<GUID>&slotId=<GUID>"
-        if (!TryParseQr(qrContent, out var bookingId))
-            throw new AppException(ErrorCodes.ValidationFailed, "Invalid QR code format.");
+        Booking? booking = null;
 
-        var booking = await db.Bookings
-            .Include(b => b.Slot)
-            .FirstOrDefaultAsync(b => b.Id == bookingId)
-            ?? throw new AppException(ErrorCodes.NotFound, "Booking not found for this QR code.", 404);
+        if (request.BookingId.HasValue && request.BookingId.Value != Guid.Empty)
+        {
+            booking = await db.Bookings
+                .Include(b => b.Slot)
+                .ThenInclude(s => s!.Zone)
+                .FirstOrDefaultAsync(b => b.Id == request.BookingId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.BookingCode))
+        {
+            booking = await db.Bookings
+                .Include(b => b.Slot)
+                .ThenInclude(s => s!.Zone)
+                .FirstOrDefaultAsync(b => b.QrCodeContent.Contains(request.BookingCode) || b.Id.ToString() == request.BookingCode);
+        }
+
+        if (booking == null)
+        {
+            if (request.SlotId.HasValue && request.SlotId.Value != Guid.Empty)
+            {
+                var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == request.SlotId.Value);
+                if (slot == null)
+                    throw new AppException(ErrorCodes.NotFound, "Booking or slot not found for provided check-in QR.", 404);
+
+                var userId = request.UserId ?? Guid.NewGuid();
+                booking = new Booking
+                {
+                    Id = request.BookingId ?? Guid.NewGuid(),
+                    UserId = userId,
+                    SlotId = slot.Id,
+                    StartTime = DateTime.UtcNow,
+                    EndTime = DateTime.UtcNow.AddHours(2),
+                    Status = BookingStatus.Active,
+                    QrCodeContent = $"{QrPrefix}{request.BookingId}&slotId={slot.Id}",
+                    EstimatedFee = slot.Zone?.BaseHourlyRate * 2 ?? 10m,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    CreatedBy = userId.ToString()
+                };
+                db.Bookings.Add(booking);
+            }
+            else
+            {
+                throw new AppException(ErrorCodes.NotFound, "Booking not found for the scanned QR code.", 404);
+            }
+        }
+
+        var existingActiveSession = await db.ParkingSessions
+            .FirstOrDefaultAsync(s => s.BookingId == booking.Id && s.Status == SessionStatus.Active);
+
+        if (existingActiveSession != null)
+            throw new AppException(ErrorCodes.SessionActive, "An active parking session is already running for this booking.", 409);
 
         if (booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.Cancelled)
-            throw new AppException(ErrorCodes.ValidationFailed,
-                $"Booking is already '{booking.Status}'.");
-
-        var alreadyActive = await db.ParkingSessions
-            .AnyAsync(s => s.BookingId == bookingId && s.Status == SessionStatus.Active);
-
-        if (alreadyActive)
-            throw new AppException(ErrorCodes.SessionActive,
-                "A session for this booking is already active.", 409);
+            throw new AppException(ErrorCodes.ValidationFailed, $"Booking cannot be checked in because its status is {booking.Status}.");
 
         var session = new ParkingSession
         {
-            Id          = Guid.NewGuid(),
-            BookingId   = booking.Id,
-            UserId      = booking.UserId,
-            SlotId      = booking.SlotId,
+            Id = Guid.NewGuid(),
+            BookingId = booking.Id,
+            UserId = booking.UserId,
+            SlotId = booking.SlotId,
             CheckInTime = DateTime.UtcNow,
-            Status      = SessionStatus.Active,
-            CreatedAt   = DateTime.UtcNow,
-            UpdatedAt   = DateTime.UtcNow
+            Status = SessionStatus.Active,
+            OverstayMinutes = 0,
+            TotalFee = 0m,
+            PenaltyFee = 0m,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         booking.Status = BookingStatus.Active;
+        db.ParkingSessions.Add(session);
 
-        if (booking.Slot is not null)
+        var targetSlot = booking.Slot ?? await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == session.SlotId);
+        if (targetSlot != null)
         {
-            booking.Slot.Status    = SlotStatus.Occupied;
-            booking.Slot.UpdatedAt = DateTime.UtcNow;
+            targetSlot.Status = SlotStatus.Occupied;
+            targetSlot.UpdatedAt = DateTime.UtcNow;
+
+            await realtimeNotifier.NotifySlotUpdatedAsync(
+                targetSlot.FloorPlanId?.ToString() ?? "", 
+                targetSlot.Id.ToString(), 
+                true);
         }
 
-        db.ParkingSessions.Add(session);
         await db.SaveChangesAsync();
 
+        session.Booking = booking;
+        session.Slot = targetSlot;
+
         logger.LogInformation("Check-in: session={SessionId} booking={BookingId} ip={Ip}",
-            session.Id, bookingId, ipAddress);
+            session.Id, booking.Id, ipAddress);
+            
         return session;
     }
 
-    public async Task<SessionCheckOutResult> CheckOutAsync(Guid sessionId, string ipAddress)
+    public async Task<SessionCheckOutResult> CheckOutAsync(CheckOutRequest request, string ipAddress)
     {
-        var session = await db.ParkingSessions
-            .Include(s => s.Booking)
-            .FirstOrDefaultAsync(s => s.Id == sessionId)
-            ?? throw new AppException(ErrorCodes.NotFound, "Session not found.", 404);
+        ParkingSession? session = null;
+
+        if (request.SessionId.HasValue && request.SessionId.Value != Guid.Empty)
+        {
+            session = await db.ParkingSessions
+                .Include(s => s.Booking)
+                .FirstOrDefaultAsync(s => s.Id == request.SessionId.Value);
+        }
+        else if (request.BookingId.HasValue && request.BookingId.Value != Guid.Empty)
+        {
+            session = await db.ParkingSessions
+                .Include(s => s.Booking)
+                .Where(s => s.BookingId == request.BookingId.Value && s.Status == SessionStatus.Active)
+                .OrderByDescending(s => s.CheckInTime)
+                .FirstOrDefaultAsync();
+        }
+
+        if (session == null)
+            throw new AppException(ErrorCodes.NotFound, "No active parking session found.", 404);
 
         if (session.Status != SessionStatus.Active && session.Status != SessionStatus.OverstayDetected)
-            throw new AppException(ErrorCodes.ValidationFailed,
-                $"Session cannot be checked out — status is '{session.Status}'.");
+            throw new AppException(ErrorCodes.ValidationFailed, $"Session cannot be checked out because it is already {session.Status}.");
 
-        var slot = await db.Slots.Include(s => s.Zone)
-            .FirstOrDefaultAsync(s => s.Id == session.SlotId);
+        var now = DateTime.UtcNow;
+        session.CheckOutTime = now;
+        session.UpdatedAt = now;
+        session.Status = SessionStatus.Completed;
 
-        var now        = DateTime.UtcNow;
+        var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == session.SlotId);
         var hourlyRate = slot?.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
 
-        // Fee calculation — 15-min billing blocks (design.md §19.2)
-        var rawMinutes     = (now - session.CheckInTime).TotalMinutes;
+        // Fee calculation — 15-min billing blocks
+        var rawMinutes = (now - session.CheckInTime).TotalMinutes;
         var billableBlocks = (decimal)Math.Ceiling(Math.Max(rawMinutes, (double)BillBlockMinutes) / (double)BillBlockMinutes);
-        var subtotal       = Math.Round(billableBlocks * BillBlockMinutes / 60m * hourlyRate, 2);
+        var subtotal = Math.Round(billableBlocks * BillBlockMinutes / 60m * hourlyRate, 2);
 
         // Overstay penalty
-        decimal penaltyFee    = 0m;
-        int     overstayMins  = 0;
+        decimal penaltyFee = 0m;
+        int overstayMins = 0;
 
-        if (session.Booking is not null && now > session.Booking.EndTime)
+        if (session.Booking != null && now > session.Booking.EndTime)
         {
             overstayMins = (int)(now - session.Booking.EndTime).TotalMinutes;
             var penaltyRate = await GetPenaltyRateAsync();
-            var extraHours  = (decimal)Math.Ceiling(overstayMins / 60.0);
-            penaltyFee      = Math.Round(extraHours * penaltyRate, 2);
+            var extraHours = (decimal)Math.Ceiling(overstayMins / 60.0);
+            penaltyFee = Math.Round(extraHours * penaltyRate, 2);
         }
 
-        session.CheckOutTime    = now;
-        session.UpdatedAt       = now;
-        session.Status          = SessionStatus.Completed;
-        session.TotalFee        = subtotal + penaltyFee;
-        session.PenaltyFee      = penaltyFee;
+        session.TotalFee = subtotal + penaltyFee;
+        session.PenaltyFee = penaltyFee;
         session.OverstayMinutes = overstayMins;
-        session.ReceiptPdfUrl   = $"/receipts/{session.Id}.pdf";
+        session.ReceiptPdfUrl = $"/receipts/{session.Id}.pdf";
 
-        if (session.Booking is not null)
+        if (session.Booking != null)
             session.Booking.Status = BookingStatus.Completed;
 
-        if (slot is not null)
+        if (slot != null)
         {
-            slot.Status    = SlotStatus.Available;
+            slot.Status = SlotStatus.Available;
             slot.UpdatedAt = now;
+            
+            await realtimeNotifier.NotifySlotUpdatedAsync(
+                slot.FloorPlanId?.ToString() ?? "", 
+                slot.Id.ToString(), 
+                false);
         }
 
         await db.SaveChangesAsync();
+        session.Slot = slot;
 
         logger.LogInformation("Check-out: session={SessionId} fee={Fee} penalty={Penalty} ip={Ip}",
-            sessionId, session.TotalFee, penaltyFee, ipAddress);
+            session.Id, session.TotalFee, penaltyFee, ipAddress);
 
         return new SessionCheckOutResult
         {
-            SessionId       = sessionId,
-            TotalFee        = session.TotalFee,
-            PenaltyFee      = penaltyFee,
+            SessionId = session.Id,
+            TotalFee = session.TotalFee,
+            PenaltyFee = penaltyFee,
             OverstayMinutes = overstayMins,
-            ReceiptPdfUrl   = session.ReceiptPdfUrl,
-            CheckOutTime    = now
+            ReceiptPdfUrl = session.ReceiptPdfUrl,
+            CheckOutTime = now,
+            Session = session
         };
     }
 
-    public async Task<ParkingSession?> GetActiveSessionAsync(Guid userId)
+    public async Task<ParkingSession?> GetActiveSessionAsync(Guid? userId, Guid? bookingId = null)
+    {
+        var query = db.ParkingSessions
+            .Include(s => s.Booking)
+            .Include(s => s.Slot).ThenInclude(s => s!.Zone)
+            .AsNoTracking()
+            .Where(s => s.Status == SessionStatus.Active || s.Status == SessionStatus.OverstayDetected);
+
+        if (bookingId.HasValue && bookingId.Value != Guid.Empty)
+            query = query.Where(s => s.BookingId == bookingId.Value);
+        else if (userId.HasValue)
+            query = query.Where(s => s.UserId == userId.Value);
+
+        return await query.OrderByDescending(s => s.CheckInTime).FirstOrDefaultAsync();
+    }
+
+    public async Task<ParkingSession> GetSessionAsync(Guid sessionId)
     {
         return await db.ParkingSessions
             .Include(s => s.Booking)
+            .Include(s => s.Slot).ThenInclude(s => s!.Zone)
             .AsNoTracking()
-            .Where(s => s.UserId == userId &&
-                        (s.Status == SessionStatus.Active || s.Status == SessionStatus.OverstayDetected))
-            .OrderByDescending(s => s.CheckInTime)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(s => s.Id == sessionId)
+            ?? throw new AppException(ErrorCodes.NotFound, "Session not found.", 404);
     }
 
     // ── ANPR Simulator (design.md §8.4) ───────────────────────────────────
@@ -386,7 +472,7 @@ public class BookingService(
             ?? throw new AppException(ErrorCodes.NotFound,
                 $"No active session for plate '{licensePlate}'.", 404);
 
-        return await CheckOutAsync(session.Id, "ANPR_SIMULATOR");
+        return await CheckOutAsync(new CheckOutRequest { SessionId = session.Id }, "ANPR_SIMULATOR");
     }
 
     // ── Private Helpers ────────────────────────────────────────────────────

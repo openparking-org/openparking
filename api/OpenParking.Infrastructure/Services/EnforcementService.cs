@@ -157,6 +157,29 @@ public class EnforcementService(
         return run;
     }
 
+    // ── Workflow Retrieval ─────────────────────────────────────────────────
+
+    public async Task<List<AgentWorkflowRun>> GetPendingWorkflowsAsync()
+    {
+        return await db.AgentWorkflowRuns
+            .AsNoTracking()
+            .Where(w => w.Status == WorkflowStatus.AwaitingApproval)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<AgentWorkflowRun> GetWorkflowAsync(Guid workflowId)
+    {
+        var run = await db.AgentWorkflowRuns
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == workflowId);
+
+        if (run is null)
+            throw new AppException(ErrorCodes.NotFound, $"Workflow run {workflowId} not found.", 404);
+
+        return run;
+    }
+
     // ── Workflow Finalization ──────────────────────────────────────────────
 
     public async Task FinalizeApprovalAsync(Guid workflowRunId, Guid approvedByUserId)

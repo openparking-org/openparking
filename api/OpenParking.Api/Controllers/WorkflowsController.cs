@@ -15,7 +15,7 @@ namespace OpenParking.Api.Controllers;
 [ApiController]
 [Route("api/agent/workflows")]
 [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
-public class WorkflowsController(AppDbContext db, ILogger<WorkflowsController> logger) : ControllerBase
+public class WorkflowsController(IEnforcementService enforcementService, ILogger<WorkflowsController> logger) : ControllerBase
 {
     private string ActorEmail => User.FindFirstValue(ClaimTypes.Email) ?? "Unknown";
     private Guid? ActorId =>
@@ -25,32 +25,27 @@ public class WorkflowsController(AppDbContext db, ILogger<WorkflowsController> l
     [HttpGet("pending")]
     public async Task<ActionResult<ApiResponse<List<WorkflowSummaryDto>>>> GetPendingWorkflows()
     {
-        var pending = await db.AgentWorkflowRuns
-            .Where(w => w.Status == WorkflowStatus.AwaitingApproval)
-            .OrderByDescending(w => w.CreatedAt)
-            .Select(w => new WorkflowSummaryDto
-            {
-                Id           = w.Id,
-                WorkflowType = w.WorkflowType,
-                Status       = w.Status.ToString(),
-                Objective    = w.Objective,
-                ZoneId       = w.ZoneId,
-                SessionId    = w.SessionId,
-                CreatedAt    = w.CreatedAt
-            })
-            .ToListAsync();
+        var pending = await enforcementService.GetPendingWorkflowsAsync();
+        
+        var dtos = pending.Select(w => new WorkflowSummaryDto
+        {
+            Id           = w.Id,
+            WorkflowType = w.WorkflowType,
+            Status       = w.Status.ToString(),
+            Objective    = w.Objective,
+            ZoneId       = w.ZoneId,
+            SessionId    = w.SessionId,
+            CreatedAt    = w.CreatedAt
+        }).ToList();
 
-        return Ok(ApiResponse<List<WorkflowSummaryDto>>.Ok(pending, HttpContext.TraceIdentifier));
+        return Ok(ApiResponse<List<WorkflowSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
     }
 
     // GET /api/agent/workflows/{id} — full detail with step results
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApiResponse<WorkflowDetailDto>>> GetWorkflow(Guid id)
     {
-        var run = await db.AgentWorkflowRuns.FindAsync(id);
-        if (run is null)
-            throw new AppException(ErrorCodes.NotFound, $"Workflow run {id} not found.", 404);
-
+        var run = await enforcementService.GetWorkflowAsync(id);
         return Ok(ApiResponse<WorkflowDetailDto>.Ok(WorkflowDetailDto.From(run), HttpContext.TraceIdentifier));
     }
 
@@ -58,23 +53,13 @@ public class WorkflowsController(AppDbContext db, ILogger<WorkflowsController> l
     [HttpPost("{id:guid}/approve")]
     public async Task<ActionResult<ApiResponse<WorkflowDetailDto>>> ApproveWorkflow(Guid id)
     {
-        var run = await db.AgentWorkflowRuns.FindAsync(id);
-        if (run is null)
-            throw new AppException(ErrorCodes.NotFound, $"Workflow run {id} not found.", 404);
+        if (ActorId == null)
+            throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
 
-        if (run.Status != WorkflowStatus.AwaitingApproval)
-            throw new AppException(ErrorCodes.WorkflowNotPending,
-                $"Workflow is in '{run.Status}' state. Only AwaitingApproval workflows can be approved.");
-
-        run.Status     = WorkflowStatus.Approved;
-        run.ApprovedAt = DateTime.UtcNow;
-        run.ApprovedBy = ActorId;
-        run.UpdatedAt  = DateTime.UtcNow;
-
-        await db.SaveChangesAsync();
-
+        await enforcementService.FinalizeApprovalAsync(id, ActorId.Value);
         logger.LogInformation("Workflow {WorkflowId} approved by {Actor}", id, ActorEmail);
 
+        var run = await enforcementService.GetWorkflowAsync(id);
         return Ok(ApiResponse<WorkflowDetailDto>.Ok(WorkflowDetailDto.From(run), HttpContext.TraceIdentifier));
     }
 
@@ -86,25 +71,13 @@ public class WorkflowsController(AppDbContext db, ILogger<WorkflowsController> l
             throw new AppException(ErrorCodes.ValidationFailed,
                 string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
 
-        var run = await db.AgentWorkflowRuns.FindAsync(id);
-        if (run is null)
-            throw new AppException(ErrorCodes.NotFound, $"Workflow run {id} not found.", 404);
+        if (ActorId == null)
+            throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
 
-        if (run.Status != WorkflowStatus.AwaitingApproval)
-            throw new AppException(ErrorCodes.WorkflowNotPending,
-                $"Workflow is in '{run.Status}' state. Only AwaitingApproval workflows can be rejected.");
+        await enforcementService.FinalizeRejectionAsync(id, req.Reason, ActorId.Value);
+        logger.LogInformation("Workflow {WorkflowId} rejected by {Actor}. Reason: {Reason}", id, ActorEmail, req.Reason);
 
-        run.Status         = WorkflowStatus.Rejected;
-        run.DecisionReason = req.Reason;
-        run.ApprovedAt     = DateTime.UtcNow;
-        run.ApprovedBy     = ActorId;
-        run.UpdatedAt      = DateTime.UtcNow;
-
-        await db.SaveChangesAsync();
-
-        logger.LogInformation("Workflow {WorkflowId} rejected by {Actor}. Reason: {Reason}",
-            id, ActorEmail, req.Reason);
-
+        var run = await enforcementService.GetWorkflowAsync(id);
         return Ok(ApiResponse<WorkflowDetailDto>.Ok(WorkflowDetailDto.From(run), HttpContext.TraceIdentifier));
     }
 }

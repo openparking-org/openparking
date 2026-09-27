@@ -1,36 +1,36 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using OpenParking.Core.Interfaces;
-using OpenParking.Infrastructure.Data;
+using OpenParking.Core.Entities;
+using OpenParking.Core.Models;
 
 namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SettingsController(ISettingsService settingsService, AppDbContext db) : ControllerBase
+public class SettingsController(ISettingsService settingsService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<Dictionary<string, List<SystemSetting>>>>> GetAll()
     {
-        var settings = await db.SystemSettings.AsNoTracking().ToListAsync();
-        return Ok(settings.GroupBy(s => s.Category).ToDictionary(g => g.Key, g => g.ToList()));
+        var result = await settingsService.GetAllGroupedAsync();
+        return Ok(ApiResponse<Dictionary<string, List<SystemSetting>>>.Ok(result, HttpContext.TraceIdentifier));
     }
 
     [HttpGet("{key}")]
-    public async Task<IActionResult> GetByKey(string key)
+    public async Task<ActionResult<ApiResponse<object>>> GetByKey(string key)
     {
         var val = await settingsService.GetStringAsync(key);
         if (string.IsNullOrEmpty(val))
-            return NotFound(new { error = $"Setting '{key}' not found" });
+            throw new AppException(ErrorCodes.NotFound, $"Setting '{key}' not found", 404);
 
-        return Ok(new { key, value = val });
+        return Ok(ApiResponse<object>.Ok(new { key, value = val }, HttpContext.TraceIdentifier));
     }
 
     [HttpPut("{key}")]
-    public async Task<IActionResult> UpdateSetting(string key, [FromBody] UpdateSettingDto dto)
+    public async Task<ActionResult<ApiResponse<object>>> UpdateSetting(string key, [FromBody] UpdateSettingDto dto)
     {
         await settingsService.SetAsync(key, dto.Value, updatedBy: dto.UpdatedBy ?? "Admin");
-        return Ok(new { key, value = dto.Value, message = "Setting updated successfully and cache invalidated" });
+        return Ok(ApiResponse<object>.Ok(new { key, value = dto.Value, message = "Setting updated successfully and cache invalidated" }, HttpContext.TraceIdentifier));
     }
 }
 

@@ -24,6 +24,10 @@ public interface IEnforcementService : IParkingModule
     /// </summary>
     Task<AgentWorkflowRun> TriggerWorkflowAsync(string workflowType, string objective, Guid? sessionId, Guid? zoneId);
 
+    // ── Workflow Retrieval ────────────────────────────────────────────────
+    Task<List<AgentWorkflowRun>> GetPendingWorkflowsAsync();
+    Task<AgentWorkflowRun> GetWorkflowAsync(Guid workflowId);
+
     // ── Workflow Resolution (called by WorkflowsController after approval) ─
     /// <summary>
     /// Finalises an APPROVED workflow: creates a Penalty record, 

@@ -72,4 +72,10 @@ public class SettingsService(AppDbContext db, IMemoryCache cache) : ISettingsSer
         cache.Remove(CacheKey(key));
         return Task.CompletedTask;
     }
+
+    public async Task<Dictionary<string, List<SystemSetting>>> GetAllGroupedAsync()
+    {
+        var settings = await db.SystemSettings.AsNoTracking().ToListAsync();
+        return settings.GroupBy(s => s.Category).ToDictionary(g => g.Key, g => g.ToList());
+    }
 }

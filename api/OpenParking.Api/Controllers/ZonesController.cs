@@ -1,52 +1,42 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using OpenParking.Core.Entities;
+using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
-using OpenParking.Infrastructure.Data;
 
 namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ZonesController(AppDbContext db) : ControllerBase
+public class ZonesController(IZoneService zoneService) : ControllerBase
 {
     // GET /api/zones — public, used by Flutter to list nearby lots
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<ZoneDto>>>> GetZones()
+    public async Task<ActionResult<ApiResponse<List<ZoneDto>>>> GetZones([FromQuery] PaginatedQuery query)
     {
-        var zones = await db.Zones
-            .Include(z => z.Slots)
-            .AsNoTracking()
-            .Select(z => new ZoneDto
-            {
-                Id          = z.Id,
-                Name        = z.Name,
-                Code        = z.Code,
-                Latitude    = z.Latitude,
-                Longitude   = z.Longitude,
-                BaseHourlyRate = z.BaseHourlyRate,
-                TotalCapacity  = z.TotalCapacity,
-                AvailableCount = z.Slots.Count(s => s.Status == SlotStatus.Available)
-            })
-            .ToListAsync();
+        var result = await zoneService.ListZonesAsync(query);
 
-        return Ok(ApiResponse<List<ZoneDto>>.Ok(zones, HttpContext.TraceIdentifier));
+        var dtos = result.Items.Select(z => new ZoneDto
+        {
+            Id          = z.Id,
+            Name        = z.Name,
+            Code        = z.Code,
+            Latitude    = z.Latitude,
+            Longitude   = z.Longitude,
+            BaseHourlyRate = z.BaseHourlyRate,
+            TotalCapacity  = z.TotalCapacity,
+            AvailableCount = z.Slots.Count(s => s.Status == SlotStatus.Available)
+        }).ToList();
+
+        return Ok(ApiResponse<List<ZoneDto>>.Ok(dtos, HttpContext.TraceIdentifier));
     }
 
     // GET /api/zones/{id}
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApiResponse<ZoneDetailDto>>> GetZone(Guid id)
     {
-        var zone = await db.Zones
-            .Include(z => z.Slots)
-            .Include(z => z.FloorPlans)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(z => z.Id == id);
-
-        if (zone is null)
-            throw new AppException(ErrorCodes.NotFound, $"Zone {id} not found.", 404);
-
+        var zone = await zoneService.GetZoneAsync(id);
         return Ok(ApiResponse<ZoneDetailDto>.Ok(ZoneDetailDto.From(zone), HttpContext.TraceIdentifier));
     }
 
@@ -59,33 +49,187 @@ public class ZonesController(AppDbContext db) : ControllerBase
             throw new AppException(ErrorCodes.ValidationFailed,
                 string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
 
-        var codeExists = await db.Zones.AnyAsync(z => z.Code == req.Code.ToUpper());
-        if (codeExists)
-            throw new AppException(ErrorCodes.Conflict, $"Zone code '{req.Code}' is already in use.");
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
 
         var zone = new Zone
         {
             Name           = req.Name,
-            Code           = req.Code.ToUpper(),
+            Code           = req.Code,
             Latitude       = req.Latitude,
             Longitude      = req.Longitude,
             BaseHourlyRate = req.BaseHourlyRate,
             TotalCapacity  = req.TotalCapacity
         };
 
-        db.Zones.Add(zone);
-        await db.SaveChangesAsync();
+        var createdZone = await zoneService.CreateZoneAsync(zone, actorId);
 
         var dto = new ZoneDto
         {
-            Id = zone.Id, Name = zone.Name, Code = zone.Code,
-            Latitude = zone.Latitude, Longitude = zone.Longitude,
-            BaseHourlyRate = zone.BaseHourlyRate, TotalCapacity = zone.TotalCapacity,
+            Id = createdZone.Id, 
+            Name = createdZone.Name, 
+            Code = createdZone.Code,
+            Latitude = createdZone.Latitude, 
+            Longitude = createdZone.Longitude,
+            BaseHourlyRate = createdZone.BaseHourlyRate, 
+            TotalCapacity = createdZone.TotalCapacity,
             AvailableCount = 0
         };
 
-        return CreatedAtAction(nameof(GetZone), new { id = zone.Id },
+        return CreatedAtAction(nameof(GetZone), new { id = createdZone.Id },
             ApiResponse<ZoneDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // PUT /api/zones/{id}
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<ZoneDto>>> UpdateZone(Guid id, [FromBody] UpdateZoneRequest req)
+    {
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        var updatedZone = await zoneService.UpdateZoneAsync(id, req, actorId);
+        
+        var dto = new ZoneDto
+        {
+            Id = updatedZone.Id, 
+            Name = updatedZone.Name, 
+            Code = updatedZone.Code,
+            Latitude = updatedZone.Latitude, 
+            Longitude = updatedZone.Longitude,
+            BaseHourlyRate = updatedZone.BaseHourlyRate, 
+            TotalCapacity = updatedZone.TotalCapacity,
+            AvailableCount = 0
+        };
+
+        return Ok(ApiResponse<ZoneDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // DELETE /api/zones/{id}
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpDelete("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteZone(Guid id)
+    {
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        await zoneService.DeleteZoneAsync(id, actorId);
+        return Ok(ApiResponse<object>.Ok(new { }, HttpContext.TraceIdentifier));
+    }
+
+    // ── Slots ─────────────────────────────────────────────────────────────
+
+    // GET /api/zones/{id}/slots/available
+    [HttpGet("{id:guid}/slots/available")]
+    public async Task<ActionResult<ApiResponse<List<SlotSummaryDto>>>> GetAvailableSlots(Guid id, [FromQuery] SlotType? type = null)
+    {
+        var slots = await zoneService.GetAvailableSlotsAsync(id, type);
+        var dtos = slots.Select(s => new SlotSummaryDto
+        {
+            Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString()
+        }).ToList();
+        return Ok(ApiResponse<List<SlotSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
+    }
+
+    // POST /api/zones/{id}/slots
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpPost("{id:guid}/slots")]
+    public async Task<ActionResult<ApiResponse<SlotSummaryDto>>> CreateSlot(Guid id, [FromBody] CreateSlotRequest req)
+    {
+        if (!ModelState.IsValid)
+            throw new AppException(ErrorCodes.ValidationFailed, "Invalid slot request");
+
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        var slot = await zoneService.CreateSlotAsync(id, req, actorId);
+        
+        var dto = new SlotSummaryDto
+        {
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+        };
+        return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // GET /api/zones/slots/{slotId}
+    [HttpGet("slots/{slotId:guid}")]
+    public async Task<ActionResult<ApiResponse<SlotSummaryDto>>> GetSlot(Guid slotId)
+    {
+        var slot = await zoneService.GetSlotAsync(slotId);
+        var dto = new SlotSummaryDto
+        {
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+        };
+        return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // PATCH /api/zones/slots/{slotId}/status
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpPatch("slots/{slotId:guid}/status")]
+    public async Task<ActionResult<ApiResponse<SlotSummaryDto>>> UpdateSlotStatus(Guid slotId, [FromBody] SlotStatus newStatus)
+    {
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        var slot = await zoneService.UpdateSlotStatusAsync(slotId, newStatus, actorId);
+        
+        var dto = new SlotSummaryDto
+        {
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+        };
+        return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // ── Floor Plans ───────────────────────────────────────────────────────
+
+    // GET /api/zones/{id}/floor-plans
+    [HttpGet("{id:guid}/floor-plans")]
+    public async Task<ActionResult<ApiResponse<List<FloorPlanSummaryDto>>>> GetFloorPlans(Guid id)
+    {
+        var plans = await zoneService.GetFloorPlansForZoneAsync(id);
+        var dtos = plans.Select(f => new FloorPlanSummaryDto
+        {
+            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl
+        }).ToList();
+        return Ok(ApiResponse<List<FloorPlanSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
+    }
+
+    // GET /api/zones/floor-plans/{floorPlanId}
+    [HttpGet("floor-plans/{floorPlanId:guid}")]
+    public async Task<ActionResult<ApiResponse<FloorPlanSummaryDto>>> GetFloorPlan(Guid floorPlanId)
+    {
+        var plan = await zoneService.GetFloorPlanAsync(floorPlanId);
+        var dto = new FloorPlanSummaryDto
+        {
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl
+        };
+        return Ok(ApiResponse<FloorPlanSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // POST /api/zones/{id}/floor-plans
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpPost("{id:guid}/floor-plans")]
+    public async Task<ActionResult<ApiResponse<FloorPlanSummaryDto>>> SaveFloorPlan(Guid id, [FromBody] SaveFloorPlanRequest req)
+    {
+        if (!ModelState.IsValid)
+            throw new AppException(ErrorCodes.ValidationFailed, "Invalid floor plan request");
+
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        var plan = await zoneService.SaveFloorPlanAsync(id, req, actorId);
+        
+        var dto = new FloorPlanSummaryDto
+        {
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl
+        };
+        return Ok(ApiResponse<FloorPlanSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // ── Occupancy ─────────────────────────────────────────────────────────
+
+    // GET /api/zones/{id}/occupancy
+    [HttpGet("{id:guid}/occupancy")]
+    public async Task<ActionResult<ApiResponse<OccupancyStats>>> GetOccupancy(Guid id)
+    {
+        var stats = await zoneService.GetOccupancyStatsAsync(id);
+        return Ok(ApiResponse<OccupancyStats>.Ok(stats, HttpContext.TraceIdentifier));
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (Guid.TryParse(sub, out var guid)) return guid;
+        return null;
     }
 }
 

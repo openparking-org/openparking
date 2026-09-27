@@ -107,6 +107,15 @@ builder.Services.AddHttpClient<IEnforcementService, EnforcementService>(client =
 // SignalR notification abstraction (decouples Infrastructure from the Hub type)
 builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
 
+// Cross-cutting Services
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+// Register modules as IParkingModule for HealthController discovery
+builder.Services.AddScoped<IParkingModule>(sp => sp.GetRequiredService<IUserService>());
+builder.Services.AddScoped<IParkingModule>(sp => sp.GetRequiredService<IZoneService>());
+builder.Services.AddScoped<IParkingModule>(sp => sp.GetRequiredService<IBookingService>());
+builder.Services.AddScoped<IParkingModule>(sp => sp.GetRequiredService<IEnforcementService>());
+
 // ── Background Services ───────────────────────────────────────────────────
 // Overstay detection loop (design.md §8.3 step 1) — runs every N minutes
 builder.Services.AddHostedService<OpenParking.Infrastructure.Services.OverstayDetectionService>();

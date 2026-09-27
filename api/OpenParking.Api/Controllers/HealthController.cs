@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
-using OpenParking.Infrastructure.Data;
 
 namespace OpenParking.Api.Controllers;
 
@@ -11,39 +10,41 @@ namespace OpenParking.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
-public class HealthController(AppDbContext db, ILogger<HealthController> logger) : ControllerBase
+public class HealthController(IEnumerable<IParkingModule> modules, ILogger<HealthController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<ApiResponse<HealthDto>>> Get()
     {
-        bool dbOk;
-        try
+        var moduleHealths = new List<ModuleHealth>();
+        bool overallOk = true;
+
+        foreach (var module in modules)
         {
-            dbOk = await db.Database.CanConnectAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Health check: database connectivity test failed.");
-            dbOk = false;
+            var status = HealthStatus.Unhealthy;
+            try
+            {
+                status = await module.HealthCheckAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Health check failed for module {Module}", module.ModuleName);
+            }
+            
+            if (status != HealthStatus.Healthy) overallOk = false;
+            moduleHealths.Add(new ModuleHealth(module.ModuleName, status.ToString()));
         }
 
         var result = new HealthDto
         {
-            Status    = dbOk ? "Healthy" : "Degraded",
+            Status    = overallOk ? "Healthy" : "Degraded",
             Timestamp = DateTime.UtcNow,
             Version   = "1.0.0",
-            Database  = dbOk ? "Connected" : "Unreachable",
-            Modules   =
-            [
-                new("User & Access",              dbOk ? "Healthy" : "Degraded"),
-                new("Space & Availability",        dbOk ? "Healthy" : "Degraded"),
-                new("Booking & Payment",           dbOk ? "Healthy" : "Degraded"),
-                new("Enforcement & AI Orchestration", dbOk ? "Healthy" : "Degraded")
-            ]
+            Database  = overallOk ? "Connected" : "Unreachable",
+            Modules   = moduleHealths
         };
 
         // Return 503 if degraded — allows load balancers to stop routing here
-        var statusCode = dbOk ? 200 : 503;
+        var statusCode = overallOk ? 200 : 503;
         return StatusCode(statusCode, ApiResponse<HealthDto>.Ok(result, HttpContext.TraceIdentifier));
     }
 }

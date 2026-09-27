@@ -17,14 +17,18 @@ public interface IBookingService : IParkingModule
     Task<Booking> CancelBookingAsync(Guid bookingId, Guid userId);
 
     // ── QR Session Lifecycle (called by the Flutter QR scanner) ───────────
-    /// <summary>Validates QR content, opens a ParkingSession, marks slot Occupied.</summary>
-    Task<ParkingSession> CheckInAsync(string qrContent, string ipAddress);
+    /// <summary>Validates QR content or ad-hoc slot, opens a ParkingSession, marks slot Occupied.</summary>
+    Task<ParkingSession> CheckInAsync(CheckInRequest request, string ipAddress);
 
     /// <summary>Closes the session, calculates fee, marks slot Available, triggers email receipt.</summary>
-    Task<SessionCheckOutResult> CheckOutAsync(Guid sessionId, string ipAddress);
+    Task<SessionCheckOutResult> CheckOutAsync(CheckOutRequest request, string ipAddress);
 
-    /// <summary>Returns the current active session for a user (for Flutter live status screen).</summary>
-    Task<ParkingSession?> GetActiveSessionAsync(Guid userId);
+
+    /// <summary>Returns the current active session (for Flutter live status screen).</summary>
+    Task<ParkingSession?> GetActiveSessionAsync(Guid? userId, Guid? bookingId = null);
+    
+    /// <summary>Returns a session by ID.</summary>
+    Task<ParkingSession> GetSessionAsync(Guid sessionId);
 
     // ── ANPR Simulator hook (design.md §8.4) ─────────────────────────────
     Task<ParkingSession> SimulateEntryAsync(string licensePlate, string zoneCode);
@@ -41,6 +45,20 @@ public class CreateBookingRequest
     public string? VehiclePlate { get; set; }
 }
 
+public class CheckInRequest
+{
+    public Guid? BookingId { get; set; }
+    public string? BookingCode { get; set; }
+    public Guid? SlotId { get; set; }
+    public Guid? UserId { get; set; }
+}
+
+public class CheckOutRequest
+{
+    public Guid? SessionId { get; set; }
+    public Guid? BookingId { get; set; }
+}
+
 public class SessionCheckOutResult
 {
     public Guid SessionId { get; set; }
@@ -49,4 +67,5 @@ public class SessionCheckOutResult
     public int OverstayMinutes { get; set; }
     public string? ReceiptPdfUrl { get; set; }
     public DateTime CheckOutTime { get; set; }
+    public ParkingSession? Session { get; set; }
 }
