@@ -79,7 +79,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ── Domain Services ───────────────────────────────────────────────────────
+
+// Shared infrastructure
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddHttpClient<IEmailService, EmailService>(client =>
+{
+    client.DefaultRequestHeaders.Add("Authorization",
+        $"Bearer {builder.Configuration["RESEND_API_KEY"] ?? ""}");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+// Module 1 — User & Access (Yowun)
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Module 2 — Space & Availability (Supun)
+builder.Services.AddScoped<IZoneService, ZoneService>();
+
+// Module 3 — Booking & Payment (Dev)
+builder.Services.AddScoped<IBookingService, BookingService>();
+
+// Module 4 — Enforcement & AI Orchestration (Karuna)
+// Uses a named HttpClient for LangGraph calls (30s timeout for AI inference)
+builder.Services.AddHttpClient<IEnforcementService, EnforcementService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+// SignalR notification abstraction (decouples Infrastructure from the Hub type)
+builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
 
 // ── Background Services ───────────────────────────────────────────────────
 // Overstay detection loop (design.md §8.3 step 1) — runs every N minutes
@@ -152,7 +178,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<SlotHub>("/hubs/slots");
+app.MapHub<SlotHub>("/hubs/slots");  // IHubContext<ISlotHub> is now available via DI
 
 // Health probe (used by Docker and CF Tunnel health checks)
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", utc = DateTime.UtcNow }))

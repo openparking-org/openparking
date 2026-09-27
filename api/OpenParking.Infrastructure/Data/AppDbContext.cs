@@ -86,6 +86,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.Status, x.CheckInTime });
             e.HasOne(x => x.Booking).WithMany().HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Slot).WithMany().HasForeignKey(x => x.SlotId).IsRequired(false).OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── DisabilityPermit ──────────────────────────────────────────────
@@ -103,6 +104,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.Status);
             e.HasIndex(x => x.WorkflowType);
             e.Property(x => x.Status).HasConversion<string>();
+            // Optional FK to the session that triggered this workflow
+            e.HasOne(x => x.Session).WithMany().HasForeignKey(x => x.SessionId)
+             .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Penalty ───────────────────────────────────────────────────────
@@ -121,7 +125,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.EntityType, x.EntityId });
-            e.HasIndex(x => x.OccurredAt);
+            e.HasIndex(x => x.CreatedAt);  // renamed from OccurredAt
             // Audit logs are immutable — disable cascade updates
             e.ToTable("audit_logs");
         });

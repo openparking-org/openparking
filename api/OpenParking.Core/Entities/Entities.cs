@@ -13,12 +13,14 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
     public UserRole Role { get; set; } = UserRole.Driver;
     public bool HasDisabilityPermit { get; set; } = false;
+    public bool IsActive { get; set; } = true;
     public string? FcmToken { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
 }
 
 public class Zone
@@ -32,6 +34,7 @@ public class Zone
     public int TotalCapacity { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
 
     public ICollection<Slot> Slots { get; set; } = new List<Slot>();
     public ICollection<FloorPlan> FloorPlans { get; set; } = new List<FloorPlan>();
@@ -62,7 +65,8 @@ public enum PenaltyStatus
     Approved,
     Rejected,
     Collected,
-    Waived
+    Waived,
+    Disputed    // Driver has filed a dispute (design.md §8.5)
 }
 
 // ── Workflow Status ───────────────────────────────────────
@@ -105,9 +109,12 @@ public class FloorPlan
     public string ImageUrl { get; set; } = string.Empty;
     public double ImageWidthPx { get; set; }
     public double ImageHeightPx { get; set; }
-    public string WaypointGraphJson { get; set; } = "{}";
+    public string WaypointGraphJson { get; set; } = "[]";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
+
+    public ICollection<Slot> Slots { get; set; } = new List<Slot>();
 }
 
 public enum BookingStatus
@@ -129,10 +136,13 @@ public class Booking
     public Slot? Slot { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    public BookingStatus Status { get; set; } = BookingStatus.Confirmed;
+    public BookingStatus Status { get; set; } = BookingStatus.Pending;
     public string QrCodeContent { get; set; } = string.Empty;
     public decimal EstimatedFee { get; set; }
+    public string? VehiclePlate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
 }
 
 public enum SessionStatus
@@ -150,6 +160,7 @@ public class ParkingSession
     public Booking? Booking { get; set; }
     public Guid UserId { get; set; }
     public Guid SlotId { get; set; }
+    public Slot? Slot { get; set; }
     public DateTime CheckInTime { get; set; } = DateTime.UtcNow;
     public DateTime? CheckOutTime { get; set; }
     public SessionStatus Status { get; set; } = SessionStatus.Active;
@@ -157,13 +168,16 @@ public class ParkingSession
     public decimal TotalFee { get; set; }
     public decimal PenaltyFee { get; set; }
     public string? ReceiptPdfUrl { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public enum PermitStatus
 {
-    PendingReview,
-    Approved,
-    Rejected
+    Pending,    // awaiting admin review
+    Verified,   // approved — driver gets disabled slot access
+    Rejected,   // rejected by admin or Validator Agent auto-rejection
+    Expired     // past ExpiryDate
 }
 
 public class DisabilityPermit
@@ -175,10 +189,12 @@ public class DisabilityPermit
     public string DocumentImageUrl { get; set; } = string.Empty;
     public string Jurisdiction { get; set; } = string.Empty;
     public DateTime ExpiryDate { get; set; }
-    public PermitStatus Status { get; set; } = PermitStatus.PendingReview;
+    public PermitStatus Status { get; set; } = PermitStatus.Pending;
     public double AiConfidence { get; set; }
     public string? ReviewNotes { get; set; }
-    public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+    public string? RejectionReason { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReviewedAt { get; set; }
 }
 
@@ -200,6 +216,8 @@ public class AgentWorkflowRun
     public WorkflowStatus Status { get; set; } = WorkflowStatus.Running;
     public Guid? ZoneId { get; set; }
     public Guid? SessionId { get; set; }
+    /// <summary>Navigation property for the related ParkingSession.</summary>
+    public ParkingSession? Session { get; set; }
     /// <summary>Objective string passed to the Planner Agent.</summary>
     public string Objective { get; set; } = string.Empty;
     /// <summary>Full LangGraph plan returned by Planner — stored as JSONB.</summary>
@@ -210,8 +228,11 @@ public class AgentWorkflowRun
     public string? ErrorLog { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = "System";
     public DateTime? ApprovedAt { get; set; }
     public Guid? ApprovedBy { get; set; }
+    /// <summary>Navigation property for the approving user.</summary>
+    public User? ApproverUser { get; set; }
 }
 
 /// <summary>
@@ -233,6 +254,8 @@ public class Penalty
     public string? DisputeNotes { get; set; }
     public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ResolvedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string CreatedBy { get; set; } = "System";
 }
 
@@ -249,9 +272,10 @@ public class AuditLog
     /// <summary>e.g. CREATE, UPDATE, APPROVE, REJECT, CHECKIN, CHECKOUT</summary>
     public string Action { get; set; } = string.Empty;
     /// <summary>JSON snapshot of changes (before/after or payload).</summary>
-    public string PayloadJson { get; set; } = "{}";
+    public string? PayloadJson { get; set; }
     public Guid? ActorUserId { get; set; }
     public string ActorEmail { get; set; } = "System";
     public string IpAddress { get; set; } = string.Empty;
-    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+    /// <summary>CreatedAt is used instead of OccurredAt to stay consistent with other entities.</summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

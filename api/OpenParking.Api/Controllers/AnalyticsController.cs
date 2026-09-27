@@ -46,7 +46,7 @@ public class AnalyticsController(AppDbContext db) : ControllerBase
 
         var totalWorkflows = await db.AgentWorkflowRuns
             .AsNoTracking()
-            .CountAsync(w => w.TriggeredAt >= startDate && w.TriggeredAt <= endDate); // Assuming CreatedAt was renamed TriggeredAt or similar. Wait, Entities uses CreatedAt now.
+            .CountAsync(w => w.CreatedAt >= startDate && w.CreatedAt <= endDate);
 
         // I need to use CreatedAt since TriggeredAt was renamed to CreatedAt in Entities.cs.
         var summary = new AnalyticsSummaryDto

@@ -88,15 +88,15 @@ public class AnalyticsControllerTests
             {
                 WorkflowType = "OVERSTAY_ENFORCEMENT",
                 Objective = "Overstay check",
-                Status = "PENDING_APPROVAL",
-                TriggeredAt = now.AddMinutes(-30)
+                Status = WorkflowStatus.AwaitingApproval,
+                CreatedAt = now.AddMinutes(-30)
             },
             new AgentWorkflowRun
             {
                 WorkflowType = "DYNAMIC_PRICING",
                 Objective = "Surge pricing",
-                Status = "APPROVED",
-                TriggeredAt = now.AddMinutes(-10)
+                Status = WorkflowStatus.Approved,
+                CreatedAt = now.AddMinutes(-10)
             }
         );
 
@@ -189,13 +189,13 @@ public class AnalyticsControllerTests
     {
         using var db = CreateInMemoryDbContext();
         db.AgentWorkflowRuns.AddRange(
-            new AgentWorkflowRun { Status = "PENDING_APPROVAL", Objective = "Obj 1", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "AWAITING_APPROVAL", Objective = "Obj 2", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "APPROVED", Objective = "Obj 3", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "AUTO_APPROVED", Objective = "Obj 4", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "REJECTED", Objective = "Obj 5", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "FAILED", Objective = "Obj 6", WorkflowType = "T1" },
-            new AgentWorkflowRun { Status = "RUNNING", Objective = "Obj 7", WorkflowType = "T1" }
+            new AgentWorkflowRun { Status = WorkflowStatus.AwaitingApproval, Objective = "Obj 1", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.AwaitingApproval, Objective = "Obj 2", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.Approved, Objective = "Obj 3", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.Approved, Objective = "Obj 4", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.Rejected, Objective = "Obj 5", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.Failed, Objective = "Obj 6", WorkflowType = "T1" },
+            new AgentWorkflowRun { Status = WorkflowStatus.Running, Objective = "Obj 7", WorkflowType = "T1" }
         );
         await db.SaveChangesAsync();
 
