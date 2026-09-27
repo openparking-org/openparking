@@ -21,7 +21,12 @@ if (builder.Environment.IsDevelopment())
 // ── MVC / SignalR ────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR();
+var redisUrl = builder.Configuration["REDIS_URL"];
+if (!string.IsNullOrEmpty(redisUrl))
+{
+    signalRBuilder.AddStackExchangeRedis(redisUrl);
+}
 builder.Services.AddMemoryCache();
 
 // ── Database ─────────────────────────────────────────────────────────────

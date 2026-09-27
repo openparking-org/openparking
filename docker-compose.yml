@@ -12,8 +12,11 @@ services:
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-pk.demo}
       - RESEND_API_KEY=${RESEND_API_KEY:-re_demo}
       - AI_SERVICE_URL=http://ai:8000
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   ai:
@@ -30,6 +33,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   db:
     image: postgres:16-alpine
