@@ -26,7 +26,8 @@ class QrScannerScreen extends StatefulWidget {
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingObserver {
+class _QrScannerScreenState extends State<QrScannerScreen>
+    with WidgetsBindingObserver {
   late final MobileScannerController _scannerController;
   final SessionService _sessionService = SessionService();
 
@@ -57,7 +58,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
       if (!_isProcessing && _successfulSession == null) {
         _scannerController.start();
       }
-    } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _scannerController.stop();
     }
   }
@@ -103,14 +105,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     if (!parseResult.isValid) {
       setState(() {
         _isProcessing = false;
-        _errorMessage = parseResult.errorMessage ?? 'Invalid or unsupported QR code format.';
+        _errorMessage = parseResult.errorMessage ??
+            'Invalid or unsupported QR code format.';
       });
       return;
     }
 
     // 2. Determine whether this is a check-in or check-out operation
     final isCheckOut = widget.mode == QrScannerMode.exitCheckOut ||
-        (widget.mode == QrScannerMode.autoDetect && parseResult.action == QrActionType.checkOut);
+        (widget.mode == QrScannerMode.autoDetect &&
+            parseResult.action == QrActionType.checkOut);
 
     try {
       ParkingSessionModel session;
@@ -120,7 +124,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
         final bookingId = parseResult.bookingId ?? widget.existingBookingId;
 
         if (sessionId == null && bookingId == null) {
-          throw SessionApiException(400, 'Check-out QR requires an active session or booking reference.');
+          throw SessionApiException(400,
+              'Check-out QR requires an active session or booking reference.');
         }
 
         session = await _sessionService.checkOut(
@@ -156,7 +161,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _errorMessage = 'An unexpected error occurred while processing scan: $e';
+          _errorMessage =
+              'An unexpected error occurred while processing scan: $e';
         });
       }
     }
@@ -188,7 +194,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
-        title: Text(titleText, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+        title: Text(titleText,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         leading: IconButton(
@@ -225,21 +232,27 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.videocam_off_outlined, color: Color(0xFFEF4444), size: 48),
+                      const Icon(Icons.videocam_off_outlined,
+                          color: Color(0xFFEF4444), size: 48),
                       const SizedBox(height: 16),
                       const Text(
                         'Camera Permission Required',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Please allow camera access in device settings to scan parking gate QR codes.\n(${error.errorDetails?.message ?? error.errorCode})',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 13),
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6366F1)),
                         icon: const Icon(Icons.refresh),
                         label: const Text('Retry Camera'),
                         onPressed: () => _scannerController.start(),
@@ -263,13 +276,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
                       strokeWidth: 3,
                     ),
                     SizedBox(height: 20),
                     Text(
                       'Verifying Gate Terminal QR...',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 6),
                     Text(
@@ -282,8 +299,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
             ),
 
           // 4. Error Sheet
-          if (_errorMessage != null)
-            _buildErrorOverlay(_errorMessage!),
+          if (_errorMessage != null) _buildErrorOverlay(_errorMessage!),
 
           // 5. Success Dialog/Card
           if (_successfulSession != null)
@@ -348,7 +364,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
               right: 20,
               bottom: 40,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xEB1E293B),
                   borderRadius: BorderRadius.circular(12),
@@ -357,13 +374,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.qr_code_scanner, color: Color(0xFF6366F1), size: 20),
+                    Icon(Icons.qr_code_scanner,
+                        color: Color(0xFF6366F1), size: 20),
                     SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         'Align terminal QR code within the frame',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
@@ -391,11 +412,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 48),
+              const Icon(Icons.error_outline_rounded,
+                  color: Color(0xFFEF4444), size: 48),
               const SizedBox(height: 16),
               const Text(
                 'Scan Unsuccessful',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -449,12 +474,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 54),
+              const Icon(Icons.check_circle_rounded,
+                  color: Color(0xFF10B981), size: 54),
               const SizedBox(height: 14),
               Text(
                 _successActionType ?? 'Scan Successful',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -475,21 +504,29 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 ),
                 child: Column(
                   children: [
-                    _detailRow('Zone & Bay', '${session.zoneName} · Bay ${session.slotNumber}'),
+                    _detailRow('Zone & Bay',
+                        '${session.zoneName} · Bay ${session.slotNumber}'),
                     const SizedBox(height: 6),
-                    _detailRow('Status', session.status, valueColor: const Color(0xFF10B981)),
+                    _detailRow('Status', session.status,
+                        valueColor: const Color(0xFF10B981)),
                     if (isExit) ...[
                       const SizedBox(height: 6),
-                      _detailRow('Total Fee', '\$${session.totalFee.toStringAsFixed(2)}', isBold: true),
+                      _detailRow('Total Fee',
+                          '\$${session.totalFee.toStringAsFixed(2)}',
+                          isBold: true),
                       if (session.penaltyFee > 0) ...[
                         const SizedBox(height: 6),
-                        _detailRow('Overstay Fine', '\$${session.penaltyFee.toStringAsFixed(2)}', valueColor: const Color(0xFFEF4444)),
+                        _detailRow('Overstay Fine',
+                            '\$${session.penaltyFee.toStringAsFixed(2)}',
+                            valueColor: const Color(0xFFEF4444)),
                       ],
                     ] else ...[
                       const SizedBox(height: 6),
-                      _detailRow('Check-in Time', _formatTime(session.checkInTime)),
+                      _detailRow(
+                          'Check-in Time', _formatTime(session.checkInTime)),
                       const SizedBox(height: 6),
-                      _detailRow('Rate', '\$${session.hourlyRate.toStringAsFixed(2)}/hr'),
+                      _detailRow('Rate',
+                          '\$${session.hourlyRate.toStringAsFixed(2)}/hr'),
                     ],
                   ],
                 ),
@@ -500,12 +537,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
                   minimumSize: const Size.fromHeight(44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: () => _finishAndReturn(session),
                 child: Text(
                   isExit ? 'Return to Home' : 'Proceed to Active Session',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Colors.white),
                 ),
               ),
             ],
@@ -515,7 +556,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _detailRow(String label, String value, {Color? valueColor, bool isBold = false}) {
+  Widget _detailRow(String label, String value,
+      {Color? valueColor, bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

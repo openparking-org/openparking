@@ -56,7 +56,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                 final zone = _zones[index];
                 return ListTile(
                   title: Text(zone.name),
-                  subtitle: Text('Capacity: ${zone.capacity} | Available: ${zone.availableSlots}'),
+                  subtitle: Text(
+                      'Capacity: ${zone.capacity} | Available: ${zone.availableSlots}'),
                   trailing: Text('Multiplier: ${zone.currentPriceMultiplier}x'),
                 );
               },

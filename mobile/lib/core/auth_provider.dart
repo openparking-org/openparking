@@ -42,10 +42,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['data']['token'];
-        
+
         await secureStorage.write(key: 'jwt_token', value: token);
         ApiConfig.setAuthToken(token);
-        state = AuthState(isAuthenticated: true, token: token, isLoading: false);
+        state =
+            AuthState(isAuthenticated: true, token: token, isLoading: false);
         return true;
       }
     } catch (e) {

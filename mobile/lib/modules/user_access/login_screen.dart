@@ -20,13 +20,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _emailController.text,
           _passwordController.text,
         );
-    
+
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed. Please check credentials.')),
+        const SnackBar(
+            content: Text('Login failed. Please check credentials.')),
       );
     }
   }

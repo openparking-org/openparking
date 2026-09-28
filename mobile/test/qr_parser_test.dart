@@ -4,7 +4,8 @@ import 'package:mobile/utils/qr_payload_parser.dart';
 void main() {
   group('QrPayloadParser Tests', () {
     test('parses openparking://session/start standard QR correctly', () {
-      const qrData = 'openparking://session/start?bookingId=bk-9912&slotId=slot-a102';
+      const qrData =
+          'openparking://session/start?bookingId=bk-9912&slotId=slot-a102';
       final result = QrPayloadParser.parse(qrData);
 
       expect(result.isValid, isTrue);
@@ -15,7 +16,8 @@ void main() {
     });
 
     test('parses openparking://session/check-in scheme correctly', () {
-      const qrData = 'openparking://session/check-in?bookingId=00000000-0000-0000-0000-000000000001&slotId=slot-1';
+      const qrData =
+          'openparking://session/check-in?bookingId=00000000-0000-0000-0000-000000000001&slotId=slot-1';
       final result = QrPayloadParser.parse(qrData);
 
       expect(result.isValid, isTrue);
@@ -34,20 +36,23 @@ void main() {
     });
 
     test('parses openparking://gate/entry and exit correctly', () {
-      final entry = QrPayloadParser.parse('openparking://gate/entry?zoneId=zone-a&bookingId=bk-01');
+      final entry = QrPayloadParser.parse(
+          'openparking://gate/entry?zoneId=zone-a&bookingId=bk-01');
       expect(entry.isValid, isTrue);
       expect(entry.action, equals(QrActionType.checkIn));
       expect(entry.zoneId, equals('zone-a'));
       expect(entry.bookingId, equals('bk-01'));
 
-      final exit = QrPayloadParser.parse('openparking://gate/exit?sessionId=sess-99');
+      final exit =
+          QrPayloadParser.parse('openparking://gate/exit?sessionId=sess-99');
       expect(exit.isValid, isTrue);
       expect(exit.action, equals(QrActionType.checkOut));
       expect(exit.sessionId, equals('sess-99'));
     });
 
     test('parses JSON format QR payload correctly', () {
-      const jsonEntry = '{"action":"check-in","bookingId":"bk-777","slotId":"slot-b"}';
+      const jsonEntry =
+          '{"action":"check-in","bookingId":"bk-777","slotId":"slot-b"}';
       final entryResult = QrPayloadParser.parse(jsonEntry);
       expect(entryResult.isValid, isTrue);
       expect(entryResult.action, equals(QrActionType.checkIn));
@@ -81,7 +86,8 @@ void main() {
     });
 
     test('handles malformed / arbitrary text gracefully without throwing', () {
-      final invalidResult = QrPayloadParser.parse('https://randomwebsite.com/page?id=123');
+      final invalidResult =
+          QrPayloadParser.parse('https://randomwebsite.com/page?id=123');
       expect(invalidResult.isValid, isFalse);
       expect(invalidResult.errorMessage, contains('Unsupported QR format'));
     });

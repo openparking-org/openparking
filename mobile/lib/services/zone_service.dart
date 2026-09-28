@@ -23,7 +23,8 @@ class ZoneModel {
       name: json['name']?.toString() ?? '',
       capacity: json['capacity'] as int? ?? 0,
       availableSlots: json['availableSlots'] as int? ?? 0,
-      currentPriceMultiplier: (json['currentPriceMultiplier'] as num?)?.toDouble() ?? 1.0,
+      currentPriceMultiplier:
+          (json['currentPriceMultiplier'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }

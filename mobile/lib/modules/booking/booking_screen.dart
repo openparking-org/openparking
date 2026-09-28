@@ -7,7 +7,9 @@ import 'qr_scanner_screen.dart';
 
 class BookingScreen extends ConsumerWidget {
   const BookingScreen({super.key});
-  Future<void> _openScanner(BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession, {required QrScannerMode mode}) async {
+  Future<void> _openScanner(
+      BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession,
+      {required QrScannerMode mode}) async {
     final result = await Navigator.of(context).push<ParkingSessionModel>(
       MaterialPageRoute(
         builder: (context) => QrScannerScreen(
@@ -19,24 +21,26 @@ class BookingScreen extends ConsumerWidget {
     );
 
     if (result != null && context.mounted) {
-      ref.read(activeSessionProvider.notifier).updateSession(
-        result.status == 'Completed' ? null : result
-      );
-        if (result.status == 'Completed') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Checked out of ${result.zoneName}! Total: \$${result.totalFee.toStringAsFixed(2)}'),
-              backgroundColor: const Color(0xFF10B981),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Checked into ${result.zoneName} (${result.slotNumber})!'),
-              backgroundColor: const Color(0xFF10B981),
-            ),
-          );
-        }
+      ref
+          .read(activeSessionProvider.notifier)
+          .updateSession(result.status == 'Completed' ? null : result);
+      if (result.status == 'Completed') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Checked out of ${result.zoneName}! Total: \$${result.totalFee.toStringAsFixed(2)}'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Checked into ${result.zoneName} (${result.slotNumber})!'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      }
     }
   }
 
@@ -63,7 +67,9 @@ class BookingScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          activeSession != null ? 'Live Parking Session' : 'My Booking & Digital Pass',
+          activeSession != null
+              ? 'Live Parking Session'
+              : 'My Booking & Digital Pass',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
         ),
         backgroundColor: const Color(0xFF111827),
@@ -72,7 +78,9 @@ class BookingScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh Status',
-            onPressed: () => ref.read(activeSessionProvider.notifier).startPolling(), // Manually trigger refresh
+            onPressed: () => ref
+                .read(activeSessionProvider.notifier)
+                .startPolling(), // Manually trigger refresh
           ),
         ],
       ),
@@ -90,14 +98,16 @@ class BookingScreen extends ConsumerWidget {
           ),
         ),
         error: (error, _) => Center(
-          child: Text('Failed to load session: $error', style: const TextStyle(color: Colors.red)),
+          child: Text('Failed to load session: $error',
+              style: const TextStyle(color: Colors.red)),
         ),
       ),
     );
   }
 
   /// Live Active Session Tracker (design.md §19.4)
-  Widget _buildActiveSessionView(BuildContext context, WidgetRef ref, ParkingSessionModel session) {
+  Widget _buildActiveSessionView(
+      BuildContext context, WidgetRef ref, ParkingSessionModel session) {
     final estimatedFee = _estimateCurrentFee(session);
 
     return Column(
@@ -111,7 +121,8 @@ class BookingScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0x4D10B981)),
             boxShadow: const [
-              BoxShadow(color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
+              BoxShadow(
+                  color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
             ],
           ),
           child: Column(
@@ -121,7 +132,8 @@ class BookingScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0x1F10B981),
                       borderRadius: BorderRadius.circular(20),
@@ -134,21 +146,30 @@ class BookingScreen extends ConsumerWidget {
                         SizedBox(width: 6),
                         Text(
                           'ACTIVE SESSION',
-                          style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     'Bay ${session.slotNumber}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
               Text(
                 session.zoneName,
-                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -166,15 +187,21 @@ class BookingScreen extends ConsumerWidget {
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.timer_outlined, color: Colors.grey, size: 14),
+                            Icon(Icons.timer_outlined,
+                                color: Colors.grey, size: 14),
                             SizedBox(width: 4),
-                            Text('Duration', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                            Text('Duration',
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 12)),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _formatDuration(session.checkInTime),
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -185,15 +212,21 @@ class BookingScreen extends ConsumerWidget {
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.attach_money, color: Color(0xFF10B981), size: 14),
+                            Icon(Icons.attach_money,
+                                color: Color(0xFF10B981), size: 14),
                             SizedBox(width: 2),
-                            Text('Est. Fee', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                            Text('Est. Fee',
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 12)),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '\$${estimatedFee.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Color(0xFF10B981), fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -214,11 +247,13 @@ class BookingScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Checked in at ${session.checkInTime.hour.toString().padLeft(2, '0')}:${session.checkInTime.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                     Text(
                       'Rate: \$${session.hourlyRate.toStringAsFixed(2)}/hr',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -234,22 +269,27 @@ class BookingScreen extends ConsumerWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFEF4444),
             minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 4,
           ),
-          icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 22),
+          icon:
+              const Icon(Icons.qr_code_scanner, color: Colors.white, size: 22),
           label: const Text(
             'Scan Exit Gate QR to Check Out',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          onPressed: () => _openScanner(context, ref, session, mode: QrScannerMode.exitCheckOut),
+          onPressed: () => _openScanner(context, ref, session,
+              mode: QrScannerMode.exitCheckOut),
         ),
       ],
     );
   }
 
   /// Booking Pass View with QR code and Scan to Enter Button
-  Widget _buildBookingPassView(BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession) {
+  Widget _buildBookingPassView(
+      BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession) {
     return Column(
       children: [
         // Digital Pass Card
@@ -259,18 +299,23 @@ class BookingScreen extends ConsumerWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: const [
-              BoxShadow(color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
+              BoxShadow(
+                  color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
             ],
           ),
           child: Column(
             children: [
               const Text(
                 'OPENPARKING PASS',
-                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.black87),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: Colors.black87),
               ),
               const SizedBox(height: 12),
               QrImageView(
-                data: 'openparking://session/start?bookingId=bk-9912&slotId=slot-a102',
+                data:
+                    'openparking://session/start?bookingId=bk-9912&slotId=slot-a102',
                 version: QrVersions.auto,
                 size: 190.0,
               ),
@@ -298,23 +343,33 @@ class BookingScreen extends ConsumerWidget {
             children: [
               Column(
                 children: [
-                  Text('Zone', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Zone',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                   SizedBox(height: 4),
-                  Text('Zone A', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text('Zone A',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
               Column(
                 children: [
-                  Text('Bay', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Bay',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                   SizedBox(height: 4),
-                  Text('A-102', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text('A-102',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
               Column(
                 children: [
-                  Text('Rate', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text('Rate',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                   SizedBox(height: 4),
-                  Text('\$5.00/hr', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                  Text('\$5.00/hr',
+                      style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -328,15 +383,19 @@ class BookingScreen extends ConsumerWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF6366F1),
             minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 4,
           ),
-          icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
+          icon:
+              const Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
           label: const Text(
             'Scan Gate QR to Enter',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          onPressed: () => _openScanner(context, ref, activeSession, mode: QrScannerMode.entryCheckIn),
+          onPressed: () => _openScanner(context, ref, activeSession,
+              mode: QrScannerMode.entryCheckIn),
         ),
       ],
     );

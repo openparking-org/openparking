@@ -25,7 +25,8 @@ void main() {
       });
 
       final service = SessionService(client: mockClient);
-      final session = await service.checkIn(bookingId: 'bk-9912', slotId: 'slot-a102');
+      final session =
+          await service.checkIn(bookingId: 'bk-9912', slotId: 'slot-a102');
 
       expect(session.id, equals('sess-123'));
       expect(session.bookingId, equals('bk-9912'));
@@ -34,29 +35,38 @@ void main() {
       expect(session.hourlyRate, equals(5.0));
     });
 
-    test('checkIn throws SessionApiException with 404 on unknown booking', () async {
+    test('checkIn throws SessionApiException with 404 on unknown booking',
+        () async {
       final mockClient = MockClient((request) async {
-        return http.Response(jsonEncode({'message': 'Booking not found.'}), 404);
+        return http.Response(
+            jsonEncode({'message': 'Booking not found.'}), 404);
       });
 
       final service = SessionService(client: mockClient);
 
       expect(
         () async => await service.checkIn(bookingId: 'unknown-id'),
-        throwsA(isA<SessionApiException>().having((e) => e.statusCode, 'statusCode', 404)),
+        throwsA(isA<SessionApiException>()
+            .having((e) => e.statusCode, 'statusCode', 404)),
       );
     });
 
-    test('checkIn throws SessionApiException with 409 on duplicate active session', () async {
+    test(
+        'checkIn throws SessionApiException with 409 on duplicate active session',
+        () async {
       final mockClient = MockClient((request) async {
-        return http.Response(jsonEncode({'message': 'An active parking session is already running.'}), 409);
+        return http.Response(
+            jsonEncode(
+                {'message': 'An active parking session is already running.'}),
+            409);
       });
 
       final service = SessionService(client: mockClient);
 
       expect(
         () async => await service.checkIn(bookingId: 'already-active-id'),
-        throwsA(isA<SessionApiException>().having((e) => e.statusCode, 'statusCode', 409)),
+        throwsA(isA<SessionApiException>()
+            .having((e) => e.statusCode, 'statusCode', 409)),
       );
     });
 

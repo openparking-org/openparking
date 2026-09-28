@@ -7,11 +7,13 @@ final sessionServiceProvider = Provider<SessionService>((ref) {
   return SessionService();
 });
 
-class SessionStateNotifier extends StateNotifier<AsyncValue<ParkingSessionModel?>> {
+class SessionStateNotifier
+    extends StateNotifier<AsyncValue<ParkingSessionModel?>> {
   final SessionService _sessionService;
   Timer? _pollingTimer;
 
-  SessionStateNotifier(this._sessionService) : super(const AsyncValue.loading());
+  SessionStateNotifier(this._sessionService)
+      : super(const AsyncValue.loading());
 
   void startPolling() {
     _fetchSession();
@@ -52,8 +54,8 @@ class SessionStateNotifier extends StateNotifier<AsyncValue<ParkingSessionModel?
   }
 }
 
-final activeSessionProvider =
-    StateNotifierProvider<SessionStateNotifier, AsyncValue<ParkingSessionModel?>>((ref) {
+final activeSessionProvider = StateNotifierProvider<SessionStateNotifier,
+    AsyncValue<ParkingSessionModel?>>((ref) {
   final service = ref.watch(sessionServiceProvider);
   final notifier = SessionStateNotifier(service);
 

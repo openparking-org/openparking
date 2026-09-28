@@ -25,7 +25,8 @@ class PenaltiesScreen extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 28),
+                  Icon(Icons.warning_amber_rounded,
+                      color: Color(0xFFEF4444), size: 28),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -39,7 +40,10 @@ class PenaltiesScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'Past Enforcement Records',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Container(
@@ -51,7 +55,8 @@ class PenaltiesScreen extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Text('No outstanding penalties found.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  Text('No outstanding penalties found.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13)),
                 ],
               ),
             ),

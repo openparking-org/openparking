@@ -47,22 +47,28 @@ class QrPayloadParser {
     final trimmed = raw.trim();
 
     // 1. Try URI parsing for openparking:// schemes
-    if (trimmed.startsWith('openparking://') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (trimmed.startsWith('openparking://') ||
+        trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://')) {
       try {
         final uri = Uri.parse(trimmed);
         final host = uri.host.toLowerCase();
         final path = uri.path.toLowerCase();
         final params = uri.queryParameters;
 
-        final bookingId = params['bookingId'] ?? params['booking_id'] ?? params['booking'];
+        final bookingId =
+            params['bookingId'] ?? params['booking_id'] ?? params['booking'];
         final slotId = params['slotId'] ?? params['slot_id'] ?? params['slot'];
-        final sessionId = params['sessionId'] ?? params['session_id'] ?? params['session'];
+        final sessionId =
+            params['sessionId'] ?? params['session_id'] ?? params['session'];
         final zoneId = params['zoneId'] ?? params['zone_id'] ?? params['zone'];
 
         // Determine action based on URI host / path
-        if (host == 'session' && (path == '/start' || path == '/check-in' || path.isEmpty)) {
+        if (host == 'session' &&
+            (path == '/start' || path == '/check-in' || path.isEmpty)) {
           if (bookingId == null && slotId == null) {
-            return QrScanResult.invalid(trimmed, 'QR code is missing a booking or slot identifier.');
+            return QrScanResult.invalid(
+                trimmed, 'QR code is missing a booking or slot identifier.');
           }
           return QrScanResult(
             isValid: true,
@@ -76,7 +82,8 @@ class QrPayloadParser {
 
         if (host == 'session' && path == '/check-out') {
           if (sessionId == null && bookingId == null) {
-            return QrScanResult.invalid(trimmed, 'QR code is missing an active session identifier for check-out.');
+            return QrScanResult.invalid(trimmed,
+                'QR code is missing an active session identifier for check-out.');
           }
           return QrScanResult(
             isValid: true,
@@ -132,13 +139,20 @@ class QrPayloadParser {
       try {
         final decoded = jsonDecode(trimmed);
         if (decoded is Map<String, dynamic>) {
-          final actionStr = (decoded['action'] ?? decoded['type'] ?? '').toString().toLowerCase();
-          final bookingId = (decoded['bookingId'] ?? decoded['booking_id'] ?? decoded['id'])?.toString();
+          final actionStr = (decoded['action'] ?? decoded['type'] ?? '')
+              .toString()
+              .toLowerCase();
+          final bookingId =
+              (decoded['bookingId'] ?? decoded['booking_id'] ?? decoded['id'])
+                  ?.toString();
           final slotId = (decoded['slotId'] ?? decoded['slot_id'])?.toString();
-          final sessionId = (decoded['sessionId'] ?? decoded['session_id'])?.toString();
+          final sessionId =
+              (decoded['sessionId'] ?? decoded['session_id'])?.toString();
           final zoneId = (decoded['zoneId'] ?? decoded['zone_id'])?.toString();
 
-          final isCheckOut = actionStr.contains('exit') || actionStr.contains('check-out') || actionStr == 'checkout';
+          final isCheckOut = actionStr.contains('exit') ||
+              actionStr.contains('check-out') ||
+              actionStr == 'checkout';
 
           if (isCheckOut) {
             return QrScanResult(
@@ -168,7 +182,8 @@ class QrPayloadParser {
     }
 
     // 3. Fallback: check if raw string looks like a UUID or booking code
-    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    final uuidRegex = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
     final bookingCodeRegex = RegExp(r'^[A-Za-z0-9\-_]{4,40}$');
 
     if (uuidRegex.hasMatch(trimmed) || bookingCodeRegex.hasMatch(trimmed)) {
@@ -180,6 +195,7 @@ class QrPayloadParser {
       );
     }
 
-    return QrScanResult.invalid(trimmed, 'Unsupported QR format: "$trimmed" is not a recognized OpenParking code.');
+    return QrScanResult.invalid(trimmed,
+        'Unsupported QR format: "$trimmed" is not a recognized OpenParking code.');
   }
 }

@@ -12,9 +12,9 @@ class ApiConfig {
     if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
       return _customBaseUrl!;
     }
-    
+
     String envUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000';
-    
+
     // Auto-resolve localhost for Android emulator
     if (!kIsWeb && envUrl.contains('localhost')) {
       try {

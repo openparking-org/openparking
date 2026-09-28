@@ -89,9 +89,11 @@ class SessionService {
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-in');
     final payload = <String, dynamic>{};
-    if (bookingId != null && bookingId.isNotEmpty) payload['bookingId'] = bookingId;
+    if (bookingId != null && bookingId.isNotEmpty)
+      payload['bookingId'] = bookingId;
     if (slotId != null && slotId.isNotEmpty) payload['slotId'] = slotId;
-    if (bookingCode != null && bookingCode.isNotEmpty) payload['bookingCode'] = bookingCode;
+    if (bookingCode != null && bookingCode.isNotEmpty)
+      payload['bookingCode'] = bookingCode;
     if (userId != null && userId.isNotEmpty) payload['userId'] = userId;
 
     try {
@@ -103,7 +105,8 @@ class SessionService {
 
       return _handleResponse(response);
     } on SocketException {
-      throw SessionApiException(0, 'Unable to connect to OpenParking server. Please verify network or backend status.');
+      throw SessionApiException(0,
+          'Unable to connect to OpenParking server. Please verify network or backend status.');
     } on http.ClientException catch (e) {
       throw SessionApiException(0, 'Network communication error: ${e.message}');
     }
@@ -116,8 +119,10 @@ class SessionService {
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-out');
     final payload = <String, dynamic>{};
-    if (sessionId != null && sessionId.isNotEmpty) payload['sessionId'] = sessionId;
-    if (bookingId != null && bookingId.isNotEmpty) payload['bookingId'] = bookingId;
+    if (sessionId != null && sessionId.isNotEmpty)
+      payload['sessionId'] = sessionId;
+    if (bookingId != null && bookingId.isNotEmpty)
+      payload['bookingId'] = bookingId;
 
     try {
       final response = await _client.post(
@@ -128,7 +133,8 @@ class SessionService {
 
       return _handleResponse(response);
     } on SocketException {
-      throw SessionApiException(0, 'Unable to connect to OpenParking server. Please check your network connection.');
+      throw SessionApiException(0,
+          'Unable to connect to OpenParking server. Please check your network connection.');
     } on http.ClientException catch (e) {
       throw SessionApiException(0, 'Network communication error: ${e.message}');
     }
@@ -141,10 +147,12 @@ class SessionService {
   }) async {
     final queryParams = <String, String>{};
     if (userId != null && userId.isNotEmpty) queryParams['userId'] = userId;
-    if (bookingId != null && bookingId.isNotEmpty) queryParams['bookingId'] = bookingId;
+    if (bookingId != null && bookingId.isNotEmpty)
+      queryParams['bookingId'] = bookingId;
 
     final baseUri = Uri.parse('${ApiConfig.baseUrl}/api/sessions/active');
-    final url = baseUri.replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+    final url = baseUri.replace(
+        queryParameters: queryParams.isNotEmpty ? queryParams : null);
 
     try {
       final response = await _client.get(url, headers: ApiConfig.headers);
@@ -163,7 +171,8 @@ class SessionService {
       if (data is Map<String, dynamic>) {
         return ParkingSessionModel.fromJson(data);
       }
-      throw SessionApiException(response.statusCode, 'Unexpected server response format.');
+      throw SessionApiException(
+          response.statusCode, 'Unexpected server response format.');
     }
 
     String errorMsg = 'Operation failed with status ${response.statusCode}.';
@@ -176,15 +185,23 @@ class SessionService {
 
     switch (response.statusCode) {
       case 400:
-        throw SessionApiException(400, errorMsg.isNotEmpty ? errorMsg : 'Invalid QR request.');
+        throw SessionApiException(
+            400, errorMsg.isNotEmpty ? errorMsg : 'Invalid QR request.');
       case 401:
-        throw SessionApiException(401, 'Authentication required. Please sign in.');
+        throw SessionApiException(
+            401, 'Authentication required. Please sign in.');
       case 403:
-        throw SessionApiException(403, 'Permission denied for this parking operation.');
+        throw SessionApiException(
+            403, 'Permission denied for this parking operation.');
       case 404:
-        throw SessionApiException(404, errorMsg.isNotEmpty ? errorMsg : 'Booking or session not found.');
+        throw SessionApiException(404,
+            errorMsg.isNotEmpty ? errorMsg : 'Booking or session not found.');
       case 409:
-        throw SessionApiException(409, errorMsg.isNotEmpty ? errorMsg : 'Conflicting parking state: session already active.');
+        throw SessionApiException(
+            409,
+            errorMsg.isNotEmpty
+                ? errorMsg
+                : 'Conflicting parking state: session already active.');
       default:
         throw SessionApiException(response.statusCode, errorMsg);
     }

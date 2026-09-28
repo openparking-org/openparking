@@ -32,7 +32,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (context, state) {
           if (authState.isLoading) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
           }
           return const MainNavigationScreen();
         },

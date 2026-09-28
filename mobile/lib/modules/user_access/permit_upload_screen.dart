@@ -19,7 +19,8 @@ class _PermitUploadScreenState extends State<PermitUploadScreen> {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Permit submitted for AI verification (Validator Agent).'),
+            content:
+                Text('Permit submitted for AI verification (Validator Agent).'),
             backgroundColor: Color(0xFF10B981),
           ),
         );
@@ -67,8 +68,10 @@ class _PermitUploadScreenState extends State<PermitUploadScreen> {
               decoration: const InputDecoration(
                 labelText: 'Permit Number',
                 labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF334155))),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF6366F1))),
+                enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF334155))),
+                focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6366F1))),
               ),
             ),
             const SizedBox(height: 16),
@@ -78,15 +81,18 @@ class _PermitUploadScreenState extends State<PermitUploadScreen> {
               decoration: const InputDecoration(
                 labelText: 'Issuing Authority / Jurisdiction',
                 labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF334155))),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF6366F1))),
+                enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF334155))),
+                focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF6366F1))),
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _isSubmitting ? null : _submitPermit,
               icon: const Icon(Icons.cloud_upload),
-              label: Text(_isSubmitting ? 'Validating...' : 'Submit to AI Validator'),
+              label: Text(
+                  _isSubmitting ? 'Validating...' : 'Submit to AI Validator'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 padding: const EdgeInsets.symmetric(vertical: 14),
