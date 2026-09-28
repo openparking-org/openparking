@@ -10,9 +10,9 @@
 - [x] **Resend Email Integration:** Sending booking confirmations and receipts natively from the .NET Core API.
 
 ## 3. Enforcement & AI Orchestration (Audit & Automation)
-- [ ] **Overstay Detection Workflow:** A `.NET` BackgroundService that sweeps the database for expired sessions and triggers the LangGraph AI to propose a penalty.
-- [ ] **Penalty Approvals:** The React UI where Parking Admins can review the AI Planner's proposed penalties and click "Approve" or "Reject".
-- [ ] **Hardware Simulation (ESP8266/OpenCV):** Setting up the Python mock endpoints (`/simulate/entry` and `/simulate/exit`) that pretend to be the physical gate ANPR cameras opening and closing booking sessions.
+- [x] **Overstay Detection Workflow:** A `.NET` BackgroundService that sweeps the database for expired sessions and triggers the LangGraph AI to propose a penalty.
+- [x] **Penalty Approvals:** The React UI where Parking Admins can review the AI Planner's proposed penalties and click "Approve" or "Reject".
+- [x] **Hardware Simulation (ESP8266/OpenCV):** Setting up the Python mock endpoints (`/simulate/entry` and `/simulate/exit`) that pretend to be the physical gate ANPR cameras opening and closing booking sessions.
 
 ## 4. The Flutter Mobile App (Driver UI)
 - [ ] **Mobile Interface:** The entire mobile interface using Dart and Riverpod 2.
