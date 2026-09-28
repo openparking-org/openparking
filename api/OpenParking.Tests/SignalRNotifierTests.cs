@@ -9,23 +9,23 @@ namespace OpenParking.Tests;
 public class SignalRNotifierTests
 {
     [Fact]
-    public async Task NotifySlotUpdatedAsync_SendsMessageToFloorGroup()
+    public async Task NotifySlotUpdatedAsync_SendsMessageToZoneGroup()
     {
         var mockHubContext = new Mock<IHubContext<SlotHub, ISlotHub>>();
         var mockClients = new Mock<IHubClients<ISlotHub>>();
         var mockClientProxy = new Mock<ISlotHub>();
 
         mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
-        mockClients.Setup(c => c.Group("floor-fp-123")).Returns(mockClientProxy.Object);
+        mockClients.Setup(c => c.Group("zone:zone-123")).Returns(mockClientProxy.Object);
 
         var notifier = new SignalRNotifier(mockHubContext.Object);
 
-        await notifier.NotifySlotUpdatedAsync("fp-123", "slot-1", true);
+        await notifier.NotifySlotUpdatedAsync("zone-123", "slot-1", "Occupied");
 
         mockClientProxy.Verify(
             c => c.SlotUpdated(It.Is<object>(obj => 
                 obj.GetType().GetProperty("slotId")!.GetValue(obj)!.ToString() == "slot-1" &&
-                (bool)obj.GetType().GetProperty("isOccupied")!.GetValue(obj)! == true)),
+                obj.GetType().GetProperty("status")!.GetValue(obj)!.ToString() == "Occupied")),
             Times.Once);
     }
 

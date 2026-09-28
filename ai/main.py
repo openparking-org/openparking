@@ -63,6 +63,60 @@ class ResumeWorkflowRequest(BaseModel):
 # API Endpoints
 # ---------------------------------------------------------
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Redirects the root URL to the Swagger UI docs."""
+    return RedirectResponse(url="/docs")
+
+from agents.cartographer import CartographerAgent, CartographerResult
+
+cartographer = CartographerAgent()
+
+class CartographerRequest(BaseModel):
+    north: float
+    south: float
+    east: float
+    west: float
+    cols: int = 5
+    rows: int = 4
+    slot_prefix: str = "AI"
+
+@app.post("/ai/cartographer/detect", response_model=CartographerResult)
+async def detect_slots(req: CartographerRequest) -> CartographerResult:
+    """
+    Detects parking bays from geospatial bounding coordinates using aerial line segmentation.
+    (Phase 9.4)
+    """
+    return await cartographer.detect_slots(
+        north=req.north,
+        south=req.south,
+        east=req.east,
+        west=req.west,
+        cols=req.cols,
+        rows=req.rows,
+        slot_prefix=req.slot_prefix
+    )
+
+from agents.validator import ValidatorAgent
+validator = ValidatorAgent()
+
+class PermitValidationRequest(BaseModel):
+    permit_number: str
+    expiry_date: str
+    jurisdiction: str
+    document_image_url: Optional[str] = None
+
+@app.post("/ai/permits/validate")
+async def validate_permit(req: PermitValidationRequest) -> dict:
+    """
+    Validates a disability permit against regulatory schema.
+    Returns a confidence score for the admin's permit review workflow.
+    """
+    return await validator.validate_permit(req.model_dump())
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     return HealthResponse(

@@ -276,9 +276,9 @@ public class BookingService(
             targetSlot.UpdatedAt = DateTime.UtcNow;
 
             await realtimeNotifier.NotifySlotUpdatedAsync(
-                targetSlot.FloorPlanId?.ToString() ?? "", 
+                targetSlot.ZoneId.ToString(), 
                 targetSlot.Id.ToString(), 
-                true);
+                SlotStatus.Occupied.ToString());
         }
 
         await db.SaveChangesAsync();
@@ -356,9 +356,9 @@ public class BookingService(
             slot.UpdatedAt = now;
             
             await realtimeNotifier.NotifySlotUpdatedAsync(
-                slot.FloorPlanId?.ToString() ?? "", 
+                slot.ZoneId.ToString(), 
                 slot.Id.ToString(), 
-                false);
+                SlotStatus.Available.ToString());
         }
 
         await db.SaveChangesAsync();

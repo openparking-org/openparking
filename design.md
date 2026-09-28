@@ -37,6 +37,7 @@ using the **Cloudflare ecosystem** as the primary edge and frontend platform.
 | **State — React** | Zustand | Lightweight, no boilerplate, easy viva explanation |
 | **State — Flutter** | Riverpod 2 | Compile-safe, testable, excellent for async API calls |
 | **Agentic AI** | LangGraph (Python) + Cloudflare Workers AI | Stateful graph orchestration; CF Workers AI for cloud inference |
+| **AI Ops & RAG** | CF AI Gateway, Agent Tracing, Vectorize | Free-tier caching, rate-limiting, observability, and RAG context |
 | **Edge Gateway** | Cloudflare Workers | Rate limiting, JWT pre-validation, routing, CORS at the edge |
 | **Version Control & CI/CD** | GitHub + GitHub Actions | Automated test runs on every push/PR to main |
 
@@ -106,6 +107,8 @@ This enforces bounded ownership and enables the modular architecture justificati
 |   Cloudflare Workers  (API Gateway: rate limiting, JWT pre-check, CORS)  |
 |   Cloudflare Pages    (React Admin Dashboard — global CDN)               |
 |   Cloudflare Workers AI (LLM inference: Llama 3.1 / Qwen2.5)            |
+|   Cloudflare AI Gateway (Analytics, Caching, Rate-limiting for LLMs)    |
+|   Cloudflare Vectorize  (RAG context for parking regulations)           |
 |   Cloudflare R2       (APK hosting, QR images, uploaded permits)         |
 |   Cloudflare Tunnel   (securely connects Oracle VM to CF network)        |
 +----------------------------------+---------------------------------------+
@@ -245,6 +248,9 @@ The actual ESP8266 integration is documented as an optional hardware extension.
 | ASP.NET Core + Python AI | **Oracle Cloud Free VM** (ARM, 4 cores, 24GB RAM) | Always Free |
 | PostgreSQL | **Neon.tech** (serverless, 0.5 GB) | Free |
 | AI Model Inference | **Cloudflare Workers AI** (Llama 3.1 8B / Qwen2.5) | Free (10k neurons/day) |
+| AI Analytics & Caching | **Cloudflare AI Gateway** | Free |
+| Agent Observability | **Cloudflare Agent Tracing** | Free |
+| RAG Vector Database | **Cloudflare Vectorize** | Free |
 | Tunnel (VM → CF network) | **Cloudflare Tunnel** | Free |
 | APK + asset hosting | **Cloudflare R2** (10 GB) | Free |
 | CI/CD | **GitHub Actions** | Free (public repo) |

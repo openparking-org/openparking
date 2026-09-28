@@ -12,12 +12,17 @@ Phases 1-4 of the backend implementation are **complete**.
     * **`ZoneService`:** Zone & Slot CRUD, FloorPlan upserts (with JSON waypoint validation), Real-time occupancy stats.
     * **`BookingService`:** Transactional bookings (overlap checks), QR session check-in/out, 15-minute billing logic, ANPR simulator hooks.
     * **`EnforcementService`:** Overstay detection loops, LangGraph AI workflow triggering, Penalty lifecycle, immutable Audit Logging.
-    * **`EmailService`:** Resend REST API integration with retry and dead-letter queue logic.
+    * **EmailService:** Resend REST API integration with retry and dead-letter queue logic.
 3. **Real-time Notifications:** Implemented cleanly. `IRealtimeNotifier` (in Core) is implemented by `SignalRNotifier` (in Api) which wraps `SlotHub`. This breaks the circular dependency between Infrastructure and Api.
 4. **Tests:** Stale field references in `OpenParking.Tests` (e.g., string statuses -> enum, `ResolvedAt` -> `ApprovedAt`) have been fixed.
+5. **Phase 9 Advanced Mapping & Cartography:**
+    * **UI/UX:** Integrated `@react-google-maps/api` into `SlotMappingEngine.tsx` with tools for Manual Drawing, Indoor Overlay, and AI Detection.
+    * **Polygon Subdivision:** Implemented Turf.js to accurately slice large parking bounds into individual GPS polygons.
+    * **SignalR UI Sync:** The map dynamically updates slot colors in real-time based on `zone:{zoneId}` SignalR events triggered from the `.NET` backend.
+    * **AI Cartographer Agent:** Updated Python `CartographerAgent` to fetch real satellite imagery from the Google Maps Static API via `httpx` and simulate YOLOv8 segmentation asynchronously, fully tested with mocked tests.
 
 ## Next Steps (Phases 5+)
-The next agent should pick up the work starting from Phase 5.
+The next agent should pick up the work starting from Phase 5, or continue with UI integrations.
 
 ### Phase 5: Controller Refactoring
 *   **Current State:** Controllers in `OpenParking.Api/Controllers` are either stubs or tightly coupled to `AppDbContext` (e.g., `WorkflowsController`).

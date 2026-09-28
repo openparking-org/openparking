@@ -88,6 +88,10 @@ public class Slot
     public string SlotNumber { get; set; } = string.Empty;
     public SlotType Type { get; set; } = SlotType.Standard;
     public SlotStatus Status { get; set; } = SlotStatus.Available;
+    public int Floor { get; set; } = 0;
+    public string? BoundingBoxJson { get; set; }
+    public Guid? AssignedSensorId { get; set; }
+    public Guid? AssignedCameraId { get; set; }
     public string? NearestWaypointId { get; set; }
     public double? CanvasX { get; set; }
     public double? CanvasY { get; set; }
@@ -109,6 +113,10 @@ public class FloorPlan
     public string ImageUrl { get; set; } = string.Empty;
     public double ImageWidthPx { get; set; }
     public double ImageHeightPx { get; set; }
+    public double? AnchorNorthWestLat { get; set; }
+    public double? AnchorNorthWestLng { get; set; }
+    public double? AnchorSouthEastLat { get; set; }
+    public double? AnchorSouthEastLng { get; set; }
     public string WaypointGraphJson { get; set; } = "[]";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

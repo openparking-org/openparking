@@ -146,9 +146,31 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         
         var dto = new SlotSummaryDto
         {
-            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString(),
+            Floor = slot.Floor, BoundingBoxJson = slot.BoundingBoxJson,
+            AssignedSensorId = slot.AssignedSensorId, AssignedCameraId = slot.AssignedCameraId
         };
         return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
+    }
+
+    // POST /api/zones/{id}/slots/batch
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
+    [HttpPost("{id:guid}/slots/batch")]
+    public async Task<ActionResult<ApiResponse<List<SlotSummaryDto>>>> BatchCreateSlots(Guid id, [FromBody] BatchCreateSlotsRequest req)
+    {
+        if (!ModelState.IsValid)
+            throw new AppException(ErrorCodes.ValidationFailed, "Invalid batch slot request");
+
+        var actorId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
+        var slots = await zoneService.BatchCreateSlotsAsync(id, req, actorId);
+        
+        var dtos = slots.Select(slot => new SlotSummaryDto
+        {
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString(),
+            Floor = slot.Floor, BoundingBoxJson = slot.BoundingBoxJson,
+            AssignedSensorId = slot.AssignedSensorId, AssignedCameraId = slot.AssignedCameraId
+        }).ToList();
+        return Ok(ApiResponse<List<SlotSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
     }
 
     // GET /api/zones/slots/{slotId}
@@ -158,7 +180,9 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var slot = await zoneService.GetSlotAsync(slotId);
         var dto = new SlotSummaryDto
         {
-            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString(),
+            Floor = slot.Floor, BoundingBoxJson = slot.BoundingBoxJson,
+            AssignedSensorId = slot.AssignedSensorId, AssignedCameraId = slot.AssignedCameraId
         };
         return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
     }
@@ -173,7 +197,9 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         
         var dto = new SlotSummaryDto
         {
-            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString()
+            Id = slot.Id, SlotNumber = slot.SlotNumber, Type = slot.Type.ToString(), Status = slot.Status.ToString(),
+            Floor = slot.Floor, BoundingBoxJson = slot.BoundingBoxJson,
+            AssignedSensorId = slot.AssignedSensorId, AssignedCameraId = slot.AssignedCameraId
         };
         return Ok(ApiResponse<SlotSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
     }
@@ -187,7 +213,9 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var plans = await zoneService.GetFloorPlansForZoneAsync(id);
         var dtos = plans.Select(f => new FloorPlanSummaryDto
         {
-            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl
+            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl,
+            AnchorNorthWestLat = f.AnchorNorthWestLat, AnchorNorthWestLng = f.AnchorNorthWestLng,
+            AnchorSouthEastLat = f.AnchorSouthEastLat, AnchorSouthEastLng = f.AnchorSouthEastLng
         }).ToList();
         return Ok(ApiResponse<List<FloorPlanSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
     }
@@ -199,7 +227,9 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var plan = await zoneService.GetFloorPlanAsync(floorPlanId);
         var dto = new FloorPlanSummaryDto
         {
-            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl,
+            AnchorNorthWestLat = plan.AnchorNorthWestLat, AnchorNorthWestLng = plan.AnchorNorthWestLng,
+            AnchorSouthEastLat = plan.AnchorSouthEastLat, AnchorSouthEastLng = plan.AnchorSouthEastLng
         };
         return Ok(ApiResponse<FloorPlanSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
     }
@@ -217,7 +247,9 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         
         var dto = new FloorPlanSummaryDto
         {
-            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl,
+            AnchorNorthWestLat = plan.AnchorNorthWestLat, AnchorNorthWestLng = plan.AnchorNorthWestLng,
+            AnchorSouthEastLat = plan.AnchorSouthEastLat, AnchorSouthEastLng = plan.AnchorSouthEastLng
         };
         return Ok(ApiResponse<FloorPlanSummaryDto>.Ok(dto, HttpContext.TraceIdentifier));
     }
@@ -293,11 +325,15 @@ public class ZoneDetailDto : ZoneDto
         Currency       = currency,
         Slots = zone.Slots.Select(s => new SlotSummaryDto
         {
-            Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString()
+            Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString(),
+            Floor = s.Floor, BoundingBoxJson = s.BoundingBoxJson,
+            AssignedSensorId = s.AssignedSensorId, AssignedCameraId = s.AssignedCameraId
         }).ToList(),
         FloorPlans = zone.FloorPlans.Select(f => new FloorPlanSummaryDto
         {
-            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl
+            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl,
+            AnchorNorthWestLat = f.AnchorNorthWestLat, AnchorNorthWestLng = f.AnchorNorthWestLng,
+            AnchorSouthEastLat = f.AnchorSouthEastLat, AnchorSouthEastLng = f.AnchorSouthEastLng
         }).ToList()
     };
 }
@@ -308,6 +344,10 @@ public class SlotSummaryDto
     public string SlotNumber { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public int Floor { get; set; }
+    public string? BoundingBoxJson { get; set; }
+    public Guid? AssignedSensorId { get; set; }
+    public Guid? AssignedCameraId { get; set; }
 }
 
 public class FloorPlanSummaryDto
@@ -316,4 +356,8 @@ public class FloorPlanSummaryDto
     public string FloorName { get; set; } = string.Empty;
     public int FloorOrder { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
+    public double? AnchorNorthWestLat { get; set; }
+    public double? AnchorNorthWestLng { get; set; }
+    public double? AnchorSouthEastLat { get; set; }
+    public double? AnchorSouthEastLng { get; set; }
 }

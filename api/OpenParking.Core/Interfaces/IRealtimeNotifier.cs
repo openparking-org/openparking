@@ -8,7 +8,7 @@ namespace OpenParking.Core.Interfaces;
 public interface IRealtimeNotifier
 {
     /// <summary>Notify a specific user's connected clients of a slot status change.</summary>
-    Task NotifySlotUpdatedAsync(string floorPlanId, string slotId, bool isOccupied);
+    Task NotifySlotUpdatedAsync(string zoneId, string slotId, string status);
 
     /// <summary>Notify a specific user that a penalty has been issued against them.</summary>
     Task NotifyPenaltyIssuedAsync(string userId, object payload);

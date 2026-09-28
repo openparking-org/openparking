@@ -16,7 +16,8 @@ namespace OpenParking.Infrastructure.Services;
 /// </summary>
 public class ZoneService(
     AppDbContext db,
-    ILogger<ZoneService> logger) : IZoneService
+    ILogger<ZoneService> logger,
+    IRealtimeNotifier notifier) : IZoneService
 {
     // ── IParkingModule ─────────────────────────────────────────────────────
     public string ModuleName => "Space & Availability";
@@ -158,6 +159,10 @@ public class ZoneService(
             SlotNumber  = req.SlotNumber.Trim().ToUpperInvariant(),
             Type        = req.Type,
             Status      = SlotStatus.Available,
+            Floor       = req.Floor,
+            BoundingBoxJson = req.BoundingBoxJson,
+            AssignedSensorId = req.AssignedSensorId,
+            AssignedCameraId = req.AssignedCameraId,
             FloorPlanId = req.FloorPlanId,
             CanvasX     = req.CanvasX,
             CanvasY     = req.CanvasY,
@@ -176,6 +181,46 @@ public class ZoneService(
         return slot;
     }
 
+    public async Task<List<Slot>> BatchCreateSlotsAsync(Guid zoneId, BatchCreateSlotsRequest req, Guid actorId)
+    {
+        var zoneExists = await db.Zones.AnyAsync(z => z.Id == zoneId);
+        if (!zoneExists)
+            throw new AppException(ErrorCodes.NotFound, "Zone not found.", 404);
+
+        var createdSlots = new List<Slot>();
+        foreach (var item in req.Slots)
+        {
+            var slot = new Slot
+            {
+                Id                = Guid.NewGuid(),
+                ZoneId            = zoneId,
+                SlotNumber        = item.SlotNumber.Trim().ToUpperInvariant(),
+                Type              = item.Type,
+                Status            = SlotStatus.Available,
+                Floor             = item.Floor,
+                BoundingBoxJson   = item.BoundingBoxJson,
+                AssignedSensorId  = item.AssignedSensorId,
+                AssignedCameraId  = item.AssignedCameraId,
+                FloorPlanId       = item.FloorPlanId,
+                CanvasX           = item.CanvasX,
+                CanvasY           = item.CanvasY,
+                CanvasWidth       = item.CanvasWidth,
+                CanvasHeight      = item.CanvasHeight,
+                NearestWaypointId = item.NearestWaypointId,
+                CreatedAt         = DateTime.UtcNow,
+                UpdatedAt         = DateTime.UtcNow,
+                CreatedBy         = actorId.ToString()
+            };
+            createdSlots.Add(slot);
+        }
+
+        db.Slots.AddRange(createdSlots);
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("Batch created {Count} slots in zone {ZoneId} by {ActorId}", createdSlots.Count, zoneId, actorId);
+        return createdSlots;
+    }
+
     public async Task<Slot> UpdateSlotStatusAsync(Guid slotId, SlotStatus newStatus, Guid actorId)
     {
         var slot = await db.Slots.FindAsync(slotId)
@@ -186,6 +231,10 @@ public class ZoneService(
         await db.SaveChangesAsync();
 
         logger.LogInformation("Slot {SlotId} status → {Status} by {ActorId}", slotId, newStatus, actorId);
+        
+        // Broadcast the real-time update
+        await notifier.NotifySlotUpdatedAsync(slot.ZoneId.ToString(), slot.Id.ToString(), newStatus.ToString());
+        
         return slot;
     }
 
@@ -229,6 +278,10 @@ public class ZoneService(
             existing.ImageUrl         = req.ImageUrl;
             existing.ImageWidthPx     = req.ImageWidthPx;
             existing.ImageHeightPx    = req.ImageHeightPx;
+            existing.AnchorNorthWestLat = req.AnchorNorthWestLat;
+            existing.AnchorNorthWestLng = req.AnchorNorthWestLng;
+            existing.AnchorSouthEastLat = req.AnchorSouthEastLat;
+            existing.AnchorSouthEastLng = req.AnchorSouthEastLng;
             existing.WaypointGraphJson = req.WaypointGraphJson;
             existing.UpdatedAt        = DateTime.UtcNow;
             await db.SaveChangesAsync();
@@ -244,6 +297,10 @@ public class ZoneService(
             ImageUrl        = req.ImageUrl,
             ImageWidthPx    = req.ImageWidthPx,
             ImageHeightPx   = req.ImageHeightPx,
+            AnchorNorthWestLat = req.AnchorNorthWestLat,
+            AnchorNorthWestLng = req.AnchorNorthWestLng,
+            AnchorSouthEastLat = req.AnchorSouthEastLat,
+            AnchorSouthEastLng = req.AnchorSouthEastLng,
             WaypointGraphJson = req.WaypointGraphJson,
             CreatedAt       = DateTime.UtcNow,
             UpdatedAt       = DateTime.UtcNow,

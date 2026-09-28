@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,8 @@ public class UserService(
     AppDbContext db,
     IEmailService emailService,
     IConfiguration config,
-    ILogger<UserService> logger) : IUserService
+    ILogger<UserService> logger,
+    IHttpClientFactory httpClientFactory) : IUserService
 {
     // ── IParkingModule ─────────────────────────────────────────────────────
     public string ModuleName => "User & Access";
@@ -189,6 +191,48 @@ public class UserService(
         await db.SaveChangesAsync();
 
         logger.LogInformation("Permit submitted: permitId={PermitId} userId={UserId}", permit.Id, userId);
+
+        try
+        {
+            var aiClient = httpClientFactory.CreateClient();
+            var aiUrl = config["AI_SERVICE_URL"] ?? "http://localhost:8000";
+            var reqBody = new
+            {
+                permit_number = req.PermitNumber,
+                expiry_date = req.ExpiryDate.ToString("O"),
+                jurisdiction = req.Jurisdiction,
+                document_image_url = req.DocumentImageUrl
+            };
+            
+            var res = await aiClient.PostAsJsonAsync($"{aiUrl}/ai/permits/validate", reqBody);
+            if (res.IsSuccessStatusCode)
+            {
+                var aiResult = await res.Content.ReadFromJsonAsync<JsonElement>();
+                if (aiResult.TryGetProperty("confidence", out var confidenceProp))
+                {
+                    var confidence = confidenceProp.GetDecimal();
+                    var thresholdStr = config["permits.auto_approve_confidence"] ?? "0.90";
+                    if (decimal.TryParse(thresholdStr, out var threshold) && confidence >= threshold)
+                    {
+                        permit.Status = PermitStatus.Verified;
+                        permit.UpdatedAt = DateTime.UtcNow;
+                        
+                        user.HasDisabilityPermit = true;
+                        user.UpdatedAt = DateTime.UtcNow;
+
+                        await db.SaveChangesAsync();
+                        
+                        logger.LogInformation("Permit {PermitId} AUTO-APPROVED by AI (Confidence: {Confidence})", permit.Id, confidence);
+                        await emailService.SendPermitOutcomeAsync(user.Email, user.FullName, permit);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to call AI validation service for permit {PermitId}. Falling back to manual review.", permit.Id);
+        }
+
         return permit;
     }
 

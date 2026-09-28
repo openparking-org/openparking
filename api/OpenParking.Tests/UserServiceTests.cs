@@ -49,8 +49,9 @@ public class UserServiceTests
 
         var emailServiceMock = new Mock<OpenParking.Core.Interfaces.IEmailService>();
         var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<UserService>>();
+        var httpClientFactoryMock = new Mock<System.Net.Http.IHttpClientFactory>();
 
-        var userService = new UserService(dbContext, emailServiceMock.Object, _configMock.Object, loggerMock.Object);
+        var userService = new UserService(dbContext, emailServiceMock.Object, _configMock.Object, loggerMock.Object, httpClientFactoryMock.Object);
 
         var result = await userService.LoginAsync("driver@openparking.local", "Password123!");
 
@@ -78,8 +79,9 @@ public class UserServiceTests
 
         var emailServiceMock = new Mock<OpenParking.Core.Interfaces.IEmailService>();
         var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<UserService>>();
+        var httpClientFactoryMock = new Mock<System.Net.Http.IHttpClientFactory>();
 
-        var userService = new UserService(dbContext, emailServiceMock.Object, _configMock.Object, loggerMock.Object);
+        var userService = new UserService(dbContext, emailServiceMock.Object, _configMock.Object, loggerMock.Object, httpClientFactoryMock.Object);
 
         await Assert.ThrowsAsync<AppException>(() => userService.LoginAsync("driver@openparking.local", "WrongPassword!"));
     }

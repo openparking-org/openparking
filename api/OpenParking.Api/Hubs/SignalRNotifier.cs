@@ -9,11 +9,11 @@ namespace OpenParking.Api.Hubs;
 /// </summary>
 public class SignalRNotifier(IHubContext<SlotHub, ISlotHub> hub) : IRealtimeNotifier
 {
-    public async Task NotifySlotUpdatedAsync(string floorPlanId, string slotId, bool isOccupied)
+    public async Task NotifySlotUpdatedAsync(string zoneId, string slotId, string status)
     {
         await hub.Clients
-            .Group($"floor-{floorPlanId}")
-            .SlotUpdated(new { slotId, isOccupied });
+            .Group($"zone:{zoneId}")
+            .SlotUpdated(new { slotId, status });
     }
 
     public async Task NotifyPenaltyIssuedAsync(string userId, object payload)

@@ -19,7 +19,8 @@ public class ZoneServiceTests
             .Options;
         var db = new AppDbContext(options);
         var loggerMock = new Mock<ILogger<ZoneService>>();
-        var service = new ZoneService(db, loggerMock.Object);
+        var notifierMock = new Mock<IRealtimeNotifier>();
+        var service = new ZoneService(db, loggerMock.Object, notifierMock.Object);
         return (db, service);
     }
 
