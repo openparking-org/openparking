@@ -46,7 +46,7 @@ class ActionAgent:
             "rationale": f"Congestion is {congestion_level} with velocity {velocity_score}"
         }
 
-    async def propose_overstay_penalty(self, overstay_minutes: int, base_penalty_per_hour: Decimal, context_data: dict[str, Any] = None) -> dict[str, Any]:
+    async def propose_overstay_penalty(self, overstay_minutes: int, base_penalty_per_hour: Decimal, context_data: dict[str, Any] | None = None) -> dict[str, Any]:
         if context_data is None:
             context_data = {}
             

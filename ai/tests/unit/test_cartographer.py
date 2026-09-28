@@ -39,7 +39,7 @@ async def test_cartographer_detect_slots_with_key():
             mock_client.get.return_value = mock_response
             mock_client_class.return_value.__aenter__.return_value = mock_client
             
-            with patch("builtins.open") as mock_open, patch("os.makedirs"):
+            with patch("builtins.open"), patch("os.makedirs"):
                 result = await cartographer.detect_slots(
                     north=37.7754,
                     south=37.7744,
