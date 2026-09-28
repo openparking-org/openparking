@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './modules/user-access/LoginPage';
 import { PermitsPage } from './modules/user-access/PermitsPage';
+import { PenaltyApprovals } from './modules/enforcement/PenaltyApprovals';
 
 // --- Types & Context ---
 
@@ -207,47 +208,7 @@ function Zones() {
   );
 }
 
-function AIEnforcement() {
-  const { settings } = useContext(SettingsContext);
-  const [penalties, setPenalties] = useState<any[]>([]);
 
-  useEffect(() => {
-    api.getPenalties().then(setPenalties);
-  }, []);
-
-  return (
-    <div>
-      <h1>AI Enforcement Queue</h1>
-      <hr />
-      <button onClick={() => alert("Batch Approved!")}>Batch Approve Verified</button>
-      <br /><br />
-      <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left' }}>
-        <thead>
-          <tr>
-            <th>Incident ID</th>
-            <th>Zone & Bay</th>
-            <th>Overstay</th>
-            <th>AI Confidence</th>
-            <th>Fine</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {penalties.map(p => (
-            <tr key={p.id}>
-              <td>{p.id}</td>
-              <td>{p.zone}</td>
-              <td>{p.duration}</td>
-              <td>{p.aiScore}%</td>
-              <td>{settings.defaultCurrency} {p.amount.toFixed(2)}</td>
-              <td><button>Approve</button> <button>Reject</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 function Analytics() {
   const { settings } = useContext(SettingsContext);
@@ -373,7 +334,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/zones" element={<Zones />} />
-                  <Route path="/ai-enforcement" element={<AIEnforcement />} />
+                  <Route path="/ai-enforcement" element={<PenaltyApprovals />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/hardware" element={<HardwareLogs />} />
                   <Route path="/permits" element={<PermitsPage />} />

@@ -1,13 +1,13 @@
 # OpenParking — Remaining Core Modules TODOs
 
 ## 1. User & Access (Identity & Permits)
-- [ ] **Role Management & JWT Auth:** Securing endpoints for Drivers vs. Admins.
-- [ ] **Disabled Parking Verification:** The Validator Agent workflow to check permit data against regulatory schemas to automatically approve/reject disabled bay requests.
+- [x] **Role Management & JWT Auth:** Securing endpoints for Drivers vs. Admins.
+- [x] **Disabled Parking Verification:** The Validator Agent workflow to check permit data against regulatory schemas to automatically approve/reject disabled bay requests.
 
 ## 2. Booking & Payment (Driver Journey)
-- [ ] **Reservation Logic & Session Lifecycle:** Real-time handling of when a driver books a slot, checks in (scans QR), and checks out.
-- [ ] **Dynamic Pricing & Payments:** The Action Agent which calculates surge-price multipliers based on current lot capacity and triggers payment transactions.
-- [ ] **Resend Email Integration:** Sending booking confirmations and receipts natively from the .NET Core API.
+- [x] **Reservation Logic & Session Lifecycle:** Real-time handling of when a driver books a slot, checks in (scans QR), and checks out.
+- [x] **Dynamic Pricing & Payments:** The Action Agent which calculates surge-price multipliers based on current lot capacity and triggers payment transactions.
+- [x] **Resend Email Integration:** Sending booking confirmations and receipts natively from the .NET Core API.
 
 ## 3. Enforcement & AI Orchestration (Audit & Automation)
 - [ ] **Overstay Detection Workflow:** A `.NET` BackgroundService that sweeps the database for expired sessions and triggers the LangGraph AI to propose a penalty.

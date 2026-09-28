@@ -6,6 +6,8 @@ using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
 using OpenParking.Infrastructure.Data;
 using OpenParking.Infrastructure.Services;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http;
 using Xunit;
 
 namespace OpenParking.Tests;
@@ -38,8 +40,10 @@ public class BookingServiceTests
         var emailMock = new Mock<IEmailService>();
         var notifierMock = new Mock<IRealtimeNotifier>();
         var loggerMock = new Mock<ILogger<BookingService>>();
+        var configMock = new Mock<IConfiguration>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
         var req = new CheckInRequest
         {
@@ -87,8 +91,10 @@ public class BookingServiceTests
         var emailMock = new Mock<IEmailService>();
         var notifierMock = new Mock<IRealtimeNotifier>();
         var loggerMock = new Mock<ILogger<BookingService>>();
+        var configMock = new Mock<IConfiguration>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
         var req = new CheckInRequest
         {
@@ -117,8 +123,15 @@ public class BookingServiceTests
         var emailMock = new Mock<IEmailService>();
         var notifierMock = new Mock<IRealtimeNotifier>();
         var loggerMock = new Mock<ILogger<BookingService>>();
+        var configMock = new Mock<IConfiguration>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object);
+        // Setup mock HttpClient to not throw during tests
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Loose);
+        var httpClient = new HttpClient(handlerMock.Object);
+        httpClientFactoryMock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
         var req = new CreateBookingRequest
         {
@@ -167,8 +180,10 @@ public class BookingServiceTests
         var emailMock = new Mock<IEmailService>();
         var notifierMock = new Mock<IRealtimeNotifier>();
         var loggerMock = new Mock<ILogger<BookingService>>();
+        var configMock = new Mock<IConfiguration>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
         var cancelled = await service.CancelBookingAsync(booking.Id, userId);
 
@@ -215,8 +230,10 @@ public class BookingServiceTests
         var emailMock = new Mock<IEmailService>();
         var notifierMock = new Mock<IRealtimeNotifier>();
         var loggerMock = new Mock<ILogger<BookingService>>();
+        var configMock = new Mock<IConfiguration>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
         var result = await service.CheckOutAsync(new CheckOutRequest { SessionId = session.Id }, "127.0.0.1");
 

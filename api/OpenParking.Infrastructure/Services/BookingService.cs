@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OpenParking.Core.Entities;
@@ -8,6 +10,13 @@ using OpenParking.Infrastructure.Extensions;
 
 namespace OpenParking.Infrastructure.Services;
 
+public class SurgePricingResult {
+    public decimal Multiplier { get; set; }
+    public decimal CalculatedRate { get; set; }
+    public decimal BaseRate { get; set; }
+    public string Rationale { get; set; } = string.Empty;
+}
+
 /// <summary>
 /// Booking &amp; Payment module service — Student 3 (Dev).
 /// Handles reservation logic, QR generation, session lifecycle, and ANPR simulator.
@@ -17,7 +26,9 @@ public class BookingService(
     AppDbContext db,
     IEmailService emailService,
     IRealtimeNotifier realtimeNotifier,
-    ILogger<BookingService> logger) : IBookingService
+    ILogger<BookingService> logger,
+    IConfiguration config,
+    IHttpClientFactory httpClientFactory) : IBookingService
 {
     // ── IParkingModule ─────────────────────────────────────────────────────
     public string ModuleName => "Booking & Payment";
@@ -86,12 +97,66 @@ public class BookingService(
 
         // 5. Load user (for disability discount)
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-        var hourlyRate   = slot.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
-        var durationHrs  = (decimal)(req.EndTime - req.StartTime).TotalHours;
-        var estimatedFee = Math.Round(hourlyRate * durationHrs, 2);
 
-        if (user?.HasDisabilityPermit == true)
-            estimatedFee = Math.Round(estimatedFee * (1m - DisabilityDiscount), 2);
+        // Check if pricing is globally enabled
+        var isEnabledSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.is_enabled");
+        bool pricingEnabled = isEnabledSetting == null || (bool.TryParse(isEnabledSetting.Value, out var b) ? b : true);
+
+        decimal estimatedFee = 0m;
+
+        if (pricingEnabled)
+        {
+            var hourlyRate   = slot.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
+
+            // Fetch dynamic surge multipliers from DB settings
+            var criticalSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.surge_critical_multiplier");
+            var highSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.surge_high_multiplier");
+            var modSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.surge_moderate_multiplier");
+
+            decimal criticalMult = criticalSetting != null && decimal.TryParse(criticalSetting.Value, out var c) ? c : 2.0m;
+            decimal highMult = highSetting != null && decimal.TryParse(highSetting.Value, out var h) ? h : 1.5m;
+            decimal modMult = modSetting != null && decimal.TryParse(modSetting.Value, out var m) ? m : 1.2m;
+
+            // Calculate dynamic surge multiplier
+            decimal multiplier = 1.0m;
+            try 
+            {
+                var totalSlots = await db.Slots.CountAsync(s => s.ZoneId == slot.ZoneId);
+                var occupiedSlots = await db.Slots.CountAsync(s => s.ZoneId == slot.ZoneId && s.Status != SlotStatus.Available);
+                var congestionScore = totalSlots > 0 ? (double)occupiedSlots / totalSlots : 0;
+                string congestionLevel = congestionScore >= 0.9 ? "CRITICAL" : (congestionScore >= 0.7 ? "HIGH" : "MODERATE");
+
+                var aiUrl = config["AI_SERVICE_URL"] ?? "http://localhost:8000";
+                var client = httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                
+                var payload = new {
+                    base_rate = hourlyRate,
+                    congestion_level = congestionLevel,
+                    velocity_score = 0.5,
+                    critical_mult = criticalMult,
+                    high_mult = highMult,
+                    mod_mult = modMult
+                };
+
+                var response = await client.PostAsJsonAsync($"{aiUrl}/ai/pricing/surge", payload);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<SurgePricingResult>();
+                    if (result != null) multiplier = result.Multiplier;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to fetch dynamic pricing from AI service. Falling back to base rate.");
+            }
+
+            var durationHrs  = (decimal)(req.EndTime - req.StartTime).TotalHours;
+            estimatedFee = Math.Round(hourlyRate * multiplier * durationHrs, 2);
+
+            if (user?.HasDisabilityPermit == true)
+                estimatedFee = Math.Round(estimatedFee * (1m - DisabilityDiscount), 2);
+        }
 
         // 6. Transactional booking + slot reservation
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -299,13 +364,13 @@ public class BookingService(
         if (request.SessionId.HasValue && request.SessionId.Value != Guid.Empty)
         {
             session = await db.ParkingSessions
-                .Include(s => s.Booking)
+                .Include(s => s.Booking).ThenInclude(b => b!.User)
                 .FirstOrDefaultAsync(s => s.Id == request.SessionId.Value);
         }
         else if (request.BookingId.HasValue && request.BookingId.Value != Guid.Empty)
         {
             session = await db.ParkingSessions
-                .Include(s => s.Booking)
+                .Include(s => s.Booking).ThenInclude(b => b!.User)
                 .Where(s => s.BookingId == request.BookingId.Value && s.Status == SessionStatus.Active)
                 .OrderByDescending(s => s.CheckInTime)
                 .FirstOrDefaultAsync();
@@ -323,23 +388,35 @@ public class BookingService(
         session.Status = SessionStatus.Completed;
 
         var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == session.SlotId);
-        var hourlyRate = slot?.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
 
-        // Fee calculation — 15-min billing blocks
-        var rawMinutes = (now - session.CheckInTime).TotalMinutes;
-        var billableBlocks = (decimal)Math.Ceiling(Math.Max(rawMinutes, (double)BillBlockMinutes) / (double)BillBlockMinutes);
-        var subtotal = Math.Round(billableBlocks * BillBlockMinutes / 60m * hourlyRate, 2);
+        var isEnabledSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.is_enabled");
+        bool pricingEnabled = isEnabledSetting == null || (bool.TryParse(isEnabledSetting.Value, out var b) ? b : true);
 
-        // Overstay penalty
+        var subtotal = 0m;
         decimal penaltyFee = 0m;
         int overstayMins = 0;
 
         if (session.Booking != null && now > session.Booking.EndTime)
         {
             overstayMins = (int)(now - session.Booking.EndTime).TotalMinutes;
-            var penaltyRate = await GetPenaltyRateAsync();
-            var extraHours = (decimal)Math.Ceiling(overstayMins / 60.0);
-            penaltyFee = Math.Round(extraHours * penaltyRate, 2);
+        }
+
+        if (pricingEnabled)
+        {
+            var hourlyRate = slot?.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
+
+            // Fee calculation — 15-min billing blocks
+            var rawMinutes = (now - session.CheckInTime).TotalMinutes;
+            var billableBlocks = (decimal)Math.Ceiling(Math.Max(rawMinutes, (double)BillBlockMinutes) / (double)BillBlockMinutes);
+            subtotal = Math.Round(billableBlocks * BillBlockMinutes / 60m * hourlyRate, 2);
+
+            // Overstay penalty
+            if (overstayMins > 0)
+            {
+                var penaltyRate = await GetPenaltyRateAsync();
+                var extraHours = (decimal)Math.Ceiling(overstayMins / 60.0);
+                penaltyFee = Math.Round(extraHours * penaltyRate, 2);
+            }
         }
 
         session.TotalFee = subtotal + penaltyFee;
@@ -363,6 +440,12 @@ public class BookingService(
 
         await db.SaveChangesAsync();
         session.Slot = slot;
+
+        // Send receipt email
+        if (session.Booking?.User != null)
+        {
+            await emailService.SendReceiptAsync(session.Booking.User.Email, session.Booking.User.FullName, session);
+        }
 
         logger.LogInformation("Check-out: session={SessionId} fee={Fee} penalty={Penalty} ip={Ip}",
             session.Id, session.TotalFee, penaltyFee, ipAddress);

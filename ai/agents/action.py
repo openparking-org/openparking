@@ -21,15 +21,16 @@ class ActionAgent:
         self.retriever = get_retriever()
         self.penalty_parser = JsonOutputParser(pydantic_object=PenaltyProposal)
 
-    async def propose_dynamic_pricing(self, base_rate: Decimal, congestion_level: str, velocity_score: float) -> Dict[str, Any]:
+    async def propose_dynamic_pricing(self, base_rate: Decimal, congestion_level: str, velocity_score: float, 
+                                      critical_mult: float = 2.0, high_mult: float = 1.5, mod_mult: float = 1.2) -> Dict[str, Any]:
         multiplier = Decimal("1.0")
 
         if congestion_level == "CRITICAL":
-            multiplier = Decimal("2.0")
+            multiplier = Decimal(str(critical_mult))
         elif congestion_level == "HIGH":
-            multiplier = Decimal("1.5")
+            multiplier = Decimal(str(high_mult))
         elif congestion_level == "MODERATE":
-            multiplier = Decimal("1.2")
+            multiplier = Decimal(str(mod_mult))
 
         if velocity_score > 0.7:
             multiplier += Decimal("0.2")

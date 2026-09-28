@@ -11,9 +11,13 @@ public static class SystemSettingsSeeder
         var defaultSettings = new List<SystemSetting>
         {
             // --- Existing settings (keys preserved to avoid breaking existing callers) ---
+            new() { Key = "pricing.is_enabled", Value = "true", Description = "Global toggle for whether the system charges for parking", Category = "Pricing" },
             new() { Key = "pricing.base_hourly_rate", Value = "5.00", Description = "Default hourly parking rate in USD", Category = "Pricing" },
             new() { Key = "pricing.peak_multiplier", Value = "1.50", Description = "Peak hours surge multiplier", Category = "Pricing" },
             new() { Key = "pricing.max_surge_multiplier", Value = "2.50", Description = "Maximum allowed dynamic surge multiplier", Category = "Pricing" },
+            new() { Key = "pricing.surge_critical_multiplier", Value = "2.00", Description = "Dynamic surge multiplier when capacity is CRITICAL", Category = "Pricing" },
+            new() { Key = "pricing.surge_high_multiplier", Value = "1.50", Description = "Dynamic surge multiplier when capacity is HIGH", Category = "Pricing" },
+            new() { Key = "pricing.surge_moderate_multiplier", Value = "1.20", Description = "Dynamic surge multiplier when capacity is MODERATE", Category = "Pricing" },
             // grace_period_mins / penalty_per_hour / max_penalty_cap already use these keys in python config_tools.py
             new() { Key = "overstay.grace_period_mins", Value = "15", Description = "Minutes after booking end before overstay triggers", Category = "Overstay" },
             new() { Key = "overstay.penalty_per_hour", Value = "25.00", Description = "Hourly penalty fee for overstaying", Category = "Overstay" },

@@ -2,6 +2,7 @@ import os
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+import httpx
 
 from routing.astar import astar
 from agents.planner import PlannerAgent, WorkflowState, ExecutionPlan
@@ -63,6 +64,44 @@ class ResumeWorkflowRequest(BaseModel):
 # API Endpoints
 # ---------------------------------------------------------
 
+# --- Hardware Simulation / Mock ANPR (Proxy to C# Backend) ---
+class SimulateEntryReq(BaseModel):
+    licensePlate: str
+    zoneCode: str
+
+class SimulateExitReq(BaseModel):
+    licensePlate: str
+
+@app.post("/simulate/entry")
+async def simulate_entry(req: SimulateEntryReq) -> dict:
+    backend_url = os.getenv("BACKEND_API_URL", "http://localhost:5000")
+    api_key = os.getenv("SIMULATION_API_KEY", "")
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{backend_url}/api/simulate/entry",
+            json=req.model_dump(),
+            headers={"X-Api-Key": api_key}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        return resp.json()
+
+@app.post("/simulate/exit")
+async def simulate_exit(req: SimulateExitReq) -> dict:
+    backend_url = os.getenv("BACKEND_API_URL", "http://localhost:5000")
+    api_key = os.getenv("SIMULATION_API_KEY", "")
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{backend_url}/api/simulate/exit",
+            json=req.model_dump(),
+            headers={"X-Api-Key": api_key}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        return resp.json()
+
 from fastapi.responses import RedirectResponse
 
 @app.get("/", include_in_schema=False)
@@ -115,6 +154,33 @@ async def validate_permit(req: PermitValidationRequest) -> dict:
     Returns a confidence score for the admin's permit review workflow.
     """
     return await validator.validate_permit(req.model_dump())
+
+# --- Action Agent (Booking & Payment) ---
+from agents.action import ActionAgent
+from decimal import Decimal
+action_agent = ActionAgent()
+
+class SurgePricingRequest(BaseModel):
+    base_rate: float
+    congestion_level: str
+    velocity_score: float
+    critical_mult: float = 2.0
+    high_mult: float = 1.5
+    mod_mult: float = 1.2
+
+@app.post("/ai/pricing/surge")
+async def calculate_surge_pricing(req: SurgePricingRequest) -> dict:
+    """
+    Calculates dynamic surge multipliers based on current lot capacity.
+    """
+    return await action_agent.propose_dynamic_pricing(
+        base_rate=Decimal(str(req.base_rate)),
+        congestion_level=req.congestion_level,
+        velocity_score=req.velocity_score,
+        critical_mult=req.critical_mult,
+        high_mult=req.high_mult,
+        mod_mult=req.mod_mult
+    )
 
 
 @app.get("/health", response_model=HealthResponse)
