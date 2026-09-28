@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/zone_service.dart';
 
-class IndoorMapScreen extends StatelessWidget {
+class IndoorMapScreen extends StatefulWidget {
   final String zoneId;
   final String? bookedSlotId;
 
@@ -11,61 +12,55 @@ class IndoorMapScreen extends StatelessWidget {
   });
 
   @override
+  State<IndoorMapScreen> createState() => _IndoorMapScreenState();
+}
+
+class _IndoorMapScreenState extends State<IndoorMapScreen> {
+  final ZoneService _zoneService = ZoneService();
+  List<ZoneModel> _zones = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchZones();
+  }
+
+  Future<void> _fetchZones() async {
+    final zones = await _zoneService.getZones();
+    if (mounted) {
+      setState(() {
+        _zones = zones;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Indoor Parking Blueprint'),
-        backgroundColor: const Color(0xFF111827),
+        title: const Text('Zone Discovery'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchZones,
+          ),
+        ],
       ),
-      backgroundColor: const Color(0xFF0B0F19),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 320,
-              height: 240,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF334155)),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Text(
-                    'Indoor Floor Blueprint Map\n(A* Pathfinding Overlay)',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    right: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text('Slot A-102', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                  )
-                ],
-              ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: _zones.length,
+              itemBuilder: (context, index) {
+                final zone = _zones[index];
+                return ListTile(
+                  title: Text(zone.name),
+                  subtitle: Text('Capacity: ${zone.capacity} | Available: ${zone.availableSlots}'),
+                  trailing: Text('Multiplier: ${zone.currentPriceMultiplier}x'),
+                );
+              },
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Navigating to Slot: ${bookedSlotId ?? "A-102"}',
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Follow green path arrows on the blueprint.',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

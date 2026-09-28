@@ -1,71 +1,28 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../services/session_service.dart';
+import '../../core/providers/session_provider.dart';
 import 'qr_scanner_screen.dart';
 
-class BookingScreen extends StatefulWidget {
+class BookingScreen extends ConsumerWidget {
   const BookingScreen({super.key});
-
-  @override
-  State<BookingScreen> createState() => _BookingScreenState();
-}
-
-class _BookingScreenState extends State<BookingScreen> {
-  final SessionService _sessionService = SessionService();
-  ParkingSessionModel? _activeSession;
-  bool _isLoading = false;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkActiveSession();
-    // Update live duration counter every 30 seconds
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted && _activeSession != null) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _checkActiveSession() async {
-    try {
-      final session = await _sessionService.getActiveSession();
-      if (mounted) {
-        setState(() {
-          _activeSession = session;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _openScanner({required QrScannerMode mode}) async {
+  Future<void> _openScanner(BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession, {required QrScannerMode mode}) async {
     final result = await Navigator.of(context).push<ParkingSessionModel>(
       MaterialPageRoute(
         builder: (context) => QrScannerScreen(
           mode: mode,
-          existingSessionId: _activeSession?.id,
-          existingBookingId: _activeSession?.bookingId,
+          existingSessionId: activeSession?.id,
+          existingBookingId: activeSession?.bookingId,
         ),
       ),
     );
 
-    if (result != null && mounted) {
-      setState(() {
+    if (result != null && context.mounted) {
+      ref.read(activeSessionProvider.notifier).updateSession(
+        result.status == 'Completed' ? null : result
+      );
         if (result.status == 'Completed') {
-          _activeSession = null;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Checked out of ${result.zoneName}! Total: \$${result.totalFee.toStringAsFixed(2)}'),
@@ -73,7 +30,6 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           );
         } else {
-          _activeSession = result;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Checked into ${result.zoneName} (${result.slotNumber})!'),
@@ -81,7 +37,6 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           );
         }
-      });
     }
   }
 
@@ -101,11 +56,14 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionAsyncValue = ref.watch(activeSessionProvider);
+    final activeSession = sessionAsyncValue.valueOrNull;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _activeSession != null ? 'Live Parking Session' : 'My Booking & Digital Pass',
+          activeSession != null ? 'Live Parking Session' : 'My Booking & Digital Pass',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
         ),
         backgroundColor: const Color(0xFF111827),
@@ -114,28 +72,32 @@ class _BookingScreenState extends State<BookingScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh Status',
-            onPressed: _checkActiveSession,
+            onPressed: () => ref.read(activeSessionProvider.notifier).startPolling(), // Manually trigger refresh
           ),
         ],
       ),
       backgroundColor: const Color(0xFF0B0F19),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _activeSession != null
-                  ? _buildActiveSessionView(_activeSession!)
-                  : _buildBookingPassView(),
-            ),
+      body: sessionAsyncValue.when(
+        data: (session) => SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: session != null
+              ? _buildActiveSessionView(context, ref, session)
+              : _buildBookingPassView(context, ref, null),
+        ),
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+          ),
+        ),
+        error: (error, _) => Center(
+          child: Text('Failed to load session: $error', style: const TextStyle(color: Colors.red)),
+        ),
+      ),
     );
   }
 
   /// Live Active Session Tracker (design.md §19.4)
-  Widget _buildActiveSessionView(ParkingSessionModel session) {
+  Widget _buildActiveSessionView(BuildContext context, WidgetRef ref, ParkingSessionModel session) {
     final estimatedFee = _estimateCurrentFee(session);
 
     return Column(
@@ -280,14 +242,14 @@ class _BookingScreenState extends State<BookingScreen> {
             'Scan Exit Gate QR to Check Out',
             style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          onPressed: () => _openScanner(mode: QrScannerMode.exitCheckOut),
+          onPressed: () => _openScanner(context, ref, session, mode: QrScannerMode.exitCheckOut),
         ),
       ],
     );
   }
 
   /// Booking Pass View with QR code and Scan to Enter Button
-  Widget _buildBookingPassView() {
+  Widget _buildBookingPassView(BuildContext context, WidgetRef ref, ParkingSessionModel? activeSession) {
     return Column(
       children: [
         // Digital Pass Card
@@ -374,7 +336,7 @@ class _BookingScreenState extends State<BookingScreen> {
             'Scan Gate QR to Enter',
             style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          onPressed: () => _openScanner(mode: QrScannerMode.entryCheckIn),
+          onPressed: () => _openScanner(context, ref, activeSession, mode: QrScannerMode.entryCheckIn),
         ),
       ],
     );

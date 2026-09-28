@@ -4,17 +4,23 @@ import 'modules/space_availability/indoor_map_screen.dart';
 import 'modules/booking/booking_screen.dart';
 import 'modules/user_access/permit_upload_screen.dart';
 import 'modules/enforcement/penalties_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/router.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env").catchError((_) {});
   runApp(const ProviderScope(child: OpenParkingApp()));
 }
 
-class OpenParkingApp extends StatelessWidget {
+class OpenParkingApp extends ConsumerWidget {
   const OpenParkingApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'OpenParking',
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -26,7 +32,7 @@ class OpenParkingApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainNavigationScreen(),
+      routerConfig: router,
     );
   }
 }
