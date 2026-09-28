@@ -1,6 +1,9 @@
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
+
 from agents.validator import ValidatorAgent
+
 
 @pytest.mark.asyncio
 async def test_validator_valid_permit():

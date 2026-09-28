@@ -1,9 +1,12 @@
-import pytest
 from decimal import Decimal
-from routing.astar import astar
-from agents.validator import ValidatorAgent
-from agents.analyzer import AnalyzerAgent
+
+import pytest
+
 from agents.action import ActionAgent
+from agents.analyzer import AnalyzerAgent
+from agents.validator import ValidatorAgent
+from routing.astar import astar
+
 
 @pytest.mark.asyncio
 async def test_astar_pathfinding():

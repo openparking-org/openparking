@@ -1,10 +1,10 @@
+import logging
 import os
 import random
-import logging
+
 import httpx
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 class DetectedSlot(BaseModel):
     slot_code: str
     confidence: float
-    bounds: List[List[float]]  # Array of 4 [lat, lng] coordinates forming the polygon
+    bounds: list[list[float]]  # Array of 4 [lat, lng] coordinates forming the polygon
     type: str = "Standard"
 
 class CartographerResult(BaseModel):
-    detected_slots: List[DetectedSlot]
+    detected_slots: list[DetectedSlot]
     total_detected: int
     algorithm: str
-    satellite_image_path: Optional[str] = None
+    satellite_image_path: str | None = None
 
 class CartographerAgent:
     """
@@ -28,7 +28,7 @@ class CartographerAgent:
     real-world GPS parking bay polygons from high-resolution satellite/aerial imagery.
     """
 
-    async def _fetch_satellite_image(self, center_lat: float, center_lng: float) -> Optional[str]:
+    async def _fetch_satellite_image(self, center_lat: float, center_lng: float) -> str | None:
         api_key = os.getenv("VITE_GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_MAPS_API_KEY")
         if not api_key:
             logger.warning("No Google Maps API key found. Skipping real satellite image download.")
@@ -80,7 +80,7 @@ class CartographerAgent:
         # 2. "Run YOLO inference" (Simulated by geospatial subdivision)
         logger.info(f"Running YOLOv8 inference on {image_path or 'mock image'}")
         
-        detected: List[DetectedSlot] = []
+        detected: list[DetectedSlot] = []
         d_lat = (north - south) / max(rows, 1)
         d_lng = (east - west) / max(cols, 1)
 

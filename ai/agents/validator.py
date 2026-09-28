@@ -1,14 +1,16 @@
-from decimal import Decimal
-from typing import Dict, Any
 from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any
+
 from tools.config_tools import get_config
+
 
 class ValidatorAgent:
     """
     Student 1 Ownership: User & Access slice.
     Checks regulatory schemas, validates permit documents, and enforces config caps.
     """
-    async def validate_permit(self, permit_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_permit(self, permit_data: dict[str, Any]) -> dict[str, Any]:
         permit_number = permit_data.get("permit_number", "")
         expiry_date_str = permit_data.get("expiry_date", "")
         jurisdiction = permit_data.get("jurisdiction", "")
@@ -58,7 +60,7 @@ class ValidatorAgent:
             }
         }
 
-    async def validate_penalty_cap(self, proposed_penalty: Decimal) -> Dict[str, Any]:
+    async def validate_penalty_cap(self, proposed_penalty: Decimal) -> dict[str, Any]:
         cap_str = await get_config("overstay.max_penalty_cap", default="150.00")
         max_penalty = Decimal(cap_str)
         if proposed_penalty > max_penalty:

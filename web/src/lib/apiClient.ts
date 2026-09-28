@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/authStore';
-import { API_BASE_URL } from '../config';
+import { config } from '../config';
+const API_BASE_URL = config.apiUrl;
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {

@@ -1,6 +1,9 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock
+
 from agents.cartographer import CartographerAgent
+
 
 @pytest.mark.asyncio
 async def test_cartographer_detect_slots_no_key():
@@ -36,17 +39,16 @@ async def test_cartographer_detect_slots_with_key():
             mock_client.get.return_value = mock_response
             mock_client_class.return_value.__aenter__.return_value = mock_client
             
-            with patch("builtins.open") as mock_open:
-                with patch("os.makedirs"):
-                    result = await cartographer.detect_slots(
-                        north=37.7754,
-                        south=37.7744,
-                        east=-122.4188,
-                        west=-122.4200,
-                        cols=1,
-                        rows=1,
-                        slot_prefix="MOCK"
-                    )
-                    assert result.total_detected == 1
-                    assert result.satellite_image_path is not None
-                    assert "satellite_" in result.satellite_image_path
+            with patch("builtins.open") as mock_open, patch("os.makedirs"):
+                result = await cartographer.detect_slots(
+                    north=37.7754,
+                    south=37.7744,
+                    east=-122.4188,
+                    west=-122.4200,
+                    cols=1,
+                    rows=1,
+                    slot_prefix="MOCK"
+                )
+                assert result.total_detected == 1
+                assert result.satellite_image_path is not None
+                assert "satellite_" in result.satellite_image_path

@@ -1,6 +1,8 @@
 import os
+
 import pytest
-from agents.planner import PlannerAgent, ExecutionPlan, WorkflowState
+
+from agents.planner import PlannerAgent
 
 # Ensure we use the mock implementations
 os.environ["CF_AI_MODE"] = "mock"

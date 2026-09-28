@@ -1,5 +1,5 @@
-import pytest
 from routing.astar import astar
+
 
 def test_astar_simple_path():
     graph = {

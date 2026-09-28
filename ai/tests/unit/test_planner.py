@@ -1,6 +1,8 @@
 import pytest
+
 from agents.planner import PlannerAgent, StepStatus
 from tools.workflow_persistence import clear_local_workflows, get_local_workflow
+
 
 @pytest.fixture(autouse=True)
 def clean_workflow_store():

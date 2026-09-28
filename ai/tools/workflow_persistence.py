@@ -1,7 +1,8 @@
-import os
 import json
 import logging
-from typing import Dict, Any, Optional
+import os
+from typing import Any
+
 import httpx
 
 logger = logging.getLogger("workflow_persistence")
@@ -10,15 +11,15 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000").rstrip("/")
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "mock-internal-secret")
 
 # In-memory store for unit tests, offline operation, and mock execution mode
-_local_workflows: Dict[str, Dict[str, Any]] = {}
+_local_workflows: dict[str, dict[str, Any]] = {}
 
 def clear_local_workflows() -> None:
     _local_workflows.clear()
 
-def get_local_workflow(workflow_id: str) -> Optional[Dict[str, Any]]:
+def get_local_workflow(workflow_id: str) -> dict[str, Any] | None:
     return _local_workflows.get(workflow_id)
 
-async def persist_workflow(workflow_data: Dict[str, Any]) -> Dict[str, Any]:
+async def persist_workflow(workflow_data: dict[str, Any]) -> dict[str, Any]:
     """
     Saves or registers an AgentWorkflowRun record.
     Integrates with ASP.NET Core /api/agent/workflows when accessible,
@@ -67,7 +68,7 @@ async def persist_workflow(workflow_data: Dict[str, Any]) -> Dict[str, Any]:
 
     return _local_workflows[workflow_id]
 
-async def update_workflow_progress(workflow_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+async def update_workflow_progress(workflow_id: str, updates: dict[str, Any]) -> dict[str, Any]:
     """
     Updates the execution progress, step results, and status of an existing workflow.
     """
@@ -110,7 +111,7 @@ async def update_workflow_progress(workflow_id: str, updates: Dict[str, Any]) ->
 
     return _local_workflows.get(workflow_id, updates)
 
-async def fetch_workflow(workflow_id: str) -> Optional[Dict[str, Any]]:
+async def fetch_workflow(workflow_id: str) -> dict[str, Any] | None:
     """
     Fetches the latest workflow state from ASP.NET Core or in-memory fallback.
     """

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../lib/apiClient';
-import { CheckCircle, XCircle, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, ShieldCheck } from 'lucide-react';
 
 interface Permit {
   id: string;

@@ -47,6 +47,7 @@ export function PenaltyApprovals() {
 
   useEffect(() => {
     fetchWorkflows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleSelect = async (id: string) => {

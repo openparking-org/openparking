@@ -1,6 +1,7 @@
 import heapq
-from typing import Optional, Dict, List, Any
 from dataclasses import dataclass, field
+from typing import Any
+
 
 @dataclass(order=True)
 class _Node:
@@ -8,10 +9,10 @@ class _Node:
     waypoint_id: str = field(compare=False)
 
 def astar(
-    graph: Dict[str, Dict[str, Any]],   # { id: { x, y, neighbors: [id] } }
+    graph: dict[str, dict[str, Any]],   # { id: { x, y, neighbors: [id] } }
     start_id: str,                      # entry waypoint ID
     goal_id: str,                       # nearest waypoint to the booked slot
-) -> Optional[List[str]]:
+) -> list[str] | None:
     """
     Returns an ordered list of waypoint IDs from start to goal,
     or None if no path exists.
@@ -20,11 +21,11 @@ def astar(
     if start_id not in graph or goal_id not in graph:
         return None
 
-    open_set: List[_Node] = []
+    open_set: list[_Node] = []
     heapq.heappush(open_set, _Node(0.0, start_id))
 
-    came_from: Dict[str, str] = {}
-    g_score: Dict[str, float] = {start_id: 0.0}
+    came_from: dict[str, str] = {}
+    g_score: dict[str, float] = {start_id: 0.0}
 
     def h(node_id: str) -> float:
         """Euclidean distance heuristic."""

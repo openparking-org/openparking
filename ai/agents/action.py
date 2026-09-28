@@ -1,10 +1,13 @@
 from decimal import Decimal
-from typing import Dict, Any
-from pydantic import BaseModel, Field
-from langchain_core.prompts import PromptTemplate
+from typing import Any
+
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
+
 from tools.llm import get_llm
 from tools.rag import get_retriever
+
 
 class PenaltyProposal(BaseModel):
     billable_hours: int = Field(description="Calculated billable hours based on overstay duration and grace period")
@@ -22,7 +25,7 @@ class ActionAgent:
         self.penalty_parser = JsonOutputParser(pydantic_object=PenaltyProposal)
 
     async def propose_dynamic_pricing(self, base_rate: Decimal, congestion_level: str, velocity_score: float, 
-                                      critical_mult: float = 2.0, high_mult: float = 1.5, mod_mult: float = 1.2) -> Dict[str, Any]:
+                                      critical_mult: float = 2.0, high_mult: float = 1.5, mod_mult: float = 1.2) -> dict[str, Any]:
         multiplier = Decimal("1.0")
 
         if congestion_level == "CRITICAL":
@@ -43,7 +46,7 @@ class ActionAgent:
             "rationale": f"Congestion is {congestion_level} with velocity {velocity_score}"
         }
 
-    async def propose_overstay_penalty(self, overstay_minutes: int, base_penalty_per_hour: Decimal, context_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def propose_overstay_penalty(self, overstay_minutes: int, base_penalty_per_hour: Decimal, context_data: dict[str, Any] = None) -> dict[str, Any]:
         if context_data is None:
             context_data = {}
             

@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { SlotMappingEngine } from './modules/space-availability/SlotMappingEngine';
 import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -20,6 +20,7 @@ interface SettingsContextType {
   updateSettings: (newSettings: Partial<Settings>) => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const SettingsContext = createContext<SettingsContextType>({
   settings: { defaultCurrency: 'USD', aiTolerance: 85, baseFine: 50 },
   updateSettings: () => {},

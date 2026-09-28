@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface AuthUser {
@@ -17,18 +17,19 @@ interface AuthState {
   isAuthenticated: () => boolean;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      token: null,
-      user: null,
-      setAuth: (token, user) => set({ token, user }),
-      logout: () => set({ token: null, user: null }),
-      isAuthenticated: () => !!get().token,
-    }),
-    { 
-      name: 'openparking-auth',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
+type AuthStore = AuthState;
+
+const authStoreCreator: StateCreator<AuthStore> = (set, get) => ({
+  token: null,
+  user: null,
+  setAuth: (token: string, user: AuthUser) => set({ token, user }),
+  logout: () => set({ token: null, user: null }),
+  isAuthenticated: () => !!get().token,
+});
+
+export const useAuthStore = create<AuthStore>()(
+  persist(authStoreCreator, { 
+    name: 'openparking-auth',
+    storage: createJSONStorage(() => localStorage),
+  })
 );

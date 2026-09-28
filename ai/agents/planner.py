@@ -1,16 +1,20 @@
 import json
 import logging
-from decimal import Decimal
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
-from typing import Dict, Any, TypedDict, Optional, List
+from typing import Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
-from agents.validator import ValidatorAgent
-from agents.analyzer import AnalyzerAgent
 from agents.action import ActionAgent
-from tools.workflow_persistence import persist_workflow, update_workflow_progress, fetch_workflow
-from langgraph.graph import StateGraph, START, END
+from agents.analyzer import AnalyzerAgent
+from agents.validator import ValidatorAgent
+from tools.workflow_persistence import (
+    fetch_workflow,
+    update_workflow_progress,
+)
 
 logger = logging.getLogger("planner_agent")
 
@@ -30,32 +34,32 @@ class PlanStep(BaseModel):
     requires_validation: bool = False
     requires_approval: bool = False
     status: StepStatus = StepStatus.PENDING
-    input_parameters: Dict[str, Any] = Field(default_factory=dict)
-    output: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    input_parameters: dict[str, Any] = Field(default_factory=dict)
+    output: dict[str, Any] | None = None
+    error: str | None = None
 
 class ExecutionPlan(BaseModel):
     workflow_id: str
     workflow_type: str                         # OVERSTAY_ENFORCEMENT | DYNAMIC_PRICING | PERMIT_VALIDATION
     objective: str
-    steps: List[PlanStep]
+    steps: list[PlanStep]
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class WorkflowState(TypedDict):
     workflow_id: str
     workflow_type: str                         # DYNAMIC_PRICING | OVERSTAY_ENFORCEMENT | PERMIT_VALIDATION
-    zone_id: Optional[str]
-    session_id: Optional[str]
-    input_data: Dict[str, Any]
-    analysis: Optional[Dict[str, Any]]
-    action_proposal: Optional[Dict[str, Any]]
-    validation: Optional[Dict[str, Any]]
-    final_decision: Optional[str]              # PENDING_APPROVAL | AWAITING_APPROVAL | AUTO_APPROVED | APPROVED | REJECTED | COMPLETED
-    reason: Optional[str]
-    plan: Optional[Dict[str, Any]]
-    current_step: Optional[str]
-    step_results: Optional[Dict[str, Any]]
-    status: Optional[str]
+    zone_id: str | None
+    session_id: str | None
+    input_data: dict[str, Any]
+    analysis: dict[str, Any] | None
+    action_proposal: dict[str, Any] | None
+    validation: dict[str, Any] | None
+    final_decision: str | None              # PENDING_APPROVAL | AWAITING_APPROVAL | AUTO_APPROVED | APPROVED | REJECTED | COMPLETED
+    reason: str | None
+    plan: dict[str, Any] | None
+    current_step: str | None
+    step_results: dict[str, Any] | None
+    status: str | None
 
 class PlannerAgent:
     """
@@ -161,13 +165,13 @@ class PlannerAgent:
         workflow_id: str,
         workflow_type: str,
         objective: str,
-        input_data: Dict[str, Any]
+        input_data: dict[str, Any]
     ) -> ExecutionPlan:
         """
         Decomposes domain objective into structured, ordered PlanStep items.
         (PART 2 — STRUCTURED PLAN)
         """
-        steps: List[PlanStep] = []
+        steps: list[PlanStep] = []
 
         if workflow_type == "OVERSTAY_ENFORCEMENT":
             overstay_mins = input_data.get("overstay_minutes", 0)
@@ -285,7 +289,7 @@ class PlannerAgent:
     async def execute_plan(
         self,
         plan: ExecutionPlan,
-        state: Optional[WorkflowState] = None
+        state: WorkflowState | None = None
     ) -> WorkflowState:
         """
         Orchestrates execution using LangGraph StateGraph engine.
@@ -339,9 +343,9 @@ class PlannerAgent:
         self,
         workflow_id: str,
         decision: str = "APPROVE",
-        approved_by: Optional[str] = None,
-        reason: Optional[str] = None,
-        plan: Optional[ExecutionPlan] = None
+        approved_by: str | None = None,
+        reason: str | None = None,
+        plan: ExecutionPlan | None = None
     ) -> WorkflowState:
         """
         Resumes a paused workflow run after human administrator approval/rejection.
@@ -411,7 +415,7 @@ class PlannerAgent:
         step: PlanStep,
         state: WorkflowState,
         plan: ExecutionPlan
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Dispatches an individual plan step to the responsible sub-agent."""
         if step.agent == "ACTION":
             if step.action == "propose_overstay_penalty":

@@ -1,8 +1,11 @@
-from typing import Dict, Any
-from pydantic import BaseModel, Field
-from langchain_core.prompts import PromptTemplate
+from typing import Any
+
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
+
 from tools.llm import get_llm
+
 
 class OccupancyAnalysis(BaseModel):
     occupancy_rate: float = Field(description="The calculated occupancy rate as a float between 0 and 1")
@@ -21,7 +24,7 @@ class AnalyzerAgent:
         self.llm = get_llm()
         self.parser = JsonOutputParser(pydantic_object=OccupancyAnalysis)
 
-    async def analyze_zone_occupancy(self, total_slots: int, occupied_slots: int, recent_arrivals: int) -> Dict[str, Any]:
+    async def analyze_zone_occupancy(self, total_slots: int, occupied_slots: int, recent_arrivals: int) -> dict[str, Any]:
         # Handle edge case where there are no slots to avoid division by zero in LLM logic
         if total_slots <= 0:
             return {

@@ -1,11 +1,12 @@
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-import httpx
 
+from agents.planner import ExecutionPlan, PlannerAgent, WorkflowState
 from routing.astar import astar
-from agents.planner import PlannerAgent, WorkflowState, ExecutionPlan
 from tools.workflow_persistence import fetch_workflow
 
 app = FastAPI(
@@ -26,7 +27,7 @@ class HealthResponse(BaseModel):
     cf_ai_mode: str
 
 class RoutingRequest(BaseModel):
-    graph: Dict[str, Dict[str, Any]]
+    graph: dict[str, dict[str, Any]]
     entryWaypointId: str
     slotWaypointId: str
 
@@ -35,30 +36,30 @@ class Coordinate(BaseModel):
     y: float
 
 class RoutingResponse(BaseModel):
-    path: List[str]
-    coordinates: List[Coordinate]
+    path: list[str]
+    coordinates: list[Coordinate]
     distancePx: float
 
 class PlanRequest(BaseModel):
     workflow_id: str
     workflow_type: str
-    objective: Optional[str] = None
-    input_data: Dict[str, Any] = Field(default_factory=dict)
+    objective: str | None = None
+    input_data: dict[str, Any] = Field(default_factory=dict)
 
 class WorkflowRequest(BaseModel):
     workflow_id: str
     workflow_type: str
-    objective: Optional[str] = None
-    zone_id: Optional[str] = None
-    session_id: Optional[str] = None
-    input_data: Dict[str, Any] = Field(default_factory=dict)
-    plan: Optional[Dict[str, Any]] = None
+    objective: str | None = None
+    zone_id: str | None = None
+    session_id: str | None = None
+    input_data: dict[str, Any] = Field(default_factory=dict)
+    plan: dict[str, Any] | None = None
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: str
     decision: str = "APPROVE"
-    approved_by: Optional[str] = None
-    reason: Optional[str] = None
+    approved_by: str | None = None
+    reason: str | None = None
 
 # ---------------------------------------------------------
 # API Endpoints
@@ -104,6 +105,7 @@ async def simulate_exit(req: SimulateExitReq) -> dict:
 
 from fastapi.responses import RedirectResponse
 
+
 @app.get("/", include_in_schema=False)
 async def root():
     """Redirects the root URL to the Swagger UI docs."""
@@ -139,13 +141,14 @@ async def detect_slots(req: CartographerRequest) -> CartographerResult:
     )
 
 from agents.validator import ValidatorAgent
+
 validator = ValidatorAgent()
 
 class PermitValidationRequest(BaseModel):
     permit_number: str
     expiry_date: str
     jurisdiction: str
-    document_image_url: Optional[str] = None
+    document_image_url: str | None = None
 
 @app.post("/ai/permits/validate")
 async def validate_permit(req: PermitValidationRequest) -> dict:
@@ -156,8 +159,10 @@ async def validate_permit(req: PermitValidationRequest) -> dict:
     return await validator.validate_permit(req.model_dump())
 
 # --- Action Agent (Booking & Payment) ---
-from agents.action import ActionAgent
 from decimal import Decimal
+
+from agents.action import ActionAgent
+
 action_agent = ActionAgent()
 
 class SurgePricingRequest(BaseModel):
@@ -197,7 +202,7 @@ async def calculate_route(req: RoutingRequest) -> RoutingResponse:
     if not path:
         raise HTTPException(status_code=404, detail="No navigable path found between specified waypoints")
 
-    coordinates: List[Coordinate] = []
+    coordinates: list[Coordinate] = []
     total_dist = 0.0
     for i, wp_id in enumerate(path):
         wp = req.graph[wp_id]
@@ -214,8 +219,8 @@ async def calculate_route(req: RoutingRequest) -> RoutingResponse:
         distancePx=round(total_dist, 2)
     )
 
-@app.post("/workflows/plan", response_model=Dict[str, Any])
-async def create_workflow_plan(req: PlanRequest) -> Dict[str, Any]:
+@app.post("/workflows/plan", response_model=dict[str, Any])
+async def create_workflow_plan(req: PlanRequest) -> dict[str, Any]:
     """Generates a structured multi-step ExecutionPlan for an objective."""
     try:
         plan = planner.create_plan(
@@ -229,7 +234,7 @@ async def create_workflow_plan(req: PlanRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/workflows/execute")
-async def execute_workflow(req: WorkflowRequest) -> Dict[str, Any]:
+async def execute_workflow(req: WorkflowRequest) -> dict[str, Any]:
     """
     Executes a multi-agent workflow run. Decomposes into a structured ExecutionPlan,
     executes steps, validates outputs, and pauses if human approval is required.
@@ -269,7 +274,7 @@ async def execute_workflow(req: WorkflowRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/workflows/resume")
-async def resume_workflow(req: ResumeWorkflowRequest) -> Dict[str, Any]:
+async def resume_workflow(req: ResumeWorkflowRequest) -> dict[str, Any]:
     """
     Resumes a paused workflow run after human administrator approval/rejection.
     (design.md §8.3)
@@ -286,7 +291,7 @@ async def resume_workflow(req: ResumeWorkflowRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/workflows/{workflow_id}")
-async def get_workflow_status(workflow_id: str) -> Dict[str, Any]:
+async def get_workflow_status(workflow_id: str) -> dict[str, Any]:
     """Fetches the latest execution state and step results of a workflow run."""
     wf = await fetch_workflow(workflow_id)
     if not wf:
