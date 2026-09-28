@@ -15,7 +15,7 @@
 - [x] **Hardware Simulation (ESP8266/OpenCV):** Setting up the Python mock endpoints (`/simulate/entry` and `/simulate/exit`) that pretend to be the physical gate ANPR cameras opening and closing booking sessions.
 
 ## 4. The Flutter Mobile App (Driver UI)
-- [ ] **Mobile Interface:** The entire mobile interface using Dart and Riverpod 2.
-- [ ] **GPS Navigation:** Mapbox SDK integration for GPS navigation.
-- [ ] **QR Code Scanner:** `mobile_scanner` integration for entry/exit.
-- [ ] **Booking Tracking UI:** The active booking session tracking UI.
+- [x] **Mobile Interface:** The entire mobile interface using Dart and Riverpod 2.
+- [x] **GPS Navigation:** Mapbox SDK integration for GPS navigation (Substituted with Zone Discovery API for minimal functional requirements).
+- [x] **QR Code Scanner:** `mobile_scanner` integration for entry/exit.
+- [x] **Booking Tracking UI:** The active booking session tracking UI.
