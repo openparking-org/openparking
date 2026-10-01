@@ -19,7 +19,7 @@ def get_llm() -> BaseChatModel:
         from langchain_core.messages import BaseMessage
 
         class SmartMockLLM(SimpleChatModel):
-            def _call(self, messages: list[BaseMessage], stop: list[str] | None = None, **kwargs: Any) -> str:
+            def _call(self, messages: list[BaseMessage], stop: list[str] | None = None, run_manager: Any | None = None, **kwargs: Any) -> str:
                 text = " ".join([m.content for m in messages if isinstance(m.content, str)])
                 
                 # Check for analyzer prompt
@@ -67,7 +67,7 @@ def get_llm() -> BaseChatModel:
     if not account_id or not api_token:
         raise ValueError("CF_ACCOUNT_ID and CF_AI_TOKEN must be set when CF_AI_MODE is not 'mock'")
 
-    return ChatCloudflareWorkersAI(
+    return ChatCloudflareWorkersAI( # type: ignore[call-arg]
         account_id=account_id,
         api_token=api_token,
         model="@cf/meta/llama-3.1-8b-instruct",

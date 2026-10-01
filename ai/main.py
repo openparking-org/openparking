@@ -269,7 +269,7 @@ async def execute_workflow(req: WorkflowRequest) -> dict[str, Any]:
         }
 
         result = await planner.execute_plan(plan, state)
-        return result
+        return dict(result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -286,7 +286,7 @@ async def resume_workflow(req: ResumeWorkflowRequest) -> dict[str, Any]:
             approved_by=req.approved_by,
             reason=req.reason
         )
-        return result
+        return dict(result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

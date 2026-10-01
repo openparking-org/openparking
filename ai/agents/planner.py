@@ -127,8 +127,12 @@ class PlannerAgent:
     async def _process_current_step(self, state: WorkflowState, expected_agent: str) -> WorkflowState:
         """Executes the current pending step for the designated agent."""
         plan_dict = state.get("plan")
+        if not plan_dict:
+            raise ValueError("Workflow state must contain a plan")
         plan = ExecutionPlan(**plan_dict)
         
+        if state.get("step_results") is None:
+            state["step_results"] = {}
         for step in plan.steps:
             if step.status in (StepStatus.PENDING, StepStatus.AWAITING_APPROVAL) and step.agent == expected_agent:
                 step.status = StepStatus.RUNNING
@@ -482,14 +486,12 @@ class PlannerAgent:
                 if plan.workflow_type == "OVERSTAY_ENFORCEMENT":
                     validation = state.get("validation") or {}
                     proposal = state.get("action_proposal") or {}
-                    proposed_amount = float(proposal.get("proposed_amount", 0.0))
-
                     if not validation.get("valid", True):
                         return {
                             "requires_human_approval": True,
                             "reason": f"Requires manual review: {validation.get('reason')}"
                         }
-                    elif proposed_amount > 100.0:
+                    elif float(proposal.get("proposed_amount", 0.0)) > 100.0:
                         return {
                             "requires_human_approval": True,
                             "reason": "Penalty exceeds auto-approval threshold ($100.00)"
