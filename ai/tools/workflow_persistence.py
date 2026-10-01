@@ -72,11 +72,12 @@ async def update_workflow_progress(workflow_id: str, updates: dict[str, Any]) ->
     """
     Updates the execution progress, step results, and status of an existing workflow.
     """
-    if workflow_id in _local_workflows:
-        _local_workflows[workflow_id].update(updates)
+    if workflow_id not in _local_workflows:
+        _local_workflows[workflow_id] = {}
+    _local_workflows[workflow_id].update(updates)
 
     if os.getenv("CF_AI_MODE") == "mock" or os.getenv("ENVIRONMENT") == "testing":
-        return _local_workflows.get(workflow_id, updates)
+        return _local_workflows[workflow_id]
 
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
