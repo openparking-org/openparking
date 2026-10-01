@@ -1,7 +1,6 @@
 import os
 
-# from langchain_cloudflare import CloudflareAISearchRetriever
-CloudflareAISearchRetriever = None
+from langchain_cloudflare import CloudflareAISearchRetriever
 
 def get_retriever():
     """
