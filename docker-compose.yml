@@ -14,8 +14,6 @@ services:
       - AI_SERVICE_URL=http://ai:8000
       - REDIS_URL=${REDIS_URL:-redis:6379,abortConnect=false}
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -30,9 +28,6 @@ services:
       - CF_AI_TOKEN=${CF_AI_TOKEN:-mock-token}
       - CF_AI_MODE=${CF_AI_MODE:-mock}
       - DATABASE_URL=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}
-    depends_on:
-      db:
-        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -44,21 +39,3 @@ services:
       timeout: 5s
       retries: 5
 
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: openparking
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d openparking"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pgdata:
