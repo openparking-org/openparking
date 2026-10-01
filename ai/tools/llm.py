@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -12,8 +13,46 @@ def get_llm() -> BaseChatModel:
     cf_mode = os.getenv("CF_AI_MODE", "mock")
     
     if cf_mode == "mock":
-        from langchain_core.language_models import FakeListChatModel
-        return FakeListChatModel(responses=["Mock response for testing"])
+        from langchain_core.language_models.chat_models import SimpleChatModel
+        from langchain_core.messages import BaseMessage
+        import json
+
+        class SmartMockLLM(SimpleChatModel):
+            def _call(self, messages: list[BaseMessage], stop: list[str] | None = None, **kwargs: Any) -> str:
+                text = " ".join([m.content for m in messages if isinstance(m.content, str)])
+                
+                # Check for analyzer prompt
+                if "Recent Arrivals" in text:
+                    return json.dumps({
+                        "occupancy_rate": 0.95,
+                        "velocity_score": 0.8,
+                        "congestion_level": "CRITICAL",
+                        "requires_surge_pricing": True
+                    })
+                
+                # Check for action penalty prompt
+                if "Overstay duration" in text:
+                    # Look for duration
+                    if "300" in text:
+                        return json.dumps({
+                            "billable_hours": 5,
+                            "proposed_amount": 125.00,
+                            "reason": "Penalty exceeds auto-approval threshold"
+                        })
+                    else: # short overstay
+                        return json.dumps({
+                            "billable_hours": 1,
+                            "proposed_amount": 25.00,
+                            "reason": "Standard minimum penalty applied"
+                        })
+                
+                return '{"status": "mocked", "valid": true}'
+                
+            @property
+            def _llm_type(self) -> str:
+                return "smart_mock"
+
+        return SmartMockLLM()
 
     # Import the Cloudflare integration
     from langchain_cloudflare import ChatCloudflareWorkersAI
