@@ -2,7 +2,7 @@ import os
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from agents.planner import ExecutionPlan, PlannerAgent, WorkflowState
@@ -14,6 +14,23 @@ app = FastAPI(
     description="Multi-Agent LangGraph Orchestration & A* Pathfinding Service",
     version="1.0.0"
 )
+
+@app.middleware("http")
+async def verify_api_key(request: Request, call_next):
+    if request.url.path in ["/docs", "/openapi.json", "/health", "/"]:
+        return await call_next(request)
+        
+    expected_api_key = os.getenv("API_KEY")
+    if expected_api_key:
+        api_key = request.headers.get("X-Api-Key")
+        if api_key != expected_api_key:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or missing API Key"}
+            )
+            
+    return await call_next(request)
 
 planner = PlannerAgent()
 
