@@ -93,8 +93,7 @@ class PlannerAgent:
         workflow.add_conditional_edges("PLANNER", self._route_step)
 
         # Compile with a memory saver (or persist manually as we do)
-        # We interrupt execution before the Action step if it requires approval
-        return workflow.compile(interrupt_before=["ACTION"])
+        return workflow.compile()
 
     def _route_step(self, state: WorkflowState) -> str:
         """Determines which agent node to run next based on the plan."""
@@ -102,13 +101,13 @@ class PlannerAgent:
         if not plan_dict or "steps" not in plan_dict:
             return END
             
+        if state.get("status") in ("PENDING_APPROVAL", "FAILED", "REJECTED"):
+            return END
+            
         plan = ExecutionPlan(**plan_dict)
         
         for step in plan.steps:
             if step.status in (StepStatus.PENDING, StepStatus.AWAITING_APPROVAL):
-                # If it's awaiting approval, but we are running routing, it means we paused.
-                # If we resumed and it's still awaiting, we should route it to Action or planner to finalize?
-                # Actually, our manual loop handled this nicely. We'll adapt it.
                 return step.agent
                 
         return END
@@ -131,7 +130,7 @@ class PlannerAgent:
         plan = ExecutionPlan(**plan_dict)
         
         for step in plan.steps:
-            if step.status == StepStatus.PENDING and step.agent == expected_agent:
+            if step.status in (StepStatus.PENDING, StepStatus.AWAITING_APPROVAL) and step.agent == expected_agent:
                 step.status = StepStatus.RUNNING
                 state["current_step"] = step.step_id
                 
@@ -146,6 +145,12 @@ class PlannerAgent:
                             state["final_decision"] = "PENDING_APPROVAL"
                             state["status"] = "PENDING_APPROVAL"
                             state["reason"] = output.get("reason")
+                            
+                            # Mark the NEXT pending step as AWAITING_APPROVAL
+                            for next_step in plan.steps:
+                                if next_step.status == StepStatus.PENDING and next_step.step_id != step.step_id:
+                                    next_step.status = StepStatus.AWAITING_APPROVAL
+                                    break
                         else:
                             state["final_decision"] = "AUTO_APPROVED"
                             state["status"] = "AUTO_APPROVED"
@@ -154,8 +159,11 @@ class PlannerAgent:
                 except Exception as e:
                     logger.error(f"Error in step {step.step_id}: {e}")
                     step.status = StepStatus.FAILED
+                    step.error = str(e)
                     state["status"] = "FAILED"
+                    state["final_decision"] = "FAILED"
                     state["plan"] = plan.model_dump()
+                    state["reason"] = f"Execution error in step {step.step_id}: {str(e)}"
                 break
                 
         return state
@@ -316,25 +324,24 @@ class PlannerAgent:
             state["plan"] = plan.model_dump()
             state["step_results"] = state.get("step_results") or {}
             state["status"] = state.get("status") or "RUNNING"
+            if state["status"] == "APPROVED":
+                state["status"] = "RUNNING"
 
-        # Check for pause condition (simulating LangGraph interrupt)
-        for step in plan.steps:
-            if step.requires_approval and step.status == StepStatus.PENDING and state.get("status") not in ("APPROVED", "AUTO_APPROVED"):
-                step.status = StepStatus.AWAITING_APPROVAL
-                state["current_step"] = step.step_id
-                state["final_decision"] = "PENDING_APPROVAL"
-                state["status"] = "PENDING_APPROVAL"
-                state["plan"] = plan.model_dump()
-                await update_workflow_progress(plan.workflow_id, state)
-                return state
+        # Rely entirely on LangGraph state machine and check_approval_gate output.
+        # We removed the manual pre-check because it was causing state sync issues.
 
         # Run the graph
         result = await self.graph.ainvoke(state)
         
         # Persist final state
-        if result.get("status") not in ("FAILED", "PENDING_APPROVAL", "REJECTED"):
+        if result.get("status") not in ("FAILED", "PENDING_APPROVAL", "REJECTED", "AUTO_APPROVED"):
             result["status"] = "COMPLETED"
             result["final_decision"] = "COMPLETED"
+            
+        # Sync the original plan object so caller assertions work
+        if "plan" in result:
+            updated_plan = ExecutionPlan(**result["plan"])
+            plan.steps = updated_plan.steps
             
         await update_workflow_progress(plan.workflow_id, result)
         return result
