@@ -243,8 +243,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildPresetChip('Driver', 'driver@openparking.test', 'Password123!'),
-                  const SizedBox(width: 8),
-                  _buildPresetChip('Admin', 'admin@openparking.test', 'Password123!'),
                 ],
               ),
             ],
