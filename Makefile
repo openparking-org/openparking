@@ -9,8 +9,8 @@ dev: ## Start all services locally
 	docker compose up
 
 test: ## Run all tests (backend + AI)
-	docker compose run --rm api dotnet test OpenParking.sln
-	docker compose run --rm ai pytest
+	cd api && dotnet test OpenParking.sln
+	docker compose run --rm -v "$(PWD)/ai:/app" ai sh -c "pip install -r requirements-dev.txt && PYTHONPATH=/app pytest"
 
 migrate: ## Create and apply a new EF migration (usage: make migrate name=AddPenalty)
 	docker compose run --rm api dotnet ef migrations add $(name) --project OpenParking.Infrastructure --startup-project OpenParking.Api
