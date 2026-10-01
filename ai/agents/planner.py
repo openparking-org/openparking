@@ -142,7 +142,7 @@ class PlannerAgent:
                     output = await self._dispatch_step(step, state, plan)
                     step.output = output
                     step.status = StepStatus.COMPLETED
-                    state["step_results"][step.step_id] = output
+                    state["step_results"][step.step_id] = output # type: ignore[index]
                     
                     if step.action == "check_approval_gate":
                         if output.get("requires_human_approval", False):
