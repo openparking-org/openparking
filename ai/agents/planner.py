@@ -163,7 +163,7 @@ class PlannerAgent:
                     state["status"] = "FAILED"
                     state["final_decision"] = "FAILED"
                     state["plan"] = plan.model_dump()
-                    state["reason"] = f"Execution error in step {step.step_id}: {str(e)}"
+                    state["reason"] = f"Execution error in step {step.step_id}: {e!s}"
                 break
                 
         return state

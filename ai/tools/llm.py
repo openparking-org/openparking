@@ -13,9 +13,10 @@ def get_llm() -> BaseChatModel:
     cf_mode = os.getenv("CF_AI_MODE", "mock")
     
     if cf_mode == "mock":
+        import json
+
         from langchain_core.language_models.chat_models import SimpleChatModel
         from langchain_core.messages import BaseMessage
-        import json
 
         class SmartMockLLM(SimpleChatModel):
             def _call(self, messages: list[BaseMessage], stop: list[str] | None = None, **kwargs: Any) -> str:

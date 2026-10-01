@@ -2,6 +2,7 @@ import os
 
 from langchain_cloudflare import CloudflareAISearchRetriever
 
+
 def get_retriever():
     """
     Initializes the Cloudflare AI Search / Vectorize Retriever.
