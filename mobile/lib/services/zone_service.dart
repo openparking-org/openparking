@@ -1,44 +1,86 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/zone.dart';
+import '../models/slot.dart';
+import '../models/paginated_response.dart';
 import 'api_config.dart';
 
-class ZoneModel {
-  final String id;
-  final String name;
-  final int capacity;
-  final int availableSlots;
-  final double currentPriceMultiplier;
-
-  ZoneModel({
-    required this.id,
-    required this.name,
-    required this.capacity,
-    required this.availableSlots,
-    required this.currentPriceMultiplier,
-  });
-
-  factory ZoneModel.fromJson(Map<String, dynamic> json) {
-    return ZoneModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      capacity: json['capacity'] as int? ?? 0,
-      availableSlots: json['availableSlots'] as int? ?? 0,
-      currentPriceMultiplier:
-          (json['currentPriceMultiplier'] as num?)?.toDouble() ?? 1.0,
-    );
-  }
-}
-
 class ZoneService {
-  final http.Client _client = http.Client();
+  final http.Client _client;
 
-  Future<List<ZoneModel>> getZones() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/zones');
+  ZoneService({http.Client? client}) : _client = client ?? http.Client();
+
+  /// GET /api/zones?page=1&pageSize=10&search=...
+  Future<PaginatedResponse<ZoneModel>> getZones({
+    int page = 1,
+    int pageSize = 10,
+    String? search,
+  }) async {
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'pageSize': pageSize.toString(),
+    };
+    if (search != null && search.trim().isNotEmpty) {
+      queryParams['search'] = search.trim();
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/zones')
+        .replace(queryParameters: queryParams);
+
     final response = await _client.get(url, headers: ApiConfig.headers);
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ZoneModel.fromJson(json)).toList();
+      final json = jsonDecode(response.body);
+      final data = json['data'] ?? json;
+      if (data is Map<String, dynamic> && data.containsKey('items')) {
+        return PaginatedResponse<ZoneModel>.fromJson(
+          data,
+          (itemJson) => ZoneModel.fromJson(itemJson),
+        );
+      } else if (data is List) {
+        final items = data.map((z) => ZoneModel.fromJson(z as Map<String, dynamic>)).toList();
+        return PaginatedResponse<ZoneModel>(
+          items: items,
+          totalCount: items.length,
+          page: 1,
+          pageSize: items.length,
+        );
+      }
+    }
+    return PaginatedResponse<ZoneModel>(
+      items: [],
+      totalCount: 0,
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  /// GET /api/zones/{id}
+  Future<ZoneModel?> getZoneDetail(String zoneId) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/zones/$zoneId');
+    final response = await _client.get(url, headers: ApiConfig.headers);
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final data = json['data'] ?? json;
+      return ZoneModel.fromJson(data as Map<String, dynamic>);
+    }
+    return null;
+  }
+
+  /// GET /api/zones/{id}/slots/available
+  Future<List<SlotModel>> getAvailableSlots(String zoneId, {String? type}) async {
+    final queryParams = <String, String>{};
+    if (type != null) queryParams['type'] = type;
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/zones/$zoneId/slots/available')
+        .replace(queryParameters: queryParams);
+    final response = await _client.get(url, headers: ApiConfig.headers);
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final List<dynamic> data = json['data'] ?? json;
+      return data.map((s) => SlotModel.fromJson(s as Map<String, dynamic>)).toList();
     }
     return [];
   }

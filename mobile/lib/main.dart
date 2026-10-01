@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'modules/space_availability/zone_discovery_screen.dart';
 import 'modules/space_availability/indoor_map_screen.dart';
 import 'modules/booking/booking_screen.dart';
 import 'modules/user_access/permit_upload_screen.dart';
@@ -48,6 +49,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
+    ZoneDiscoveryScreen(),
     BookingScreen(),
     IndoorMapScreen(zoneId: 'zone-a'),
     PermitUploadScreen(),
@@ -57,13 +59,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
         backgroundColor: const Color(0xFF111827),
         indicatorColor: const Color(0x4D6366F1),
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
           NavigationDestination(
             icon: Icon(Icons.qr_code_2),
             label: 'Pass',
@@ -80,10 +90,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             icon: Icon(Icons.shield_outlined),
             selectedIcon: Icon(Icons.shield),
-            label: 'Enforcement',
+            label: 'Penalties',
           ),
         ],
       ),
     );
   }
 }
+

@@ -172,7 +172,10 @@ class SessionService {
 
   ParkingSessionModel _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(response.body);
+      final json = jsonDecode(response.body);
+      final data = (json is Map<String, dynamic> && json.containsKey('data'))
+          ? json['data']
+          : json;
       if (data is Map<String, dynamic>) {
         return ParkingSessionModel.fromJson(data);
       }
