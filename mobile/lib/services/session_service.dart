@@ -89,11 +89,13 @@ class SessionService {
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-in');
     final payload = <String, dynamic>{};
-    if (bookingId != null && bookingId.isNotEmpty)
+    if (bookingId != null && bookingId.isNotEmpty) {
       payload['bookingId'] = bookingId;
+    }
     if (slotId != null && slotId.isNotEmpty) payload['slotId'] = slotId;
-    if (bookingCode != null && bookingCode.isNotEmpty)
+    if (bookingCode != null && bookingCode.isNotEmpty) {
       payload['bookingCode'] = bookingCode;
+    }
     if (userId != null && userId.isNotEmpty) payload['userId'] = userId;
 
     try {
@@ -119,10 +121,12 @@ class SessionService {
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-out');
     final payload = <String, dynamic>{};
-    if (sessionId != null && sessionId.isNotEmpty)
+    if (sessionId != null && sessionId.isNotEmpty) {
       payload['sessionId'] = sessionId;
-    if (bookingId != null && bookingId.isNotEmpty)
+    }
+    if (bookingId != null && bookingId.isNotEmpty) {
       payload['bookingId'] = bookingId;
+    }
 
     try {
       final response = await _client.post(
@@ -147,8 +151,9 @@ class SessionService {
   }) async {
     final queryParams = <String, String>{};
     if (userId != null && userId.isNotEmpty) queryParams['userId'] = userId;
-    if (bookingId != null && bookingId.isNotEmpty)
+    if (bookingId != null && bookingId.isNotEmpty) {
       queryParams['bookingId'] = bookingId;
+    }
 
     final baseUri = Uri.parse('${ApiConfig.baseUrl}/api/sessions/active');
     final url = baseUri.replace(
