@@ -11,6 +11,8 @@ using OpenParking.Infrastructure.Seeders;
 using OpenParking.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+DotNetEnv.Env.TraversePath().Load();
+builder.Configuration.AddEnvironmentVariables();
 
 // ── Logging (structured, easy grep in prod) ──────────────────────────────
 builder.Logging.ClearProviders();
@@ -30,10 +32,9 @@ if (!string.IsNullOrEmpty(redisUrl))
 builder.Services.AddMemoryCache();
 
 // ── Database ─────────────────────────────────────────────────────────────
-var connectionString = builder.Configuration.GetConnectionString("Default")
+var connectionString = builder.Configuration["DATABASE_URL"] ?? builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException(
-        "ConnectionStrings:Default is not set. " +
-        "Set it in appsettings.json or the DATABASE_URL environment variable.");
+        "Connection string is not set. Add DATABASE_URL to .env or ConnectionStrings:Default to appsettings.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -44,7 +45,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // ── JWT Authentication ────────────────────────────────────────────────────
-var jwtSecret = builder.Configuration["JWT:Secret"]
+var jwtSecret = builder.Configuration["JWT_SECRET"] ?? builder.Configuration["JWT:Secret"]
     ?? throw new InvalidOperationException(
         "JWT:Secret is not configured. Add it to appsettings.json or the JWT_SECRET environment variable.");
 
