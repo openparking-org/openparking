@@ -96,7 +96,7 @@ builder.Services.AddHttpClient<IEmailService, EmailService>(client =>
 });
 
 // Module 1 — User & Access (Yowun)
-builder.Services.AddHttpClient<IUserService, UserService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Module 2 — Space & Availability (Supun)
 builder.Services.AddScoped<IZoneService, ZoneService>();

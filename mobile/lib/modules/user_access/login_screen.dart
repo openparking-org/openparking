@@ -11,7 +11,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'driver@openparking.test');
+  final _emailController =
+      TextEditingController(text: 'driver@openparking.test');
   final _passwordController = TextEditingController(text: 'Password123!');
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -49,17 +50,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
 
         final userService = UserService();
-        await userService.register(fullName: name, email: email, password: password);
+        await userService.register(
+            fullName: name, email: email, password: password);
         _showSnackBar('Account created successfully! Logging in...');
       }
 
-      final success = await ref.read(authProvider.notifier).login(email, password);
+      final success =
+          await ref.read(authProvider.notifier).login(email, password);
 
       if (!mounted) return;
       setState(() => _isLoading = false);
 
       if (!success) {
-        _showSnackBar('Authentication failed. Check credentials.', isError: true);
+        _showSnackBar('Authentication failed. Check credentials.',
+            isError: true);
       }
     } catch (e) {
       if (!mounted) return;
@@ -92,11 +96,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.15),
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFF6366F1), width: 2),
                 ),
-                child: const Icon(Icons.local_parking, color: Color(0xFF6366F1), size: 44),
+                child: const Icon(Icons.local_parking,
+                    color: Color(0xFF6366F1), size: 44),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -110,7 +115,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                _isRegisterMode ? 'Create a Driver Account' : 'Smart Campus & City Parking',
+                _isRegisterMode
+                    ? 'Create a Driver Account'
+                    : 'Smart Campus & City Parking',
                 style: const TextStyle(color: Colors.white60, fontSize: 14),
               ),
               const SizedBox(height: 36),
@@ -124,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   border: Border.all(color: const Color(0xFF1E293B)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     )
@@ -140,7 +147,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: 'Full Name',
                           labelStyle: const TextStyle(color: Colors.white60),
-                          prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF6366F1)),
+                          prefixIcon: const Icon(Icons.person_outline,
+                              color: Color(0xFF6366F1)),
                           filled: true,
                           fillColor: const Color(0xFF1E293B),
                           border: OutlineInputBorder(
@@ -151,7 +159,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -159,7 +166,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: 'Email Address',
                         labelStyle: const TextStyle(color: Colors.white60),
-                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF6366F1)),
+                        prefixIcon: const Icon(Icons.email_outlined,
+                            color: Color(0xFF6366F1)),
                         filled: true,
                         fillColor: const Color(0xFF1E293B),
                         border: OutlineInputBorder(
@@ -169,7 +177,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -177,13 +184,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: 'Password',
                         labelStyle: const TextStyle(color: Colors.white60),
-                        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF6366F1)),
+                        prefixIcon: const Icon(Icons.lock_outline,
+                            color: Color(0xFF6366F1)),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.white38,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
                         ),
                         filled: true,
                         fillColor: const Color(0xFF1E293B),
@@ -194,29 +205,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                       ),
                       child: _isLoading
                           ? const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2.5),
                             )
                           : Text(
                               _isRegisterMode ? 'Register' : 'Sign In',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
                     const SizedBox(height: 16),
-
                     TextButton(
                       onPressed: () {
                         setState(() => _isRegisterMode = !_isRegisterMode);
@@ -236,13 +248,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 28),
               const Text(
                 'Quick Test Accounts',
-                style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildPresetChip('Driver', 'driver@openparking.test', 'Password123!'),
+                  _buildPresetChip(
+                      'Driver', 'driver@openparking.test', 'Password123!'),
                 ],
               ),
             ],

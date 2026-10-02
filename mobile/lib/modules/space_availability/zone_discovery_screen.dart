@@ -8,7 +8,8 @@ class ZoneDiscoveryScreen extends ConsumerStatefulWidget {
   const ZoneDiscoveryScreen({super.key});
 
   @override
-  ConsumerState<ZoneDiscoveryScreen> createState() => _ZoneDiscoveryScreenState();
+  ConsumerState<ZoneDiscoveryScreen> createState() =>
+      _ZoneDiscoveryScreenState();
 }
 
 class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
@@ -23,7 +24,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(zoneListProvider.notifier).fetchZones(reset: false);
     }
   }
@@ -68,18 +70,24 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                 TextField(
                   controller: _searchController,
                   onChanged: (value) {
-                    ref.read(zoneListProvider.notifier).fetchZones(query: value, reset: true);
+                    ref
+                        .read(zoneListProvider.notifier)
+                        .fetchZones(query: value, reset: true);
                   },
                   decoration: InputDecoration(
                     hintText: 'Search zone name or code...',
                     hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Color(0xFF6366F1)),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.white54),
+                            icon:
+                                const Icon(Icons.clear, color: Colors.white54),
                             onPressed: () {
                               _searchController.clear();
-                              ref.read(zoneListProvider.notifier).fetchZones(query: '', reset: true);
+                              ref
+                                  .read(zoneListProvider.notifier)
+                                  .fetchZones(query: '', reset: true);
                             },
                           )
                         : null,
@@ -115,24 +123,30 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                await ref.read(zoneListProvider.notifier).fetchZones(reset: true);
+                await ref
+                    .read(zoneListProvider.notifier)
+                    .fetchZones(reset: true);
               },
               color: const Color(0xFF6366F1),
               backgroundColor: const Color(0xFF1E293B),
               child: zoneState.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xFF6366F1)))
                   : zoneState.zones.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.all(16),
-                          itemCount: zoneState.zones.length + (zoneState.isLoadingMore ? 1 : 0),
+                          itemCount: zoneState.zones.length +
+                              (zoneState.isLoadingMore ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == zoneState.zones.length) {
                               return const Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Center(
-                                  child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                                  child: CircularProgressIndicator(
+                                      color: Color(0xFF6366F1)),
                                 ),
                               );
                             }
@@ -179,7 +193,9 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
 
     final Color statusColor = zone.availableCount == 0
         ? Colors.redAccent
-        : (occupancyRatio > 0.8 ? Colors.orangeAccent : const Color(0xFF10B981));
+        : (occupancyRatio > 0.8
+            ? Colors.orangeAccent
+            : const Color(0xFF10B981));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -209,24 +225,28 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'Code: ${zone.code}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 13),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withOpacity(0.5)),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     children: [
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                            color: statusColor, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -272,7 +292,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.payments_outlined, color: Colors.white70, size: 18),
+                    const Icon(Icons.payments_outlined,
+                        color: Colors.white70, size: 18),
                     const SizedBox(width: 6),
                     Text(
                       '${zone.currency} ${zone.baseHourlyRate.toStringAsFixed(2)}/hr',
@@ -319,11 +340,15 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.location_off_outlined, size: 64, color: Colors.white.withOpacity(0.3)),
+          Icon(Icons.location_off_outlined,
+              size: 64, color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text(
             'No Parking Lots Found',
-            style: TextStyle(fontSize: 18, color: Colors.white70, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 18,
+                color: Colors.white70,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(

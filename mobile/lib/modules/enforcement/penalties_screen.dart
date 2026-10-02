@@ -14,18 +14,21 @@ class PenaltiesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
-        title: const Text('Enforcement & Penalties', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Enforcement & Penalties',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(penaltyProvider.notifier).fetchPenalties(),
+            onPressed: () =>
+                ref.read(penaltyProvider.notifier).fetchPenalties(),
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.read(penaltyProvider.notifier).fetchPenalties(),
+        onRefresh: () async =>
+            ref.read(penaltyProvider.notifier).fetchPenalties(),
         color: const Color(0xFF6366F1),
         backgroundColor: const Color(0xFF1E293B),
         child: SingleChildScrollView(
@@ -44,12 +47,14 @@ class PenaltiesScreen extends ConsumerWidget {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 32),
+                    Icon(Icons.warning_amber_rounded,
+                        color: Color(0xFFEF4444), size: 32),
                     SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         'AI Overstay Detection active across all zones. 15-minute grace period strictly enforced.',
-                        style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                        style: TextStyle(
+                            color: Colors.white, fontSize: 13, height: 1.4),
                       ),
                     ),
                   ],
@@ -59,7 +64,10 @@ class PenaltiesScreen extends ConsumerWidget {
 
               const Text(
                 'Issued Penalties',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -100,11 +108,13 @@ class PenaltiesScreen extends ConsumerWidget {
       ),
       child: const Column(
         children: [
-          Icon(Icons.verified_user_outlined, size: 48, color: Color(0xFF10B981)),
+          Icon(Icons.verified_user_outlined,
+              size: 48, color: Color(0xFF10B981)),
           SizedBox(height: 12),
           Text(
             'Clean Enforcement Record',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
           ),
           SizedBox(height: 4),
           Text(
@@ -116,7 +126,8 @@ class PenaltiesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPenaltyCard(BuildContext context, WidgetRef ref, PenaltyModel penalty) {
+  Widget _buildPenaltyCard(
+      BuildContext context, WidgetRef ref, PenaltyModel penalty) {
     Color statusColor;
     switch (penalty.status.toLowerCase()) {
       case 'approved':
@@ -149,7 +160,8 @@ class PenaltiesScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.receipt_long, color: Color(0xFF6366F1), size: 20),
+                    const Icon(Icons.receipt_long,
+                        color: Color(0xFF6366F1), size: 20),
                     const SizedBox(width: 8),
                     Text(
                       penalty.reason,
@@ -162,11 +174,13 @@ class PenaltiesScreen extends ConsumerWidget {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: statusColor.withOpacity(0.5)),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.5)),
                   ),
                   child: Text(
                     penalty.status,
@@ -180,25 +194,28 @@ class PenaltiesScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Issued On', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Issued On',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
                     const SizedBox(height: 2),
                     Text(
-                      DateFormat('MMM d, yyyy - HH:mm').format(penalty.issuedAt),
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      DateFormat('MMM d, yyyy - HH:mm')
+                          .format(penalty.issuedAt),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Fine Amount', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Fine Amount',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
                     const SizedBox(height: 2),
                     Text(
                       'USD ${penalty.amount.toStringAsFixed(2)}',
@@ -212,8 +229,8 @@ class PenaltiesScreen extends ConsumerWidget {
                 ),
               ],
             ),
-
-            if (penalty.disputeNotes != null && penalty.disputeNotes!.isNotEmpty) ...[
+            if (penalty.disputeNotes != null &&
+                penalty.disputeNotes!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -227,7 +244,6 @@ class PenaltiesScreen extends ConsumerWidget {
                 ),
               ),
             ],
-
             const SizedBox(height: 16),
             if (penalty.isDisputable)
               SizedBox(
@@ -239,7 +255,8 @@ class PenaltiesScreen extends ConsumerWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.orangeAccent,
                     side: const BorderSide(color: Colors.orangeAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -249,7 +266,8 @@ class PenaltiesScreen extends ConsumerWidget {
     );
   }
 
-  void _showDisputeDialog(BuildContext context, WidgetRef ref, PenaltyModel penalty) {
+  void _showDisputeDialog(
+      BuildContext context, WidgetRef ref, PenaltyModel penalty) {
     final controller = TextEditingController();
 
     showModalBottomSheet(
@@ -273,7 +291,10 @@ class PenaltiesScreen extends ConsumerWidget {
             children: [
               const Text(
                 'Dispute Penalty Fine',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -286,7 +307,8 @@ class PenaltiesScreen extends ConsumerWidget {
                 maxLines: 4,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Enter dispute reason (e.g., machine malfunction, emergency)...',
+                  hintText:
+                      'Enter dispute reason (e.g., machine malfunction, emergency)...',
                   hintStyle: const TextStyle(color: Colors.white38),
                   filled: true,
                   fillColor: const Color(0xFF111827),
@@ -313,9 +335,13 @@ class PenaltiesScreen extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            success ? 'Dispute submitted successfully.' : 'Failed to submit dispute.',
+                            success
+                                ? 'Dispute submitted successfully.'
+                                : 'Failed to submit dispute.',
                           ),
-                          backgroundColor: success ? const Color(0xFF10B981) : Colors.redAccent,
+                          backgroundColor: success
+                              ? const Color(0xFF10B981)
+                              : Colors.redAccent,
                         ),
                       );
                     }
@@ -324,9 +350,11 @@ class PenaltiesScreen extends ConsumerWidget {
                     backgroundColor: Colors.orangeAccent,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text('Submit Dispute', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Submit Dispute',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

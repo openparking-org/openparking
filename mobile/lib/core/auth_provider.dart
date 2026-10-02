@@ -32,7 +32,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<bool> login(String email, String password) async {
     try {
-      final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000';
+      final baseUrl = ApiConfig.baseUrl;
       final response = await http.post(
         Uri.parse('$baseUrl/api/users/login'),
         headers: {'Content-Type': 'application/json'},

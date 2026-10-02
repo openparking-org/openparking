@@ -26,7 +26,8 @@ class IndoorMapScreen extends ConsumerStatefulWidget {
 }
 
 class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
 
   @override
   void initState() {
@@ -37,10 +38,10 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
 
       if (widget.targetSlotId != null) {
         ref.read(floorPlanProvider.notifier).loadNavigationRoute(
-          zoneId: widget.zoneId,
-          targetSlotId: widget.targetSlotId!,
-          bookingId: widget.bookingId,
-        );
+              zoneId: widget.zoneId,
+              targetSlotId: widget.targetSlotId!,
+              bookingId: widget.bookingId,
+            );
       }
     });
   }
@@ -89,7 +90,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
         ],
       ),
       body: fpState.isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF6366F1)))
           : Column(
               children: [
                 // Floor Selector Tabs
@@ -99,7 +101,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                     color: const Color(0xFF111827),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       itemCount: fpState.floorPlans.length,
                       itemBuilder: (context, index) {
                         final plan = fpState.floorPlans[index];
@@ -113,10 +116,14 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                             backgroundColor: const Color(0xFF1E293B),
                             labelStyle: TextStyle(
                               color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                             onSelected: (_) {
-                              ref.read(floorPlanProvider.notifier).selectFloorPlan(plan);
+                              ref
+                                  .read(floorPlanProvider.notifier)
+                                  .selectFloorPlan(plan);
                             },
                           ),
                         );
@@ -140,7 +147,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E293B),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFF334155), width: 2),
+                              border: Border.all(
+                                  color: const Color(0xFF334155), width: 2),
                             ),
                             child: Stack(
                               children: [
@@ -152,7 +160,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                                     width: 600,
                                     height: 600,
                                     fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) => _buildGridPattern(),
+                                    errorWidget: (_, __, ___) =>
+                                        _buildGridPattern(),
                                   )
                                 else
                                   _buildGridPattern(),
@@ -161,7 +170,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                                 if (fpState.navigationRoute != null)
                                   CustomPaint(
                                     size: const Size(600, 600),
-                                    painter: RoutePainter(route: fpState.navigationRoute!),
+                                    painter: RoutePainter(
+                                        route: fpState.navigationRoute!),
                                   ),
 
                                 // Slot Overlays
@@ -180,7 +190,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF111827).withOpacity(0.9),
+                            color:
+                                const Color(0xFF111827).withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFF334155)),
                           ),
@@ -258,7 +269,7 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
               width: 80,
               height: 90,
               decoration: BoxDecoration(
-                color: color.withOpacity(isTarget ? 0.4 : 0.25),
+                color: color.withValues(alpha: isTarget ? 0.4 : 0.25),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isTarget ? Colors.yellowAccent : color,
@@ -267,7 +278,7 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                 boxShadow: isTarget
                     ? [
                         BoxShadow(
-                          color: Colors.yellowAccent.withOpacity(0.6),
+                          color: Colors.yellowAccent.withValues(alpha: 0.6),
                           blurRadius: 12,
                           spreadRadius: 2,
                         )
@@ -351,17 +362,20 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: slot.isAvailable
-                          ? const Color(0xFF10B981).withOpacity(0.2)
-                          : Colors.redAccent.withOpacity(0.2),
+                          ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                          : Colors.redAccent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       slot.status,
                       style: TextStyle(
-                        color: slot.isAvailable ? const Color(0xFF10B981) : Colors.redAccent,
+                        color: slot.isAvailable
+                            ? const Color(0xFF10B981)
+                            : Colors.redAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -369,8 +383,10 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Type: ${slot.type}', style: const TextStyle(color: Colors.white70)),
-              Text('Floor Level: ${slot.floor}', style: const TextStyle(color: Colors.white70)),
+              Text('Type: ${slot.type}',
+                  style: const TextStyle(color: Colors.white70)),
+              Text('Floor Level: ${slot.floor}',
+                  style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -395,7 +411,8 @@ class _IndoorMapScreenState extends ConsumerState<IndoorMapScreen> {
                     backgroundColor: const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -411,7 +428,7 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF334155).withOpacity(0.3)
+      ..color = const Color(0xFF334155).withValues(alpha: 0.3)
       ..strokeWidth = 1;
 
     const double step = 30;
@@ -451,7 +468,7 @@ class RoutePainter extends CustomPainter {
 
     // Glow Effect
     final glowPaint = Paint()
-      ..color = Colors.cyanAccent.withOpacity(0.4)
+      ..color = Colors.cyanAccent.withValues(alpha: 0.4)
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
@@ -461,5 +478,6 @@ class RoutePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant RoutePainter oldDelegate) => oldDelegate.route != route;
+  bool shouldRepaint(covariant RoutePainter oldDelegate) =>
+      oldDelegate.route != route;
 }

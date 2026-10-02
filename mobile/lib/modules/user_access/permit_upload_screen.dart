@@ -52,13 +52,15 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
-        title: const Text('Disability Permit Verification', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Disability Permit Verification',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(permitProvider.notifier).fetchPermitStatus(),
+            onPressed: () =>
+                ref.read(permitProvider.notifier).fetchPermitStatus(),
           ),
         ],
       ),
@@ -82,7 +84,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                   Expanded(
                     child: Text(
                       'Upload your valid accessible parking permit for AI Validator verification and a 15% discount.',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                          color: Colors.white70, fontSize: 13, height: 1.4),
                     ),
                   )
                 ],
@@ -99,7 +102,10 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
             // Submission Form
             const Text(
               'Submit / Update Permit Document',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -113,7 +119,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                     decoration: InputDecoration(
                       labelText: 'Permit Number',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF6366F1)),
+                      prefixIcon: const Icon(Icons.badge_outlined,
+                          color: Color(0xFF6366F1)),
                       filled: true,
                       fillColor: const Color(0xFF1E293B),
                       border: OutlineInputBorder(
@@ -121,7 +128,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                         borderSide: const BorderSide(color: Color(0xFF334155)),
                       ),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                    validator: (val) =>
+                        val == null || val.trim().isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -131,7 +139,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                     decoration: InputDecoration(
                       labelText: 'Issuing Authority / Jurisdiction',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      prefixIcon: const Icon(Icons.account_balance, color: Color(0xFF6366F1)),
+                      prefixIcon: const Icon(Icons.account_balance,
+                          color: Color(0xFF6366F1)),
                       filled: true,
                       fillColor: const Color(0xFF1E293B),
                       border: OutlineInputBorder(
@@ -139,7 +148,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                         borderSide: const BorderSide(color: Color(0xFF334155)),
                       ),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                    validator: (val) =>
+                        val == null || val.trim().isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -150,7 +160,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                         context: context,
                         initialDate: _expiryDate,
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365 * 5)),
                       );
                       if (picked != null) setState(() => _expiryDate = picked);
                     },
@@ -163,15 +174,20 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Color(0xFF6366F1), size: 20),
+                          const Icon(Icons.calendar_today,
+                              color: Color(0xFF6366F1), size: 20),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Expiry Date', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                              const Text('Expiry Date',
+                                  style: TextStyle(
+                                      color: Colors.white54, fontSize: 11)),
                               Text(
                                 DateFormat('MMM d, yyyy').format(_expiryDate),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -191,23 +207,26 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                         color: const Color(0xFF1E293B),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF6366F1).withOpacity(0.5),
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.5),
                           style: BorderStyle.solid,
                         ),
                       ),
                       child: _selectedImageFile != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Image.file(_selectedImageFile!, fit: BoxFit.cover),
+                              child: Image.file(_selectedImageFile!,
+                                  fit: BoxFit.cover),
                             )
                           : const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_a_photo_outlined, size: 40, color: Color(0xFF6366F1)),
+                                Icon(Icons.add_a_photo_outlined,
+                                    size: 40, color: Color(0xFF6366F1)),
                                 SizedBox(height: 8),
                                 Text(
                                   'Tap to take photo or choose document',
-                                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -219,19 +238,22 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: permitState.isSubmitting ? null : _submitPermit,
+                      onPressed:
+                          permitState.isSubmitting ? null : _submitPermit,
                       icon: const Icon(Icons.cloud_upload),
                       label: permitState.isSubmitting
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Submit to AI Validator',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
@@ -264,9 +286,9 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.15),
+        color: statusColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withOpacity(0.5)),
+        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,20 +299,25 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
               const SizedBox(width: 10),
               Text(
                 'Status: ${permit.status.toUpperCase()}',
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             'Permit #${permit.permitNumber} - ${permit.issuingAuthority}',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
           Text(
             'Expires: ${DateFormat("MMM d, yyyy").format(permit.expiryDate)}',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
-          if (permit.rejectionNotes != null && permit.rejectionNotes!.isNotEmpty) ...[
+          if (permit.rejectionNotes != null &&
+              permit.rejectionNotes!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               'Reason: ${permit.rejectionNotes}',
@@ -315,15 +342,18 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF6366F1)),
-                title: const Text('Take Photo (Camera)', style: TextStyle(color: Colors.white)),
+                title: const Text('Take Photo (Camera)',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF6366F1)),
-                title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+                leading:
+                    const Icon(Icons.photo_library, color: Color(0xFF6366F1)),
+                title: const Text('Choose from Gallery',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -352,7 +382,9 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success ? 'Permit submitted for AI verification!' : 'Permit submission failed.',
+            success
+                ? 'Permit submitted for AI verification!'
+                : 'Permit submission failed.',
           ),
           backgroundColor: success ? const Color(0xFF10B981) : Colors.redAccent,
         ),

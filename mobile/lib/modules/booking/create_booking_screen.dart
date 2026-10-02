@@ -18,7 +18,8 @@ class CreateBookingScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CreateBookingScreen> createState() => _CreateBookingScreenState();
+  ConsumerState<CreateBookingScreen> createState() =>
+      _CreateBookingScreenState();
 }
 
 class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
@@ -28,7 +29,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   SlotModel? _selectedSlot;
   DateTime _startTime = DateTime.now().add(const Duration(minutes: 5));
   DateTime _endTime = DateTime.now().add(const Duration(hours: 2, minutes: 5));
-  bool _applyDisabilityDiscount = false;
+  final bool _applyDisabilityDiscount = false;
 
   @override
   void initState() {
@@ -51,7 +52,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     final permitState = ref.watch(permitProvider);
 
     final zone = zoneState.selectedZone;
-    final availableSlots = zone?.slots.where((s) => s.isAvailable).toList() ?? [];
+    final availableSlots =
+        zone?.slots.where((s) => s.isAvailable).toList() ?? [];
 
     if (_selectedSlot == null && availableSlots.isNotEmpty) {
       if (widget.preselectedSlotId != null) {
@@ -67,19 +69,22 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     final durationHours = _endTime.difference(_startTime).inMinutes / 60.0;
     final baseRate = zone?.baseHourlyRate ?? 5.0;
     double estimatedFee = durationHours > 0 ? durationHours * baseRate : 0.0;
-    if (_applyDisabilityDiscount || (permitState.permit?.status.toLowerCase() == 'approved')) {
+    if (_applyDisabilityDiscount ||
+        (permitState.permit?.status.toLowerCase() == 'approved')) {
       estimatedFee *= 0.85; // 15% disability discount
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
-        title: const Text('New Reservation', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('New Reservation',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
       ),
       body: zoneState.isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF6366F1)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -97,7 +102,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.local_parking, color: Color(0xFF6366F1), size: 36),
+                          const Icon(Icons.local_parking,
+                              color: Color(0xFF6366F1), size: 36),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(
@@ -114,7 +120,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'Rate: ${zone?.currency ?? "USD"} ${baseRate.toStringAsFixed(2)}/hr',
-                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -127,18 +134,22 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     // Slot Picker
                     const Text(
                       'Select Slot',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<SlotModel>(
-                      value: _selectedSlot,
+                      initialValue: _selectedSlot,
                       dropdownColor: const Color(0xFF1E293B),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFF1E293B),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF334155)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFF334155)),
                         ),
                       ),
                       items: availableSlots.map((slot) {
@@ -183,7 +194,10 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     // Vehicle Plate Field
                     const Text(
                       'Vehicle License Plate',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -192,16 +206,19 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       decoration: InputDecoration(
                         hintText: 'e.g. ABC-1234',
                         hintStyle: const TextStyle(color: Colors.white38),
-                        prefixIcon: const Icon(Icons.directions_car, color: Color(0xFF6366F1)),
+                        prefixIcon: const Icon(Icons.directions_car,
+                            color: Color(0xFF6366F1)),
                         filled: true,
                         fillColor: const Color(0xFF1E293B),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF334155)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFF334155)),
                         ),
                       ),
-                      validator: (val) =>
-                          val == null || val.trim().isEmpty ? 'Please enter vehicle plate' : null,
+                      validator: (val) => val == null || val.trim().isEmpty
+                          ? 'Please enter vehicle plate'
+                          : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -211,18 +228,21 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blueAccent.withOpacity(0.15),
+                          color: Colors.blueAccent.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                          border: Border.all(
+                              color: Colors.blueAccent.withValues(alpha: 0.4)),
                         ),
-                        child: Row(
+                        child: const Row(
                           children: [
-                            const Icon(Icons.accessible, color: Colors.blueAccent),
-                            const SizedBox(width: 10),
-                            const Expanded(
+                            Icon(Icons.accessible, color: Colors.blueAccent),
+                            SizedBox(width: 10),
+                            Expanded(
                               child: Text(
                                 '15% Disability Discount Automatically Applied',
-                                style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -243,9 +263,12 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Duration', style: TextStyle(color: Colors.white60)),
+                              const Text('Duration',
+                                  style: TextStyle(color: Colors.white60)),
                               Text('${durationHours.toStringAsFixed(1)} hrs',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const Divider(color: Color(0xFF334155), height: 20),
@@ -254,7 +277,10 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                             children: [
                               const Text(
                                 'Estimated Total',
-                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 '${zone?.currency ?? "USD"} ${estimatedFee.toStringAsFixed(2)}',
@@ -275,18 +301,22 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: bookingState.isCreating ? null : _submitBooking,
+                        onPressed:
+                            bookingState.isCreating ? null : _submitBooking,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF6366F1),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         child: bookingState.isCreating
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : const Text(
                                 'Confirm & Reserve',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -315,16 +345,21 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            Text(title,
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.access_time, color: Color(0xFF6366F1), size: 18),
+                const Icon(Icons.access_time,
+                    color: Color(0xFF6366F1), size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     DateFormat('MMM d, HH:mm').format(time),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
                   ),
                 ),
               ],
@@ -335,7 +370,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     );
   }
 
-  Future<void> _pickDateTime(BuildContext context, {required bool isStart}) async {
+  Future<void> _pickDateTime(BuildContext context,
+      {required bool isStart}) async {
     final initial = isStart ? _startTime : _endTime;
     final date = await showDatePicker(
       context: context,
@@ -353,7 +389,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
     if (time == null || !mounted) return;
 
-    final selected = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final selected =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
 
     setState(() {
       if (isStart) {
