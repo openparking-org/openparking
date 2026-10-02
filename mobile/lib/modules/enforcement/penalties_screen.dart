@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/penalty_provider.dart';
+import '../../core/theme.dart';
 import '../../models/penalty.dart';
 
 class PenaltiesScreen extends ConsumerWidget {
@@ -12,87 +13,104 @@ class PenaltiesScreen extends ConsumerWidget {
     final penaltyState = ref.watch(penaltyProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
-      appBar: AppBar(
-        title: const Text('Enforcement & Penalties',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF111827),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(penaltyProvider.notifier).fetchPenalties(),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async =>
-            ref.read(penaltyProvider.notifier).fetchPenalties(),
-        color: const Color(0xFF6366F1),
-        backgroundColor: const Color(0xFF1E293B),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // AI Overstay Banner
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0x1FEF4444),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0x66EF4444)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Color(0xFFEF4444), size: 32),
-                    SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'AI Overstay Detection active across all zones. 15-minute grace period strictly enforced.',
-                        style: TextStyle(
-                            color: Colors.white, fontSize: 13, height: 1.4),
-                      ),
-                    ),
-                  ],
-                ),
+      backgroundColor: AppTheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            backgroundColor: AppTheme.surfacePure,
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              'Penalties & Enforcement',
+              style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                color: AppTheme.primary,
+                onPressed: () =>
+                    ref.read(penaltyProvider.notifier).fetchPenalties(),
               ),
-              const SizedBox(height: 24),
-
-              const Text(
-                'Issued Penalties',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-
-              if (penaltyState.isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF6366F1)),
-                  ),
-                )
-              else if (penaltyState.penalties.isEmpty)
-                _buildEmptyState()
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: penaltyState.penalties.length,
-                  itemBuilder: (context, index) {
-                    final penalty = penaltyState.penalties[index];
-                    return _buildPenaltyCard(context, ref, penalty);
-                  },
-                ),
             ],
           ),
-        ),
+          SliverPadding(
+            padding: const EdgeInsets.all(AppTheme.margin),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // ── AI OVERSTAY BANNER ──
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.spaceMd),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentCritical.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    border: Border.all(
+                      color: AppTheme.accentCritical.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentCritical.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.warning_amber_rounded,
+                            color: AppTheme.accentCritical, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'AI Overstay Detection active across all zones. 15-minute grace period strictly enforced.',
+                          style: AppTheme.bodySm.copyWith(
+                            color: AppTheme.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spaceLg),
+
+                // ── SECTION HEADER ──
+                Text(
+                  'Issued Penalties',
+                  style: AppTheme.titleMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spaceSm),
+
+                // ── PENALTY LIST ──
+                if (penaltyState.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                else if (penaltyState.penalties.isEmpty)
+                  _buildEmptyState()
+                else
+                  ...penaltyState.penalties.map(
+                    (penalty) => Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: AppTheme.spaceSm),
+                      child: _buildPenaltyCard(context, ref, penalty),
+                    ),
+                  ),
+
+                const SizedBox(height: 80), // Bottom nav padding
+              ]),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -102,24 +120,31 @@ class PenaltiesScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        color: AppTheme.surfacePure,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(color: AppTheme.borderSubtle),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.verified_user_outlined,
-              size: 48, color: Color(0xFF10B981)),
-          SizedBox(height: 12),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppTheme.accentSuccess.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.verified_user_outlined,
+                size: 28, color: AppTheme.accentSuccess),
+          ),
+          const SizedBox(height: 12),
           Text(
             'Clean Enforcement Record',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            style: AppTheme.labelLg.copyWith(fontWeight: FontWeight.w700),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             'No penalties or active disputes found.',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+            style: AppTheme.bodySm.copyWith(color: AppTheme.textTertiary),
           ),
         ],
       ),
@@ -132,26 +157,27 @@ class PenaltiesScreen extends ConsumerWidget {
     switch (penalty.status.toLowerCase()) {
       case 'approved':
       case 'pending':
-        statusColor = Colors.redAccent;
+        statusColor = AppTheme.accentCritical;
         break;
       case 'disputed':
-        statusColor = Colors.orangeAccent;
+        statusColor = const Color(0xFFF59E0B);
         break;
       case 'waived':
       case 'paid':
-        statusColor = const Color(0xFF10B981);
+        statusColor = AppTheme.accentSuccess;
         break;
       default:
-        statusColor = Colors.grey;
+        statusColor = AppTheme.textTertiary;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: const Color(0xFF1E293B),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfacePure,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppTheme.spaceMd),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -160,69 +186,83 @@ class PenaltiesScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.receipt_long,
-                        color: Color(0xFF6366F1), size: 20),
-                    const SizedBox(width: 8),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceSubtle,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.receipt_long,
+                          color: AppTheme.primary, size: 18),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
                       penalty.reason,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      style: AppTheme.labelLg.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.5)),
+                    color: statusColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     penalty.status,
-                    style: TextStyle(
+                    style: AppTheme.labelSm.copyWith(
                       color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Issued On',
-                        style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text(
+                      'Issued On',
+                      style: AppTheme.labelSm.copyWith(
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       DateFormat('MMM d, yyyy - HH:mm')
                           .format(penalty.issuedAt),
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: AppTheme.bodySm.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Fine Amount',
-                        style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text(
+                      'Fine Amount',
+                      style: AppTheme.labelSm.copyWith(
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       'USD ${penalty.amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      style: AppTheme.titleMd.copyWith(
+                        color: AppTheme.accentCritical,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -233,33 +273,45 @@ class PenaltiesScreen extends ConsumerWidget {
                 penalty.disputeNotes!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111827),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
                 child: Text(
                   'Dispute Notes: ${penalty.disputeNotes}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (penalty.isDisputable)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _showDisputeDialog(context, ref, penalty),
-                  icon: const Icon(Icons.gavel, size: 18),
-                  label: const Text('Dispute Penalty (7-Day Window)'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orangeAccent,
-                    side: const BorderSide(color: Colors.orangeAccent),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  style: AppTheme.bodySm.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ),
+            ],
+            if (penalty.isDisputable) ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showDisputeDialog(context, ref, penalty),
+                  icon: const Icon(Icons.gavel, size: 16),
+                  label: Text(
+                    'Dispute Penalty (7-Day Window)',
+                    style: AppTheme.labelMd.copyWith(
+                      color: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF59E0B),
+                    side: const BorderSide(color: Color(0xFFF59E0B)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusLg),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -273,7 +325,7 @@ class PenaltiesScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: AppTheme.surfacePure,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -289,38 +341,50 @@ class PenaltiesScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceMuted,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 'Dispute Penalty Fine',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
+                style: AppTheme.headlineSm,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Please explain the reason for your dispute. Parking admins will review your request.',
-                style: TextStyle(color: Colors.white60, fontSize: 13),
+                style: AppTheme.bodyMd.copyWith(color: AppTheme.textSecondary),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 maxLines: 4,
-                style: const TextStyle(color: Colors.white),
+                style: AppTheme.bodyMd,
                 decoration: InputDecoration(
                   hintText:
                       'Enter dispute reason (e.g., machine malfunction, emergency)...',
-                  hintStyle: const TextStyle(color: Colors.white38),
+                  hintStyle:
+                      AppTheme.bodyMd.copyWith(color: AppTheme.textTertiary),
                   filled: true,
-                  fillColor: const Color(0xFF111827),
+                  fillColor: AppTheme.surfaceSubtle,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF334155)),
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.radiusXl),
+                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
+                height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
                     final reason = controller.text.trim();
@@ -340,21 +404,27 @@ class PenaltiesScreen extends ConsumerWidget {
                                 : 'Failed to submit dispute.',
                           ),
                           backgroundColor: success
-                              ? const Color(0xFF10B981)
-                              : Colors.redAccent,
+                              ? AppTheme.accentSuccess
+                              : AppTheme.accentCritical,
                         ),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: AppTheme.onPrimary,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusXl),
+                    ),
                   ),
-                  child: const Text('Submit Dispute',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Submit Dispute',
+                    style: AppTheme.labelLg.copyWith(
+                      color: AppTheme.onPrimary,
+                    ),
+                  ),
                 ),
               ),
             ],

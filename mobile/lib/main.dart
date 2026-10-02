@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'modules/space_availability/zone_discovery_screen.dart';
-import 'modules/space_availability/indoor_map_screen.dart';
-import 'modules/booking/booking_screen.dart';
-import 'modules/user_access/permit_upload_screen.dart';
-import 'modules/enforcement/penalties_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/router.dart';
+import 'core/theme.dart';
+import 'modules/home/home_dashboard_screen.dart';
+import 'modules/space_availability/zone_discovery_screen.dart';
+import 'modules/booking/booking_screen.dart';
+import 'modules/enforcement/penalties_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env").catchError((_) {});
+  
+  // Set system UI overlay style for monochrome theme
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: AppTheme.surfacePure,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+  
   runApp(const ProviderScope(child: OpenParkingApp()));
 }
 
@@ -23,16 +34,8 @@ class OpenParkingApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'OpenParking',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B0F19),
-        primaryColor: const Color(0xFF6366F1),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6366F1),
-          secondary: Color(0xFF10B981),
-        ),
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
     );
   }
@@ -49,10 +52,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
+    HomeDashboardScreen(),
     ZoneDiscoveryScreen(),
     BookingScreen(),
-    IndoorMapScreen(zoneId: 'zone-a'),
-    PermitUploadScreen(),
     PenaltiesScreen(),
   ];
 
@@ -63,38 +65,106 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: const Color(0xFF111827),
-        indicatorColor: const Color(0x4D6366F1),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Explore',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surfacePure,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceXs,
+              vertical: 8,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavBarItem(
+                  icon: Icons.local_parking,
+                  activeIcon: Icons.local_parking,
+                  label: 'Home',
+                  isActive: _currentIndex == 0,
+                  onTap: () => setState(() => _currentIndex = 0),
+                ),
+                _NavBarItem(
+                  icon: Icons.search,
+                  activeIcon: Icons.search,
+                  label: 'Find Parking',
+                  isActive: _currentIndex == 1,
+                  onTap: () => setState(() => _currentIndex = 1),
+                ),
+                _NavBarItem(
+                  icon: Icons.calendar_today_outlined,
+                  activeIcon: Icons.calendar_today,
+                  label: 'My Bookings',
+                  isActive: _currentIndex == 2,
+                  onTap: () => setState(() => _currentIndex = 2),
+                ),
+                _NavBarItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: 'Account',
+                  isActive: _currentIndex == 3,
+                  onTap: () => setState(() => _currentIndex = 3),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_2),
-            label: 'Pass',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Blueprint',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.accessible),
-            label: 'Permit',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
-            selectedIcon: Icon(Icons.shield),
-            label: 'Penalties',
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+/// Custom bottom nav item matching the Stitch design's minimalist nav
+class _NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavBarItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              size: 22,
+              color: isActive ? AppTheme.primary : AppTheme.textTertiary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTheme.labelSm.copyWith(
+                color: isActive ? AppTheme.primary : AppTheme.textTertiary,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

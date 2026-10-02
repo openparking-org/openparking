@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../services/session_service.dart';
 import '../../core/providers/session_provider.dart';
+import '../../core/theme.dart';
 import 'qr_scanner_screen.dart';
 
 class BookingScreen extends ConsumerWidget {
@@ -29,7 +30,7 @@ class BookingScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
                 'Checked out of ${result.zoneName}! Total: \$${result.totalFee.toStringAsFixed(2)}'),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppTheme.accentSuccess,
           ),
         );
       } else {
@@ -37,7 +38,7 @@ class BookingScreen extends ConsumerWidget {
           SnackBar(
             content:
                 Text('Checked into ${result.zoneName} (${result.slotNumber})!'),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppTheme.accentSuccess,
           ),
         );
       }
@@ -65,47 +66,67 @@ class BookingScreen extends ConsumerWidget {
     final activeSession = sessionAsyncValue.valueOrNull;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          activeSession != null
-              ? 'Live Parking Session'
-              : 'My Booking & Digital Pass',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-        ),
-        backgroundColor: const Color(0xFF111827),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 20),
-            tooltip: 'Refresh Status',
-            onPressed: () => ref
-                .read(activeSessionProvider.notifier)
-                .startPolling(), // Manually trigger refresh
+      backgroundColor: AppTheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            backgroundColor: AppTheme.surfacePure,
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              activeSession != null
+                  ? 'Live Parking Session'
+                  : 'My Booking & Digital Pass',
+              style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                color: AppTheme.primary,
+                tooltip: 'Refresh Status',
+                onPressed: () => ref
+                    .read(activeSessionProvider.notifier)
+                    .startPolling(),
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(AppTheme.margin),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                sessionAsyncValue.when(
+                  data: (session) => session != null
+                      ? _buildActiveSessionView(context, ref, session)
+                      : _buildBookingPassView(context, ref, null),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                  error: (error, _) => Center(
+                    child: Text(
+                      'Failed to load session: $error',
+                      style: AppTheme.bodyMd.copyWith(
+                        color: AppTheme.accentCritical,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 80),
+              ]),
+            ),
           ),
         ],
-      ),
-      backgroundColor: const Color(0xFF0B0F19),
-      body: sessionAsyncValue.when(
-        data: (session) => SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: session != null
-              ? _buildActiveSessionView(context, ref, session)
-              : _buildBookingPassView(context, ref, null),
-        ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
-          ),
-        ),
-        error: (error, _) => Center(
-          child: Text('Failed to load session: $error',
-              style: const TextStyle(color: Colors.red)),
-        ),
       ),
     );
   }
 
-  /// Live Active Session Tracker (design.md §19.4)
+  /// Live Active Session Tracker
   Widget _buildActiveSessionView(
       BuildContext context, WidgetRef ref, ParkingSessionModel session) {
     final estimatedFee = _estimateCurrentFee(session);
@@ -115,14 +136,19 @@ class BookingScreen extends ConsumerWidget {
       children: [
         // Active Status Card
         Container(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(AppTheme.spaceMd + 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0x4D10B981)),
-            boxShadow: const [
+            color: AppTheme.surfacePure,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            border: Border.all(
+              color: AppTheme.accentSuccess.withValues(alpha: 0.3),
+            ),
+            boxShadow: [
               BoxShadow(
-                  color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -132,51 +158,58 @@ class BookingScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0x1F10B981),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0x4D10B981)),
+                      color: AppTheme.accentSuccess.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: AppTheme.accentSuccess.withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.circle, color: Color(0xFF10B981), size: 10),
-                        SizedBox(width: 6),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.accentSuccess,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         Text(
                           'ACTIVE SESSION',
-                          style: TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold),
+                          style: AppTheme.labelSm.copyWith(
+                            color: AppTheme.accentSuccess,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     'Bay ${session.slotNumber}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16),
+                    style: AppTheme.labelLg.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               Text(
                 session.zoneName,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
+                style: AppTheme.headlineSm,
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Vehicle parked inside designated bay',
-                style: TextStyle(color: Colors.white60, fontSize: 13),
+                style: AppTheme.bodySm.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
               ),
-              const Divider(color: Colors.white12, height: 32),
+              const Divider(height: 32, color: AppTheme.borderSubtle),
 
               // Duration and estimate tiles
               Row(
@@ -185,23 +218,25 @@ class BookingScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.timer_outlined,
-                                color: Colors.grey, size: 14),
-                            SizedBox(width: 4),
-                            Text('Duration',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 12)),
+                            const Icon(Icons.timer_outlined,
+                                color: AppTheme.textTertiary, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Duration',
+                              style: AppTheme.labelSm.copyWith(
+                                color: AppTheme.textTertiary,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _formatDuration(session.checkInTime),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
+                          style: AppTheme.titleMd.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -210,23 +245,26 @@ class BookingScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.attach_money,
-                                color: Color(0xFF10B981), size: 14),
-                            SizedBox(width: 2),
-                            Text('Est. Fee',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 12)),
+                            const Icon(Icons.attach_money,
+                                color: AppTheme.accentSuccess, size: 14),
+                            const SizedBox(width: 2),
+                            Text(
+                              'Est. Fee',
+                              style: AppTheme.labelSm.copyWith(
+                                color: AppTheme.textTertiary,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '\$${estimatedFee.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
+                          style: AppTheme.titleMd.copyWith(
+                            color: AppTheme.accentSuccess,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -239,21 +277,23 @@ class BookingScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Checked in at ${session.checkInTime.hour.toString().padLeft(2, '0')}:${session.checkInTime.minute.toString().padLeft(2, '0')}',
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: AppTheme.bodySm.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                     Text(
                       'Rate: \$${session.hourlyRate.toStringAsFixed(2)}/hr',
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: AppTheme.bodySm.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -262,26 +302,30 @@ class BookingScreen extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppTheme.spaceLg),
 
-        // Scan to Check Out Button (design.md §19.4)
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFEF4444),
-            minimumSize: const Size.fromHeight(52),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 4,
+        // Scan to Check Out Button
+        SizedBox(
+          height: 52,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentCritical,
+              foregroundColor: AppTheme.onPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner, size: 22),
+            label: Text(
+              'Scan Exit Gate QR to Check Out',
+              style: AppTheme.labelLg.copyWith(
+                color: AppTheme.onPrimary,
+              ),
+            ),
+            onPressed: () => _openScanner(context, ref, session,
+                mode: QrScannerMode.exitCheckOut),
           ),
-          icon:
-              const Icon(Icons.qr_code_scanner, color: Colors.white, size: 22),
-          label: const Text(
-            'Scan Exit Gate QR to Check Out',
-            style: TextStyle(
-                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-          onPressed: () => _openScanner(context, ref, session,
-              mode: QrScannerMode.exitCheckOut),
         ),
       ],
     );
@@ -294,108 +338,156 @@ class BookingScreen extends ConsumerWidget {
       children: [
         // Digital Pass Card
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppTheme.spaceLg),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
+            color: AppTheme.surfacePure,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            border: Border.all(color: AppTheme.borderSubtle),
+            boxShadow: [
               BoxShadow(
-                  color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
             children: [
-              const Text(
-                'OPENPARKING PASS',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: Text(
+                  'OPENPARKING PASS',
+                  style: AppTheme.labelSm.copyWith(
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
-                    color: Colors.black87),
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               QrImageView(
                 data:
                     'openparking://session/start?bookingId=bk-9912&slotId=slot-a102',
                 version: QrVersions.auto,
                 size: 190.0,
+                dataModuleStyle: const QrDataModuleStyle(
+                  color: AppTheme.primary,
+                ),
+                eyeStyle: const QrEyeStyle(
+                  color: AppTheme.primary,
+                ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Scan at Entry Gate Terminal or scan gate QR below',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: AppTheme.bodySm.copyWith(
+                  color: AppTheme.textTertiary,
+                ),
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 22),
+        const SizedBox(height: AppTheme.spaceMd),
 
         // Zone & Bay Details Card
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppTheme.spaceMd),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.surfacePure,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            border: Border.all(color: AppTheme.borderSubtle),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Column(
-                children: [
-                  Text('Zone',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  SizedBox(height: 4),
-                  Text('Zone A',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
+              _InfoColumn(label: 'Zone', value: 'Zone A'),
+              Container(
+                width: 1,
+                height: 32,
+                color: AppTheme.borderSubtle,
               ),
-              Column(
-                children: [
-                  Text('Bay',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  SizedBox(height: 4),
-                  Text('A-102',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
+              _InfoColumn(label: 'Bay', value: 'A-102'),
+              Container(
+                width: 1,
+                height: 32,
+                color: AppTheme.borderSubtle,
               ),
-              Column(
-                children: [
-                  Text('Rate',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  SizedBox(height: 4),
-                  Text('\$5.00/hr',
-                      style: TextStyle(
-                          color: Color(0xFF10B981),
-                          fontWeight: FontWeight.bold)),
-                ],
+              _InfoColumn(
+                label: 'Rate',
+                value: '\$5.00/hr',
+                valueColor: AppTheme.accentSuccess,
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 22),
+        const SizedBox(height: AppTheme.spaceMd),
 
-        // Scan to Enter Button (design.md §5.1)
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
-            minimumSize: const Size.fromHeight(50),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 4,
+        // Scan to Enter Button
+        SizedBox(
+          height: 50,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: AppTheme.onPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner, size: 20),
+            label: Text(
+              'Scan Gate QR to Enter',
+              style: AppTheme.labelLg.copyWith(
+                color: AppTheme.onPrimary,
+              ),
+            ),
+            onPressed: () => _openScanner(context, ref, activeSession,
+                mode: QrScannerMode.entryCheckIn),
           ),
-          icon:
-              const Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
-          label: const Text(
-            'Scan Gate QR to Enter',
-            style: TextStyle(
-                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoColumn extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _InfoColumn({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: AppTheme.labelSm.copyWith(
+            color: AppTheme.textTertiary,
           ),
-          onPressed: () => _openScanner(context, ref, activeSession,
-              mode: QrScannerMode.entryCheckIn),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppTheme.labelLg.copyWith(
+            color: valueColor ?? AppTheme.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
