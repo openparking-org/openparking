@@ -264,6 +264,17 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         return Ok(ApiResponse<OccupancyStats>.Ok(stats, HttpContext.TraceIdentifier));
     }
 
+    [HttpGet("{id:guid}/route")]
+    public ActionResult<ApiResponse<object>> GetZoneRoute(Guid id, [FromQuery] Guid targetSlotId)
+    {
+        // Fallback route generation stub
+        var dummyRoute = new
+        {
+            Waypoints = new[] { new { X = 0, Y = 0 }, new { X = 10, Y = 10 } }
+        };
+        return Ok(ApiResponse<object>.Ok(dummyRoute, HttpContext.TraceIdentifier));
+    }
+
     private Guid? GetCurrentUserId()
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");

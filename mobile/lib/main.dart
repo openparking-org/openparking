@@ -7,7 +7,7 @@ import 'core/theme.dart';
 import 'modules/home/home_dashboard_screen.dart';
 import 'modules/space_availability/zone_discovery_screen.dart';
 import 'modules/booking/booking_screen.dart';
-import 'modules/enforcement/penalties_screen.dart';
+import 'modules/account/account_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +55,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     HomeDashboardScreen(),
     ZoneDiscoveryScreen(),
     BookingScreen(),
-    PenaltiesScreen(),
+    AccountScreen(),
   ];
 
   @override
