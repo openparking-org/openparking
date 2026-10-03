@@ -11,6 +11,9 @@ public static class SettingsKeys
     public const string PeakMultiplier = "pricing.peak_multiplier";
     public const string MaxSurgeMultiplier = "pricing.max_surge_multiplier";
 
+    /// <summary>How early a driver may check in ahead of their start time.</summary>
+    public const string EarlyCheckInMins = "booking.early_checkin_mins";
+
     public const string OverstayGracePeriodMins = "overstay.grace_period_mins";
     public const string OverstayPenaltyPerHour = "overstay.penalty_per_hour";
     public const string OverstayMaxPenaltyCap = "overstay.max_penalty_cap";

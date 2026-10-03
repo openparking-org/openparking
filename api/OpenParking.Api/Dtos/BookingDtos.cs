@@ -76,3 +76,77 @@ public class FeeBreakdownResponse
         Amount = quote.Amount
     };
 }
+
+public class CheckInRequest
+{
+    /// <summary>The code carried by the driver's digital pass, as scanned.</summary>
+    [Required]
+    public string QrCodeContent { get; set; } = string.Empty;
+}
+
+public class SessionResponse
+{
+    public Guid Id { get; init; }
+    public Guid BookingId { get; init; }
+    public Guid UserId { get; init; }
+    public Guid SlotId { get; init; }
+    public string SlotNumber { get; init; } = string.Empty;
+    public DateTime BookedStart { get; init; }
+    public DateTime BookedEnd { get; init; }
+    public DateTime CheckInTime { get; init; }
+    public DateTime? CheckOutTime { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public int OverstayMinutes { get; init; }
+    public decimal TotalFee { get; init; }
+    public decimal PenaltyFee { get; init; }
+
+    public static SessionResponse From(ParkingSession session, Booking booking, Slot? slot = null) => new()
+    {
+        Id = session.Id,
+        BookingId = session.BookingId,
+        UserId = session.UserId,
+        SlotId = session.SlotId,
+        SlotNumber = (slot ?? booking.Slot)?.SlotNumber ?? string.Empty,
+        BookedStart = booking.StartTime,
+        BookedEnd = booking.EndTime,
+        CheckInTime = session.CheckInTime,
+        CheckOutTime = session.CheckOutTime,
+        Status = session.Status.ToString(),
+        OverstayMinutes = session.OverstayMinutes,
+        TotalFee = session.TotalFee,
+        PenaltyFee = session.PenaltyFee
+    };
+}
+
+/// <summary>Itemised receipt returned at check-out.</summary>
+public class ReceiptResponse
+{
+    public Guid SessionId { get; init; }
+    public Guid BookingId { get; init; }
+    public string SlotNumber { get; init; } = string.Empty;
+    public DateTime CheckInTime { get; init; }
+    public DateTime CheckOutTime { get; init; }
+    public int BillableHours { get; init; }
+    public decimal ParkingFee { get; init; }
+    public int OverstayMinutes { get; init; }
+    public int ChargeableOverstayMinutes { get; init; }
+    public decimal PenaltyFee { get; init; }
+    public bool PenaltyWasCapped { get; init; }
+    public decimal TotalFee { get; init; }
+
+    public static ReceiptResponse From(ParkingSession session, Booking booking, SessionCharge charge, Slot? slot) => new()
+    {
+        SessionId = session.Id,
+        BookingId = booking.Id,
+        SlotNumber = slot?.SlotNumber ?? string.Empty,
+        CheckInTime = session.CheckInTime,
+        CheckOutTime = session.CheckOutTime ?? DateTime.UtcNow,
+        BillableHours = charge.BillableHours,
+        ParkingFee = charge.ParkingFee,
+        OverstayMinutes = charge.OverstayMinutes,
+        ChargeableOverstayMinutes = charge.ChargeableOverstayMinutes,
+        PenaltyFee = charge.PenaltyFee,
+        PenaltyWasCapped = charge.PenaltyWasCapped,
+        TotalFee = charge.TotalFee
+    };
+}
