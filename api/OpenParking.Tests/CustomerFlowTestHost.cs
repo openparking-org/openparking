@@ -51,7 +51,7 @@ public static class CustomerFlowTestHost
         var clients = new Mock<IHttpClientFactory>(); clients.Setup(c => c.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient(new IsolatedAiHandler()));
         builder.Services.AddSingleton(clients.Object);
         builder.Services.AddScoped<IBookingService, BookingService>(); builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<ISettingsService, SettingsService>(); builder.Services.AddScoped<IZoneService, ZoneService>();
+        builder.Services.AddScoped<ISettingsService, SettingsService>(); builder.Services.AddScoped<IFeePolicyProvider, FeePolicyProvider>(); builder.Services.AddScoped<IZoneService, ZoneService>();
         builder.Services.AddScoped<IEnforcementService>(services => new EnforcementService(services.GetRequiredService<AppDbContext>(), new HttpClient(new IsolatedAiHandler()),
             services.GetRequiredService<IEmailService>(), services.GetRequiredService<IRealtimeNotifier>(), services.GetRequiredService<ISettingsService>(),
             builder.Configuration, services.GetRequiredService<ILogger<EnforcementService>>()));

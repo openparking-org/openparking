@@ -18,7 +18,8 @@ public class GateAndCustomerFlowTests
         .UseInMemoryDatabase(Guid.NewGuid().ToString())
         .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning)).Options);
     private static BookingService BookingService(AppDbContext db) => new(db, Mock.Of<IEmailService>(),
-        Mock.Of<IRealtimeNotifier>(), Mock.Of<ILogger<BookingService>>(), new ConfigurationBuilder().Build(), Mock.Of<IHttpClientFactory>());
+        Mock.Of<IRealtimeNotifier>(), Mock.Of<ILogger<BookingService>>(), new ConfigurationBuilder().Build(), Mock.Of<IHttpClientFactory>(),
+        new FeePolicyProvider(new SettingsService(db, new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()))));
     private static async Task<Booking> Seed(AppDbContext db)
     {
         var user = new User { Email = "driver@example.test", FullName = "Test Driver" };

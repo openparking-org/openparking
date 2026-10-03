@@ -28,7 +28,8 @@ public class BookingRegressionTests
         factory.Setup(f => f.CreateClient(It.IsAny<string>()))
             .Returns(new HttpClient(handler ?? new PricingHandler(_ => Task.CompletedTask)));
         return new BookingService(db, Mock.Of<IEmailService>(), Mock.Of<IRealtimeNotifier>(),
-            Mock.Of<ILogger<BookingService>>(), new ConfigurationBuilder().Build(), factory.Object);
+            Mock.Of<ILogger<BookingService>>(), new ConfigurationBuilder().Build(), factory.Object,
+            new FeePolicyProvider(new SettingsService(db, new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()))));
     }
 
     private static async Task<(User User, Slot Slot)> SeedAsync(AppDbContext db)
