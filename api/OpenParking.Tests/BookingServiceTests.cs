@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -14,6 +15,10 @@ namespace OpenParking.Tests;
 
 public class BookingServiceTests
 {
+    /// <summary>Real policy provider over the test database, so fees follow seeded settings.</summary>
+    private static IFeePolicyProvider Policies(AppDbContext db) =>
+        new FeePolicyProvider(new SettingsService(db, new MemoryCache(new MemoryCacheOptions())));
+
     private AppDbContext GetInMemoryDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -43,7 +48,7 @@ public class BookingServiceTests
         var configMock = new Mock<IConfiguration>();
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object, Policies(db));
 
         var req = new CheckInRequest
         {
@@ -94,7 +99,7 @@ public class BookingServiceTests
         var configMock = new Mock<IConfiguration>();
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object, Policies(db));
 
         var req = new CheckInRequest
         {
@@ -131,7 +136,7 @@ public class BookingServiceTests
         var httpClient = new HttpClient(handlerMock.Object);
         httpClientFactoryMock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object, Policies(db));
 
         var req = new CreateBookingRequest
         {
@@ -183,7 +188,7 @@ public class BookingServiceTests
         var configMock = new Mock<IConfiguration>();
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object, Policies(db));
 
         var cancelled = await service.CancelBookingAsync(booking.Id, userId);
 
@@ -233,7 +238,7 @@ public class BookingServiceTests
         var configMock = new Mock<IConfiguration>();
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
-        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
+        var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object, Policies(db));
 
         var result = await service.CheckOutAsync(new CheckOutRequest { SessionId = session.Id }, "127.0.0.1");
 

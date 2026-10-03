@@ -97,6 +97,7 @@ builder.Services.AddAuthorization();
 
 // Shared infrastructure
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<IFeePolicyProvider, FeePolicyProvider>();
 builder.Services.AddHttpClient<IEmailService, EmailService>(client =>
 {
     client.DefaultRequestHeaders.Add("Authorization",

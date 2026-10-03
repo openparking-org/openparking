@@ -28,7 +28,8 @@ public class BookingService(
     IRealtimeNotifier realtimeNotifier,
     ILogger<BookingService> logger,
     IConfiguration config,
-    IHttpClientFactory httpClientFactory) : IBookingService
+    IHttpClientFactory httpClientFactory,
+    IFeePolicyProvider feePolicies) : IBookingService
 {
     // ── IParkingModule ─────────────────────────────────────────────────────
     public string ModuleName => "Booking & Payment";
@@ -54,11 +55,7 @@ public class BookingService(
     /// <summary>QR content prefix. Flutter scanner validates this prefix before calling check-in.</summary>
     private const string QrPrefix = "openparking://session/start?bookingId=";
 
-    /// <summary>Bill in 15-minute blocks, minimum 1 block (design.md §19.2).</summary>
-    private const decimal BillBlockMinutes = 15m;
-
-    private const decimal DefaultHourlyRate  = 5.00m;
-    private const decimal DisabilityDiscount = 0.15m;
+    // Rates, discount and penalty policy live in FeePolicy / FeeRules.
 
     // ── Bookings ───────────────────────────────────────────────────────────
 
@@ -98,15 +95,12 @@ public class BookingService(
         // 5. Load user (for disability discount)
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
 
-        // Check if pricing is globally enabled
-        var isEnabledSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.is_enabled");
-        bool pricingEnabled = isEnabledSetting == null || (bool.TryParse(isEnabledSetting.Value, out var b) ? b : true);
-
+        var policy = await feePolicies.GetAsync();
         decimal estimatedFee = 0m;
 
-        if (pricingEnabled)
+        if (policy.PricingEnabled)
         {
-            var hourlyRate   = slot.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
+            var hourlyRate   = slot.Zone?.BaseHourlyRate ?? policy.BaseHourlyRate;
 
             // Fetch dynamic surge multipliers from DB settings
             var criticalSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.surge_critical_multiplier");
@@ -151,11 +145,18 @@ public class BookingService(
                 logger.LogWarning(ex, "Failed to fetch dynamic pricing from AI service. Falling back to base rate.");
             }
 
-            var durationHrs  = (decimal)(req.EndTime - req.StartTime).TotalHours;
-            estimatedFee = Math.Round(hourlyRate * multiplier * durationHrs, 2);
+            // Same 15-minute block rule as check-out, so leaving on time costs
+            // what was quoted. The AI's multiplier is clamped to policy here.
+            var quote = FeeRules.Quote(
+                policy, req.StartTime, req.EndTime, hourlyRate, multiplier,
+                hasDisabilityPermit: user?.HasDisabilityPermit == true);
 
-            if (user?.HasDisabilityPermit == true)
-                estimatedFee = Math.Round(estimatedFee * (1m - DisabilityDiscount), 2);
+            if (quote.SurgeWasCapped)
+                logger.LogWarning(
+                    "Surge {Requested}x from the pricing agent exceeds the {Max}x policy ceiling; applied {Applied}x",
+                    quote.RequestedSurge, policy.MaxSurgeMultiplier, quote.AppliedSurge);
+
+            estimatedFee = quote.Amount;
         }
 
         // 6. Transactional booking + slot reservation
@@ -393,37 +394,28 @@ public class BookingService(
 
         var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == session.SlotId);
 
-        var isEnabledSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.is_enabled");
-        bool pricingEnabled = isEnabledSetting == null || (bool.TryParse(isEnabledSetting.Value, out var b) ? b : true);
+        var policy = await feePolicies.GetAsync();
 
-        var subtotal = 0m;
-        decimal penaltyFee = 0m;
-        int overstayMins = 0;
+        // Grace period and penalty cap now come from overstay.grace_period_mins
+        // and overstay.max_penalty_cap; previously both were ignored, so one
+        // minute late cost a full penalty hour and long overstays were uncapped.
+        var charge = FeeRules.Settle(
+            policy,
+            checkIn: session.CheckInTime,
+            checkOut: now,
+            bookedEnd: session.Booking?.EndTime,
+            zoneHourlyRate: slot?.Zone?.BaseHourlyRate,
+            hasDisabilityPermit: session.Booking?.User?.HasDisabilityPermit == true);
 
-        if (session.Booking != null && now > session.Booking.EndTime)
-        {
-            overstayMins = (int)(now - session.Booking.EndTime).TotalMinutes;
-        }
+        var penaltyFee = charge.PenaltyFee;
+        var overstayMins = charge.OverstayMinutes;
 
-        if (pricingEnabled)
-        {
-            var hourlyRate = slot?.Zone?.BaseHourlyRate ?? DefaultHourlyRate;
+        if (charge.PenaltyWasCapped)
+            logger.LogInformation(
+                "Overstay penalty for session {SessionId} capped at {Cap} (uncapped {Uncapped})",
+                session.Id, policy.PenaltyCap, charge.UncappedPenalty);
 
-            // Fee calculation — 15-min billing blocks
-            var rawMinutes = (now - session.CheckInTime).TotalMinutes;
-            var billableBlocks = (decimal)Math.Ceiling(Math.Max(rawMinutes, (double)BillBlockMinutes) / (double)BillBlockMinutes);
-            subtotal = Math.Round(billableBlocks * BillBlockMinutes / 60m * hourlyRate, 2);
-
-            // Overstay penalty
-            if (overstayMins > 0)
-            {
-                var penaltyRate = await GetPenaltyRateAsync();
-                var extraHours = (decimal)Math.Ceiling(overstayMins / 60.0);
-                penaltyFee = Math.Round(extraHours * penaltyRate, 2);
-            }
-        }
-
-        session.TotalFee = subtotal + penaltyFee;
+        session.TotalFee = charge.TotalFee;
         session.PenaltyFee = penaltyFee;
         session.OverstayMinutes = overstayMins;
         session.ReceiptPdfUrl = $"/receipts/{session.Id}.pdf";
@@ -572,18 +564,5 @@ public class BookingService(
         var afterPrefix = qrContent[QrPrefix.Length..];
         var guidPart    = afterPrefix.Split('&')[0];
         return Guid.TryParse(guidPart, out bookingId);
-    }
-
-    private async Task<decimal> GetPenaltyRateAsync()
-    {
-        var setting = await db.SystemSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Key == "overstay.penalty_per_hour" ||
-                                      s.Key == "overstay_penalty_per_hour");
-
-        if (setting is not null && decimal.TryParse(setting.Value, out var rate))
-            return rate;
-
-        return 25.00m; // design.md §19.2 default
     }
 }
