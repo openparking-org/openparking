@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenParking.Api.Dtos;
+using OpenParking.Api.Security;
 using OpenParking.Core.Entities;
 using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
@@ -14,6 +16,7 @@ namespace OpenParking.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SessionsController(
     AppDbContext db,
     IFeeCalculationService fees,
@@ -21,6 +24,7 @@ public class SessionsController(
     ILogger<SessionsController> logger) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = Roles.Staff)]
     public async Task<IActionResult> GetSessions([FromQuery] PaginatedQuery query, [FromQuery] SessionStatus? status = null)
     {
         var sessions = db.ParkingSessions
@@ -58,14 +62,22 @@ public class SessionsController(
         if (session?.Booking == null)
             return NotFound(new { error = $"Session '{id}' not found" });
 
+        if (!User.IsStaff() && session.UserId != User.UserId())
+            return NotFound(new { error = $"Session '{id}' not found" });
+
         return Ok(SessionResponse.From(session, session.Booking));
     }
 
     /// <summary>
     /// Exchanges a scanned pass code for an active session. The code is an
     /// opaque reference, so it is resolved by lookup rather than decoded.
+    ///
+    /// Restricted to staff because the scanner is operated at the gate. If a
+    /// driver could call this themselves they could also call check-out, and so
+    /// close their own session early to dodge an overstay penalty.
     /// </summary>
     [HttpPost("check-in")]
+    [Authorize(Roles = Roles.Staff)]
     public async Task<IActionResult> CheckIn([FromBody] CheckInRequest request)
     {
         if (!DigitalPass.IsWellFormed(request.QrCodeContent))
@@ -136,6 +148,7 @@ public class SessionsController(
     /// the driver can see exactly how the figure was reached.
     /// </summary>
     [HttpPost("{id:guid}/check-out")]
+    [Authorize(Roles = Roles.Staff)]
     public async Task<IActionResult> CheckOut(Guid id)
     {
         var session = await db.ParkingSessions

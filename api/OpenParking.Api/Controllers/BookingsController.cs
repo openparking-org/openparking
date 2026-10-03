@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenParking.Api.Dtos;
+using OpenParking.Api.Security;
 using OpenParking.Core.Entities;
 using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
@@ -14,6 +16,7 @@ namespace OpenParking.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BookingsController(
     AppDbContext db,
     IFeeCalculationService fees,
@@ -30,7 +33,11 @@ public class BookingsController(
             .Include(b => b.Slot)!.ThenInclude(s => s!.Zone)
             .AsNoTracking();
 
-        if (userId.HasValue)
+        // A driver may only ever see their own reservations; the userId filter
+        // is an administrative convenience, not something a driver can widen.
+        if (!User.IsStaff())
+            bookings = bookings.Where(b => b.UserId == User.UserId());
+        else if (userId.HasValue)
             bookings = bookings.Where(b => b.UserId == userId.Value);
 
         if (status.HasValue)
@@ -60,6 +67,11 @@ public class BookingsController(
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (booking == null)
+            return NotFound(new { error = $"Booking '{id}' not found" });
+
+        // Report another driver's booking as missing rather than forbidden, so
+        // the response cannot be used to probe which ids exist.
+        if (!User.IsStaff() && booking.UserId != User.UserId())
             return NotFound(new { error = $"Booking '{id}' not found" });
 
         return Ok(BookingResponse.From(booking));
@@ -108,8 +120,9 @@ public class BookingsController(
         if (slot.Status == SlotStatus.Maintenance)
             return Conflict(new { error = $"Slot '{slot.SlotNumber}' is out of service" });
 
-        if (!await db.Users.AnyAsync(u => u.Id == request.UserId))
-            return NotFound(new { error = $"User '{request.UserId}' not found" });
+        var userId = User.UserId();
+        if (userId is null)
+            return Unauthorized(new { error = "Token does not identify a user" });
 
         // Two reservations clash when each starts before the other ends. Held in
         // the booking table rather than on Slot.Status, because a slot can carry
@@ -131,7 +144,7 @@ public class BookingsController(
 
         var booking = new Booking
         {
-            UserId = request.UserId,
+            UserId = userId.Value,
             SlotId = request.SlotId,
             StartTime = request.StartTime,
             EndTime = request.EndTime,
@@ -160,6 +173,9 @@ public class BookingsController(
         var booking = await db.Bookings.FirstOrDefaultAsync(b => b.Id == id);
 
         if (booking == null)
+            return NotFound(new { error = $"Booking '{id}' not found" });
+
+        if (!User.IsStaff() && booking.UserId != User.UserId())
             return NotFound(new { error = $"Booking '{id}' not found" });
 
         if (booking.Status == BookingStatus.Cancelled)

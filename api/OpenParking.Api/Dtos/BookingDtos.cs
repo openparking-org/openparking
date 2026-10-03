@@ -6,8 +6,8 @@ namespace OpenParking.Api.Dtos;
 
 public class CreateBookingRequest
 {
-    [Required]
-    public Guid UserId { get; set; }
+    // Deliberately no UserId: the owner is taken from the bearer token, so a
+    // caller cannot create or price a reservation in someone else's name.
 
     [Required]
     public Guid SlotId { get; set; }
