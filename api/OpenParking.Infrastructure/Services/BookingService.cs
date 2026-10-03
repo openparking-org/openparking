@@ -189,6 +189,10 @@ public class BookingService(
             logger.LogInformation("Booking created: {BookingId} slot={SlotId} user={UserId}",
                 bookingId, req.SlotId, userId);
 
+            // Broadcast real-time update so other users see this slot as Reserved
+            await realtimeNotifier.NotifySlotUpdatedAsync(
+                slot.ZoneId.ToString(), slot.Id.ToString(), SlotStatus.Reserved.ToString());
+
             // Send confirmation email (non-fatal)
             if (user is not null)
                 await emailService.SendBookingConfirmationAsync(user.Email, user.FullName, booking);

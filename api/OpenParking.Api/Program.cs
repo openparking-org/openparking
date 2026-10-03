@@ -21,7 +21,11 @@ if (builder.Environment.IsDevelopment())
     builder.Logging.AddDebug();
 
 // ── MVC / SignalR ────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 var signalRBuilder = builder.Services.AddSignalR();
 var redisUrl = builder.Configuration["REDIS_URL"];
@@ -129,9 +133,9 @@ builder.Services.AddHostedService<OpenParking.Infrastructure.Services.OverstayDe
 // ── CORS ──────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
-    // Dev: allow all origins (Vite / Flutter dev servers)
+    // Dev: allow all origins (Vite / Flutter dev servers) while supporting credentials
     options.AddPolicy("DevAllowAll", p =>
-        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        p.SetIsOriginAllowed(_ => true).AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 
     // Prod: restrict to Cloudflare Pages origin
     var cfPagesOrigin = builder.Configuration["AllowedOrigins:CloudflarePages"] ?? "";

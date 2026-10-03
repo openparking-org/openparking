@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './modules/user-access/LoginPage';
 import { PermitsPage } from './modules/user-access/PermitsPage';
 import { PenaltyApprovals } from './modules/enforcement/PenaltyApprovals';
+import { DriverBookingLayout } from './modules/booking/DriverBookingLayout';
 
 // --- Types & Context ---
 
@@ -87,6 +88,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           <li><Link to="/permits">Permits Review</Link></li>
           <li><Link to="/settings">Settings</Link></li>
           <li><Link to="/slot-mapping">Slot Mapping</Link></li>
+          <li><Link to="/book-parking">🅿️ Book Parking</Link></li>
         </ul>
         <hr />
         <p>Global Currency: <strong>{settings.defaultCurrency}</strong></p>
@@ -345,6 +347,7 @@ export default function App() {
                     </ProtectedRoute>
                   } />
                   <Route path="/slot-mapping" element={<SlotMapping />} />
+                  <Route path="/book-parking" element={<DriverBookingLayout />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>
