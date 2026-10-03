@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 
 from routing.astar import astar
 from agents.planner import PlannerAgent, WorkflowState
+from agents.action import ActionAgent
+from agents.contracts import ActionProposal, PenaltyProposalRequest, SurgePricingRequest
 
 app = FastAPI(
     title="OpenParking AI Service",
@@ -13,6 +15,7 @@ app = FastAPI(
 )
 
 planner = PlannerAgent()
+action_agent = ActionAgent()
 
 # ---------------------------------------------------------
 # Request & Response Models
@@ -78,6 +81,30 @@ async def calculate_route(req: RoutingRequest) -> RoutingResponse:
         coordinates=coordinates,
         distancePx=round(total_dist, 2)
     )
+
+@app.post("/agents/action/surge-pricing", response_model=ActionProposal)
+async def propose_surge_pricing(req: SurgePricingRequest) -> ActionProposal:
+    """
+    Action Agent (Booking & Payment slice): propose a surge multiplier for a zone.
+
+    Returns a proposal, never an applied change. A proposal whose status is
+    NEEDS_HUMAN_APPROVAL must be approved by an administrator before the API
+    prices anything with it.
+    """
+    return await action_agent.propose_surge_pricing(req)
+
+
+@app.post("/agents/action/overstay-penalty", response_model=ActionProposal)
+async def propose_overstay_penalty(req: PenaltyProposalRequest) -> ActionProposal:
+    """
+    Action Agent: propose an overstay penalty for a finished session.
+
+    The amount is bounded by overstay.max_penalty_cap read from system settings
+    at call time; if settings cannot be read the agent fails safe with a zero
+    amount rather than charging from a built-in default.
+    """
+    return await action_agent.propose_penalty(req)
+
 
 @app.post("/workflows/execute")
 async def execute_workflow(req: WorkflowRequest) -> Dict[str, Any]:
