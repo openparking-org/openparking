@@ -6,7 +6,7 @@ services:
     ports:
       - "5000:8080"
     environment:
-      - ConnectionStrings__Default=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}
+      - ConnectionStrings__Default=${API_CONNECTION_STRING:-Host=db;Port=5432;Database=openparking;Username=dev;Password=dev}
       - JWT__Secret=${JWT_SECRET:-dev-super-secret-key-that-is-at-least-32-chars-long}
       - JWT__ExpiryHours=${JWT_EXPIRY_HOURS:-24}
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-pk.demo}
