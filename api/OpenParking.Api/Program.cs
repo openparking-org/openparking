@@ -24,10 +24,7 @@ if (builder.Environment.IsDevelopment())
 
 // ── MVC / SignalR ────────────────────────────────────────────────────────
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-    });
+    .AddJsonOptions(options => ApiJson.Configure(options.JsonSerializerOptions));
 builder.Services.AddEndpointsApiExplorer();
 var signalRBuilder = builder.Services.AddSignalR();
 var redisUrl = builder.Configuration["REDIS_URL"];

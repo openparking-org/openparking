@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OpenParking.Api.Configuration;
 using OpenParking.Core.Entities;
 using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
@@ -13,8 +15,9 @@ using Xunit;
 namespace OpenParking.Tests;
 
 /// <summary>
-/// Booking creation failed with a 500 against Postgres when a client sent a
-/// time with no timezone, which is what the Flutter app did.
+/// Booking creation failed with a 500 from both clients against Postgres:
+/// the Flutter app sent times with no timezone, and a successful booking could
+/// not be serialised back because of an entity reference cycle.
 /// </summary>
 public class BookingCreationRegressionTests
 {
@@ -80,4 +83,23 @@ public class BookingCreationRegressionTests
         Assert.Equal(startUtc, saved.StartTime, TimeSpan.FromSeconds(1));
     }
 
+    [Fact]
+    public async Task CreatedBooking_SerialisesWithTheApiJsonSettings()
+    {
+        // The booking's Slot -> Zone -> Slots navigation is a cycle. With the
+        // API's settings it must serialise instead of throwing after commit.
+        var (service, _, slot, user) = Arrange();
+        var start = DateTime.UtcNow.AddHours(1);
+        var booking = await service.CreateBookingAsync(
+            new CreateBookingRequest { SlotId = slot.Id, StartTime = start, EndTime = start.AddHours(2) }, user.Id);
+        booking.Slot = slot;
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        ApiJson.Configure(options);
+
+        var json = JsonSerializer.Serialize(ApiResponse<Booking>.Ok(booking, "trace"), options);
+
+        Assert.Contains("\"slotNumber\":\"A-1\"", json);
+        Assert.Contains("\"status\":\"Pending\"", json); // enums stay strings
+    }
 }
