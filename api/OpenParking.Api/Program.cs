@@ -41,6 +41,8 @@ var connectionString = builder.Configuration["DATABASE_URL"] ?? builder.Configur
     ?? throw new InvalidOperationException(
         "Connection string is not set. Add DATABASE_URL to .env or ConnectionStrings:Default to appsettings.");
 
+connectionString = PostgresConnectionString.Normalize(connectionString);
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
