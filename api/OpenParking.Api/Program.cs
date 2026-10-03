@@ -1,3 +1,4 @@
+using OpenParking.Api.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ using OpenParking.Infrastructure.Services;
 var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.TraversePath().Load();
 builder.Configuration.AddEnvironmentVariables();
+FlatEnvAliases.Apply(builder.Configuration, builder.Configuration);
 
 // ── Logging (structured, easy grep in prod) ──────────────────────────────
 builder.Logging.ClearProviders();
@@ -51,7 +53,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // ── JWT Authentication ────────────────────────────────────────────────────
-var jwtSecret = builder.Configuration["JWT_SECRET"] ?? builder.Configuration["JWT:Secret"]
+// Same key UserService signs with; FlatEnvAliases maps JWT_SECRET onto it.
+var jwtSecret = builder.Configuration["JWT:Secret"]
     ?? throw new InvalidOperationException(
         "JWT:Secret is not configured. Add it to appsettings.json or the JWT_SECRET environment variable.");
 
