@@ -73,6 +73,12 @@ public class BookingService(
                 $"Slot '{slot.SlotNumber}' is not available (current status: {slot.Status}).", 409);
 
         // 3. Time range validation
+        // Normalise to UTC before anything touches the database: Npgsql only
+        // writes UTC to timestamptz, and a time sent with an offset arrives
+        // here as Kind=Local, which previously surfaced as a 500.
+        req.StartTime = RequireUtc(req.StartTime, "startTime");
+        req.EndTime   = RequireUtc(req.EndTime, "endTime");
+
         if (req.StartTime >= req.EndTime)
             throw new AppException(ErrorCodes.InvalidBookingTime,
                 "Booking end time must be after start time.");
@@ -555,6 +561,20 @@ public class BookingService(
     }
 
     // ── Private Helpers ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Converts a client-supplied time to UTC. A time with an offset or a Z is
+    /// unambiguous and is converted. A time with neither is refused: it could be
+    /// the driver's local wall clock or UTC, and guessing would silently shift a
+    /// Sri Lankan driver's booking by five and a half hours.
+    /// </summary>
+    private static DateTime RequireUtc(DateTime value, string field) => value.Kind switch
+    {
+        DateTimeKind.Utc   => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => throw new AppException(ErrorCodes.InvalidBookingTime,
+                 $"{field} must include a timezone, e.g. 2026-10-05T10:00:00Z or 2026-10-05T15:30:00+05:30.")
+    };
 
     private static bool TryParseQr(string qrContent, out Guid bookingId)
     {
