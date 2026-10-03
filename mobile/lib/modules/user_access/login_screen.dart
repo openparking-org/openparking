@@ -111,8 +111,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: AppTheme.textPrimary,
                     onPressed: () {},
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                        minWidth: 40, minHeight: 40),
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
                   Row(
                     children: [
@@ -139,8 +139,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: AppTheme.textSecondary,
                     onPressed: () {},
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                        minWidth: 40, minHeight: 40),
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
                 ],
               ),
@@ -213,11 +213,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _isPhoneTab = true),
+                                onTap: () => setState(() => _isPhoneTab = true),
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 150),
+                                  duration: const Duration(milliseconds: 150),
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
@@ -232,8 +230,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               color: Colors.black
                                                   .withValues(alpha: 0.04),
                                               blurRadius: 4,
-                                              offset:
-                                                  const Offset(0, 1),
+                                              offset: const Offset(0, 1),
                                             ),
                                           ]
                                         : null,
@@ -255,8 +252,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 onTap: () =>
                                     setState(() => _isPhoneTab = false),
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 150),
+                                  duration: const Duration(milliseconds: 150),
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
@@ -271,8 +267,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               color: Colors.black
                                                   .withValues(alpha: 0.04),
                                               blurRadius: 4,
-                                              offset:
-                                                  const Offset(0, 1),
+                                              offset: const Offset(0, 1),
                                             ),
                                           ]
                                         : null,
@@ -297,14 +292,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // ── NAME FIELD (Register mode only) ──
                     if (_isRegisterMode) ...[
-                      Text('Full Name', style: AppTheme.labelMd),
+                      const Text('Full Name', style: AppTheme.labelMd),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _nameController,
                         style: AppTheme.bodyMd,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'John Doe',
-                          prefixIcon: const Icon(Icons.person_outline,
+                          prefixIcon: Icon(Icons.person_outline,
                               color: AppTheme.textTertiary, size: 18),
                         ),
                       ),
@@ -341,7 +336,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppTheme.spaceMd),
 
                     // ── PASSWORD FIELD ──
-                    Text('Password', style: AppTheme.labelMd),
+                    const Text('Password', style: AppTheme.labelMd),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _passwordController,
@@ -419,8 +414,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           backgroundColor: AppTheme.primary,
                           foregroundColor: AppTheme.onPrimary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.radiusXl),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusXl),
                           ),
                           elevation: 0,
                         ),
@@ -488,8 +483,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           color: AppTheme.borderSubtle),
                                     ),
                                     child: const Icon(Icons.fingerprint,
-                                        size: 20,
-                                        color: AppTheme.textPrimary),
+                                        size: 20, color: AppTheme.textPrimary),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -513,8 +507,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ),
                                   const Icon(Icons.arrow_forward,
-                                      size: 18,
-                                      color: AppTheme.textSecondary),
+                                      size: 18, color: AppTheme.textSecondary),
                                 ],
                               ),
                             ),
@@ -532,8 +525,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: Divider(color: AppTheme.borderSubtle),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
                               'OR CONTINUE WITH',
                               style: AppTheme.labelSm.copyWith(
@@ -597,8 +589,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () {
                           setState(() {
                             _isRegisterMode = false;
-                            _emailController.text =
-                                'driver@openparking.test';
+                            _emailController.text = 'driver@openparking.test';
                             _passwordController.text = 'Password123!';
                           });
                         },

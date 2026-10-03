@@ -100,8 +100,7 @@ class PenaltiesScreen extends ConsumerWidget {
                 else
                   ...penaltyState.penalties.map(
                     (penalty) => Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: AppTheme.spaceSm),
+                      padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
                       child: _buildPenaltyCard(context, ref, penalty),
                     ),
                   ),
@@ -206,8 +205,8 @@ class PenaltiesScreen extends ConsumerWidget {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(100),
@@ -305,8 +304,7 @@ class PenaltiesScreen extends ConsumerWidget {
                     foregroundColor: const Color(0xFFF59E0B),
                     side: const BorderSide(color: Color(0xFFF59E0B)),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusLg),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
                   ),
                 ),
@@ -353,7 +351,7 @@ class PenaltiesScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Dispute Penalty Fine',
                 style: AppTheme.headlineSm,
               ),
@@ -375,8 +373,7 @@ class PenaltiesScreen extends ConsumerWidget {
                   filled: true,
                   fillColor: AppTheme.surfaceSubtle,
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.radiusXl),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -415,8 +412,7 @@ class PenaltiesScreen extends ConsumerWidget {
                     foregroundColor: AppTheme.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusXl),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     ),
                   ),
                   child: Text(

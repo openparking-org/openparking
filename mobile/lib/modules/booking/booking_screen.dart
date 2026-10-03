@@ -85,9 +85,8 @@ class BookingScreen extends ConsumerWidget {
                 icon: const Icon(Icons.refresh, size: 20),
                 color: AppTheme.primary,
                 tooltip: 'Refresh Status',
-                onPressed: () => ref
-                    .read(activeSessionProvider.notifier)
-                    .startPolling(),
+                onPressed: () =>
+                    ref.read(activeSessionProvider.notifier).startPolling(),
               ),
             ],
           ),
@@ -158,8 +157,8 @@ class BookingScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppTheme.accentSuccess.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(100),
@@ -355,8 +354,8 @@ class BookingScreen extends ConsumerWidget {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceSubtle,
                   borderRadius: BorderRadius.circular(100),
@@ -409,19 +408,19 @@ class BookingScreen extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _InfoColumn(label: 'Zone', value: 'Zone A'),
+              const _InfoColumn(label: 'Zone', value: 'Zone A'),
               Container(
                 width: 1,
                 height: 32,
                 color: AppTheme.borderSubtle,
               ),
-              _InfoColumn(label: 'Bay', value: 'A-102'),
+              const _InfoColumn(label: 'Bay', value: 'A-102'),
               Container(
                 width: 1,
                 height: 32,
                 color: AppTheme.borderSubtle,
               ),
-              _InfoColumn(
+              const _InfoColumn(
                 label: 'Rate',
                 value: '\$5.00/hr',
                 valueColor: AppTheme.accentSuccess,

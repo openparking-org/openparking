@@ -56,7 +56,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                     ),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.location_on,
                           size: 13,
                           color: AppTheme.textTertiary,
@@ -182,13 +182,11 @@ class HomeDashboardScreen extends ConsumerWidget {
                 else if (zoneState.zones.isEmpty)
                   _buildEmptyZonesState()
                 else
-                  ...zoneState.zones
-                      .take(5)
-                      .map((zone) => Padding(
-                            padding: const EdgeInsets.only(
-                                bottom: AppTheme.spaceSm),
-                            child: _NearbyZoneCard(zone: zone),
-                          )),
+                  ...zoneState.zones.take(5).map((zone) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: AppTheme.spaceSm),
+                        child: _NearbyZoneCard(zone: zone),
+                      )),
 
                 const SizedBox(height: 100), // Bottom nav padding
               ]),
@@ -369,8 +367,8 @@ class _ActiveSessionHero extends StatelessWidget {
 
                 // Vehicle info
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(4),
@@ -378,7 +376,7 @@ class _ActiveSessionHero extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.directions_car,
                         size: 14,
                         color: AppTheme.surfaceDim,
@@ -459,10 +457,9 @@ class _ActiveSessionHero extends StatelessWidget {
                         borderRadius: BorderRadius.circular(100),
                         child: LinearProgressIndicator(
                           value: progress,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white),
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          valueColor:
+                              const AlwaysStoppedAnimation<Color>(Colors.white),
                           minHeight: 6,
                         ),
                       ),
@@ -504,8 +501,8 @@ class _ActiveSessionHero extends StatelessWidget {
                             foregroundColor: AppTheme.primary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusXl),
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusXl),
                             ),
                           ),
                           child: Row(
@@ -532,14 +529,13 @@ class _ActiveSessionHero extends StatelessWidget {
                         onPressed: () {},
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.1),
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
                           side: BorderSide(
                             color: Colors.white.withValues(alpha: 0.2),
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.radiusXl),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusXl),
                           ),
                         ),
                         child: const Icon(
@@ -581,8 +577,7 @@ class _NoActiveSessionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(100),
@@ -596,7 +591,7 @@ class _NoActiveSessionCard extends StatelessWidget {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppTheme.surfaceMuted,
                     shape: BoxShape.circle,
                   ),
@@ -637,8 +632,7 @@ class _NoActiveSessionCard extends StatelessWidget {
                 foregroundColor: AppTheme.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusXl),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                 ),
               ),
               child: Row(
@@ -728,7 +722,7 @@ class _QuickActionCard extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.surfaceSubtle,
                   shape: BoxShape.circle,
                 ),
@@ -745,8 +739,8 @@ class _QuickActionCard extends StatelessWidget {
               const SizedBox(height: 2),
               if (subtitleColor != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceSubtle,
                     borderRadius: BorderRadius.circular(100),
@@ -836,10 +830,9 @@ class _NearbyZoneCard extends StatelessWidget {
                                     horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: AppTheme.surfaceSubtle,
-                                  borderRadius:
-                                      BorderRadius.circular(100),
-                                  border: Border.all(
-                                      color: AppTheme.borderSubtle),
+                                  borderRadius: BorderRadius.circular(100),
+                                  border:
+                                      Border.all(color: AppTheme.borderSubtle),
                                 ),
                                 child: Text(
                                   statusText,
@@ -855,8 +848,7 @@ class _NearbyZoneCard extends StatelessWidget {
                           Row(
                             children: [
                               const Icon(Icons.navigation,
-                                  size: 14,
-                                  color: AppTheme.textSecondary),
+                                  size: 14, color: AppTheme.textSecondary),
                               const SizedBox(width: 4),
                               Text(
                                 'Code: ${zone.code}',

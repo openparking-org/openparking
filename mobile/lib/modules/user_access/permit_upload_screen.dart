@@ -130,43 +130,41 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Permit Number', style: AppTheme.labelMd),
+                      const Text('Permit Number', style: AppTheme.labelMd),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _permitNumberController,
                         style: AppTheme.bodyMd,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Enter permit number',
-                          prefixIcon: const Icon(Icons.badge_outlined,
+                          prefixIcon: Icon(Icons.badge_outlined,
                               color: AppTheme.textTertiary, size: 18),
                         ),
-                        validator: (val) =>
-                            val == null || val.trim().isEmpty
-                                ? 'Required'
-                                : null,
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: AppTheme.spaceMd),
 
-                      Text('Issuing Authority / Jurisdiction',
+                      const Text('Issuing Authority / Jurisdiction',
                           style: AppTheme.labelMd),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _authorityController,
                         style: AppTheme.bodyMd,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Enter issuing authority',
-                          prefixIcon: const Icon(Icons.account_balance,
+                          prefixIcon: Icon(Icons.account_balance,
                               color: AppTheme.textTertiary, size: 18),
                         ),
-                        validator: (val) =>
-                            val == null || val.trim().isEmpty
-                                ? 'Required'
-                                : null,
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: AppTheme.spaceMd),
 
                       // Expiry Date Picker
-                      Text('Expiry Date', style: AppTheme.labelMd),
+                      const Text('Expiry Date', style: AppTheme.labelMd),
                       const SizedBox(height: 6),
                       GestureDetector(
                         onTap: () async {
@@ -185,8 +183,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: AppTheme.surfaceSubtle,
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.radiusXl),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusXl),
                           ),
                           child: Row(
                             children: [
@@ -194,8 +192,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                                   color: AppTheme.textTertiary, size: 18),
                               const SizedBox(width: 12),
                               Text(
-                                DateFormat('MMM d, yyyy')
-                                    .format(_expiryDate),
+                                DateFormat('MMM d, yyyy').format(_expiryDate),
                                 style: AppTheme.bodyMd.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -210,7 +207,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                       const SizedBox(height: AppTheme.spaceMd),
 
                       // Image Upload Picker Box
-                      Text('Permit Document', style: AppTheme.labelMd),
+                      const Text('Permit Document', style: AppTheme.labelMd),
                       const SizedBox(height: 6),
                       GestureDetector(
                         onTap: () => _showImageSourceModal(context),
@@ -219,8 +216,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                           width: double.infinity,
                           decoration: BoxDecoration(
                             color: AppTheme.surfaceSubtle,
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.radiusXl),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusXl),
                             border: Border.all(
                               color: AppTheme.borderSubtle,
                               style: BorderStyle.solid,
@@ -228,14 +225,13 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                           ),
                           child: _selectedImageFile != null
                               ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusXl),
+                                  borderRadius:
+                                      BorderRadius.circular(AppTheme.radiusXl),
                                   child: Image.file(_selectedImageFile!,
                                       fit: BoxFit.cover),
                                 )
                               : Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Container(
                                       width: 48,
@@ -269,9 +265,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton.icon(
-                          onPressed: permitState.isSubmitting
-                              ? null
-                              : _submitPermit,
+                          onPressed:
+                              permitState.isSubmitting ? null : _submitPermit,
                           icon: const Icon(Icons.cloud_upload, size: 20),
                           label: permitState.isSubmitting
                               ? const SizedBox(
@@ -293,8 +288,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                             foregroundColor: AppTheme.onPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusXl),
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusXl),
                             ),
                           ),
                         ),
@@ -419,7 +414,8 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                   child: const Icon(Icons.camera_alt,
                       color: AppTheme.primary, size: 18),
                 ),
-                title: Text('Take Photo (Camera)', style: AppTheme.labelLg),
+                title:
+                    const Text('Take Photo (Camera)', style: AppTheme.labelLg),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -437,7 +433,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
                       color: AppTheme.primary, size: 18),
                 ),
                 title:
-                    Text('Choose from Gallery', style: AppTheme.labelLg),
+                    const Text('Choose from Gallery', style: AppTheme.labelLg),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
