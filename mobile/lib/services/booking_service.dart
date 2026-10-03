@@ -19,8 +19,10 @@ class BookingService {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/bookings');
     final payload = {
       'slotId': slotId,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
+      // UTC with a trailing Z. A local DateTime's toIso8601String() carries no
+      // offset, which the API cannot place in time and used to reject with 500.
+      'startTime': startTime.toUtc().toIso8601String(),
+      'endTime': endTime.toUtc().toIso8601String(),
       if (vehiclePlate != null && vehiclePlate.isNotEmpty) 'vehiclePlate': vehiclePlate,
     };
 

@@ -31,10 +31,10 @@ class BookingModel {
       userId: json['userId']?.toString() ?? '',
       slotId: json['slotId']?.toString() ?? '',
       startTime: json['startTime'] != null
-          ? DateTime.parse(json['startTime'].toString())
+          ? DateTime.parse(json['startTime'].toString()).toLocal()
           : DateTime.now(),
       endTime: json['endTime'] != null
-          ? DateTime.parse(json['endTime'].toString())
+          ? DateTime.parse(json['endTime'].toString()).toLocal()
           : DateTime.now().add(const Duration(hours: 2)),
       vehiclePlate: json['vehiclePlate']?.toString(),
       status: json['status']?.toString() ?? 'Pending',
@@ -50,8 +50,8 @@ class BookingModel {
         'id': id,
         'userId': userId,
         'slotId': slotId,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.toUtc().toIso8601String(),
+        'endTime': endTime.toUtc().toIso8601String(),
         'vehiclePlate': vehiclePlate,
         'status': status,
         'qrCodeContent': qrCodeContent,
