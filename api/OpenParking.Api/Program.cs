@@ -201,7 +201,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SlotHub>("/hubs/slots");  // IHubContext<ISlotHub> is now available via DI
 
-// Health probe (used by Docker and CF Tunnel health checks)
+// Liveness probe (Docker healthcheck, CF Tunnel, deploy-vm.yml). Must stay cheap
+// and must not touch the database; the per-module report is /health/modules.
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", utc = DateTime.UtcNow }))
    .AllowAnonymous();
 

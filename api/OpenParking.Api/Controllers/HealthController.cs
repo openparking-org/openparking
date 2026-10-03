@@ -5,11 +5,16 @@ using OpenParking.Core.Models;
 namespace OpenParking.Api.Controllers;
 
 /// <summary>
-/// /health — used by Docker health checks, Cloudflare Tunnel, and the admin dashboard.
-/// Returns database connectivity status so infra issues are immediately visible.
+/// /health/modules — per-module readiness report for the admin dashboard and for
+/// diagnosing which slice is degraded. Returns 503 when any module is unhealthy.
+///
+/// Deliberately not at /health. Program.cs maps a lightweight liveness probe
+/// there for the Docker healthcheck, Cloudflare Tunnel and the deploy workflow;
+/// with both claiming the same path every request was ambiguous and returned
+/// 500, which failed the deploy health check.
 /// </summary>
 [ApiController]
-[Route("[controller]")]
+[Route("health/modules")]
 public class HealthController(IEnumerable<IParkingModule> modules, ILogger<HealthController> logger) : ControllerBase
 {
     [HttpGet]
