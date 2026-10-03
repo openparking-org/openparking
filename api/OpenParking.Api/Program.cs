@@ -23,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register domain services
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<IFeeCalculationService, FeeCalculationService>();
 
 // CORS policy
 builder.Services.AddCors(options =>
