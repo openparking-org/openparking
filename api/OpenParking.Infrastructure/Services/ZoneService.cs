@@ -92,6 +92,8 @@ public class ZoneService(
 
     public async Task<Zone> UpdateZoneAsync(Guid zoneId, UpdateZoneRequest req, Guid actorId)
     {
+        if ((req.Name != null && (string.IsNullOrWhiteSpace(req.Name) || req.Name.Length > 128)) || req.BaseHourlyRate is < 0 or > 1000)
+            throw new AppException(ErrorCodes.ValidationFailed, "Enter a valid zone name and hourly rate.");
         var zone = await db.Zones.FindAsync(zoneId)
             ?? throw new AppException(ErrorCodes.NotFound, "Zone not found.", 404);
 
@@ -106,6 +108,8 @@ public class ZoneService(
 
     public async Task DeleteZoneAsync(Guid zoneId, Guid actorId)
     {
+        if (await db.Bookings.AnyAsync(b => b.Slot != null && b.Slot.ZoneId == zoneId))
+            throw new AppException(ErrorCodes.ValidationFailed, "Zones with booking history cannot be deleted.", 409);
         var zone = await db.Zones.FindAsync(zoneId)
             ?? throw new AppException(ErrorCodes.NotFound, "Zone not found.", 404);
 
@@ -260,6 +264,10 @@ public class ZoneService(
 
     public async Task<FloorPlan> SaveFloorPlanAsync(Guid zoneId, SaveFloorPlanRequest req, Guid actorId)
     {
+        if (!await db.Zones.AnyAsync(z => z.Id == zoneId))
+            throw new AppException(ErrorCodes.NotFound, "Zone not found.", 404);
+        if (string.IsNullOrWhiteSpace(req.FloorName))
+            throw new AppException(ErrorCodes.ValidationFailed, "Floor name is required.");
         // Validate waypoint JSON before touching the DB
         try { JsonDocument.Parse(req.WaypointGraphJson); }
         catch (JsonException ex)

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
+import { config } from '../config';
+import { useAuthStore } from '../store/authStore';
 
 export interface SlotStatusUpdate {
   slotId: string;
@@ -10,6 +12,7 @@ export interface SlotStatusUpdate {
 export function useSlotUpdates(zoneId: string) {
   const [updates, setUpdates] = useState<Record<string, SlotStatusUpdate>>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionRevision, setConnectionRevision] = useState(0);
 
   useEffect(() => {
     if (!zoneId) return;
@@ -17,9 +20,9 @@ export function useSlotUpdates(zoneId: string) {
     setIsConnected(false);
     let disposed = false;
 
-    const hubUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/hubs/slots`;
+    const hubUrl = `${config.apiUrl}/hubs/slots`;
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl)
+      .withUrl(hubUrl, { accessTokenFactory: () => useAuthStore.getState().token || '' })
       .withAutomaticReconnect()
       .build();
 
@@ -30,6 +33,7 @@ export function useSlotUpdates(zoneId: string) {
       try {
         await connection.invoke('JoinZoneGroup', zoneId);
         setIsConnected(true);
+        setConnectionRevision(value => value + 1);
       } catch (err) {
         console.warn('SignalR zone subscription failed:', err);
       }
@@ -45,7 +49,7 @@ export function useSlotUpdates(zoneId: string) {
         setIsConnected(true);
       })
       .catch((err: any) => {
-        console.warn('SignalR connection failed (running in fallback mock mode):', err?.message);
+        console.warn('SignalR connection failed:', err?.message);
       });
 
     connection.on('SlotUpdated', (update: SlotStatusUpdate) => {
@@ -58,5 +62,5 @@ export function useSlotUpdates(zoneId: string) {
     };
   }, [zoneId]);
 
-  return { updates, isConnected };
+  return { updates, isConnected, connectionRevision };
 }

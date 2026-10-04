@@ -97,6 +97,11 @@ public class BookingService(
 
         // 5. Load user (for disability discount)
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null || !user.IsActive)
+            throw new AppException(ErrorCodes.ValidationFailed, "An active user is required for booking.");
+        if (slot.Type == SlotType.Accessible && (!user.HasDisabilityPermit ||
+            !await db.DisabilityPermits.AnyAsync(p => p.UserId == userId && p.Status == PermitStatus.Verified && p.ExpiryDate > DateTime.UtcNow)))
+            throw new AppException(ErrorCodes.Forbidden, "A valid verified disability permit is required for an accessible bay.", 403);
 
         // Check if pricing is globally enabled
         var isEnabledSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.is_enabled");
@@ -248,6 +253,8 @@ public class BookingService(
         if (booking.UserId != userId)
             throw new AppException(ErrorCodes.Forbidden, "You can only cancel your own bookings.", 403);
 
+        if (booking.Status == BookingStatus.Cancelled) return booking;
+
         if (booking.Status == BookingStatus.Active || booking.Status == BookingStatus.Completed)
             throw new AppException(ErrorCodes.CannotCancelBooking,
                 $"A booking with status '{booking.Status}' cannot be cancelled.", 409);
@@ -264,6 +271,8 @@ public class BookingService(
 
         await db.SaveChangesAsync();
         logger.LogInformation("Booking cancelled: {BookingId} by {UserId}", bookingId, userId);
+        if (booking.Slot != null)
+            await realtimeNotifier.NotifySlotUpdatedAsync(booking.Slot.ZoneId.ToString(), booking.SlotId.ToString(), SlotStatus.Available.ToString());
         return booking;
     }
 

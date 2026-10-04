@@ -23,7 +23,13 @@ const authStoreCreator: StateCreator<AuthStore> = (set, get) => ({
   token: null,
   user: null,
   setAuth: (token: string, user: AuthUser) => set({ token, user }),
-  logout: () => set({ token: null, user: null }),
+  logout: () => {
+    for (const key of ['openparking_token', 'token', 'adminToken']) {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(key);
+    }
+    set({ token: null, user: null });
+  },
   isAuthenticated: () => !!get().token,
 });
 

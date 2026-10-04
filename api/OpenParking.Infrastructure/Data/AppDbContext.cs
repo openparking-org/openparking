@@ -104,7 +104,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.Status);
             e.HasIndex(x => x.WorkflowType);
-            e.Property(x => x.Status).HasConversion<string>();
+            e.Property(x => x.Status).HasConversion<string>().IsConcurrencyToken();
             // Optional FK to the session that triggered this workflow
             e.HasOne(x => x.Session).WithMany().HasForeignKey(x => x.SessionId)
              .IsRequired(false).OnDelete(DeleteBehavior.SetNull);

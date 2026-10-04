@@ -68,6 +68,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         // Push JWT auth errors into the structured error response
         options.Events = new JwtBearerEvents
         {
+            OnTokenValidated = async ctx =>
+            {
+                var idClaim = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? ctx.Principal?.FindFirst("sub")?.Value;
+                if (!Guid.TryParse(idClaim, out var userId)) { ctx.Fail("User context not found."); return; }
+                var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ctx.HttpContext.RequestAborted);
+                if (user == null || !user.IsActive) { ctx.Fail("Account unavailable."); return; }
+                if (ctx.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
+                {
+                    foreach (var role in identity.FindAll(identity.RoleClaimType).ToList()) identity.RemoveClaim(role);
+                    identity.AddClaim(new System.Security.Claims.Claim(identity.RoleClaimType, user.Role.ToString()));
+                }
+            },
             OnChallenge = ctx =>
             {
                 ctx.HandleResponse();

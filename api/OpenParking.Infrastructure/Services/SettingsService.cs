@@ -63,8 +63,19 @@ public class SettingsService(AppDbContext db, IMemoryCache cache) : ISettingsSer
             setting.UpdatedBy = updatedBy;
         }
 
+        var aliases = key switch
+        {
+            "overstay.grace_period_mins" or "overstay.grace_period_minutes" => new[] { "overstay.grace_period_mins", "overstay.grace_period_minutes" },
+            "overstay.penalty_per_hour" or "overstay.penalty_per_extra_hour" => new[] { "overstay.penalty_per_hour", "overstay.penalty_per_extra_hour" },
+            _ => new[] { key }
+        };
+        var aliasKeys = aliases.ToList();
+        foreach (var alias in await db.SystemSettings.Where(s => aliasKeys.Contains(s.Key)).ToListAsync())
+        {
+            alias.Value = value; alias.UpdatedAt = DateTime.UtcNow; alias.UpdatedBy = updatedBy;
+        }
         await db.SaveChangesAsync();
-        await InvalidateCacheAsync(key);
+        foreach (var alias in aliases) await InvalidateCacheAsync(alias);
     }
 
     public Task InvalidateCacheAsync(string key)

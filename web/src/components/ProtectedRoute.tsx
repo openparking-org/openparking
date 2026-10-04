@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const location = useLocation();
 
   if (!isAuthenticated()) {
@@ -16,13 +16,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (roles && user && !roles.includes(user.role)) {
+  if (!user || (roles && !roles.includes(user.role))) {
     // Role not authorized
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h2>Unauthorized Access</h2>
         <p>You do not have permission to view this page.</p>
-        <Navigate to="/" replace />
+        <button className="btn btn-secondary" onClick={logout}>Sign out</button>
       </div>
     );
   }

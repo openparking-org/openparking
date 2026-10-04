@@ -18,6 +18,22 @@ namespace OpenParking.Api.Controllers;
 [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
 public class WorkflowsController(IEnforcementService enforcementService, ILogger<WorkflowsController> logger) : ControllerBase
 {
+    [HttpPost("scan")]
+    public async Task<IActionResult> ScanOverstays()
+    {
+        var sessions = await enforcementService.DetectAndTriggerOverstaysAsync();
+        return Ok(ApiResponse<object>.Ok(new { triggeredCount = sessions.Count }));
+    }
+
+    [HttpPost("{id:guid}/retry")]
+    public async Task<IActionResult> RetryWorkflow(Guid id)
+    {
+        var previous = await enforcementService.GetWorkflowAsync(id);
+        if (previous.Status != OpenParking.Core.Entities.WorkflowStatus.Failed)
+            throw new AppException(ErrorCodes.ValidationFailed, "Only failed workflows can be retried.", 409);
+        var run = await enforcementService.TriggerWorkflowAsync(previous.WorkflowType, previous.Objective, previous.SessionId, previous.ZoneId);
+        return Ok(ApiResponse<WorkflowDetailDto>.Ok(WorkflowDetailDto.From(run)));
+    }
     private string ActorEmail => User.FindFirstValue(ClaimTypes.Email) ?? "Unknown";
     private Guid? ActorId =>
         Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;

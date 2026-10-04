@@ -1,0 +1,507 @@
+{
+  "outputComponents": [
+    {
+      "designSystem": {
+        "designSystem": {
+          "displayName": "OpenParking Administrative System",
+          "styleGuidelines": "## Brand & Style\n\nThis design system is engineered for municipal mobility directors, enterprise asset managers, and civil enforcement teams who govern physical infrastructure through digital interfaces. The visual tone is grounded, authoritative, and operational: balancing the gravitas of civil infrastructure with the velocity and legibility of contemporary operational intelligence software.\n\nThe design movement mixes **Modern High-Density SaaS** with **Architectural Minimalism**. Structural grounding is established through deep forest-green navigational anchors, high-fidelity crisp data cards, and an uncluttered stone-toned background that prevents ocular fatigue during extended shifts.\n\nInteractions are rapid and decisive. Density is tuned for situational awareness: high-density statistical readouts, monospaced tabular coordinates, and instantly distinguishable status badges (Available, Moderate, Critical, AI Pending) provide critical clarity without visual dissonance.\n\n## Layout & Spacing\n\nThis layout uses a fixed-rail collapsible sidebar coupled with an adaptive 12-column fluid grid system across the primary operational workspace.\n\n- **Sidebar Metrics:** Fixed `260px` standard width, compacting to `72px` in icon-only mode.\n- **Main Viewport Bounds:** Fluid grid with a strict minimum screen target of `1280px` for optimal multi-card data density. Margins transition from `1rem` on mobile/tablet viewports to `2rem` on administrative desktop displays.\n- **Card and Component Spacing:**\n  - Compact stat containers utilize `space-md` (`1rem`) internal padding.\n  - Complex visual charts and high-priority queues utilize `space-lg` (`1.5rem`) internal padding to isolate actionable modules.\n  - Sibling elements within control bars adhere to `space-sm` (`0.5rem`) gaps.\n\n## Elevation & Depth\n\nVisual hierarchy uses **Delicate Boundary Separation** paired with subtle ambient diffusion. Heavy shadows and harsh contrast drops are avoided to preserve interface cleanliness across dense data tables.\n\n- **Base Surfaces (Level 0):** Canvas `#F8FAFC`. Completely flat.\n- **Card Containers (Level 1):** Solid `#FFFFFF`, bordered by 1px solid `#E2E8F0` with dual micro-shadow: `0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)`.\n- **Active Navigation & Focused Items (Level 2):** In the dark sidebar, active buttons utilize `#123326` background with a 1px internal border (`rgba(255, 255, 255, 0.06)`).\n- **Overlays & Drawers (Level 3):** Modals, flyout context menus, and review drawers utilize `#FFFFFF` with `0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06)` anchored by an exterior `#0B2319` scrim blurred at `backdrop-filter: blur(4px)` and opacity `0.4`.\n\n## Components\n\n### 1. Navigation Rail & Workspace Header\n- **Sidebar Rail:** Deep background (`#0B2319`) with a distinct 64px header holding the circular emerald 'P' brand mark and a sharp `Plus Jakarta Sans` wordmark (`#FFFFFF`). Categorized into tracking groups: `OPERATIONS` and `MANAGEMENT` in `10px` uppercase (`#64748B`). Nav items include an unselected state (`#94A3B8` text, transparent background) and an active state (`#10B981` text, `#123326` fill, with a 3px active emerald left border indicator). Footer features an admin profile cell with presence indicator.\n- **Header Console:** Sticky top layout (`#FFFFFF` with `#E2E8F0` border-b). Contains breadcrumbs (`Dashboard / Real-Time Enforcement`), administrative currency toggle (`USD $`), status refresh indicators, and an admin user avatar circle (`#0B2319` fill with `#10B981` typography initials).\n\n### 2. Metric Stat Cards\n- Single card wrapper: White surface, 1px `#E2E8F0` border.\n- Layout: Top row hosts descriptive title (`#64748B`, 12px) and trend chip (`+8.4%` in emerald pill). Center row holds large monospaced metric value (`metric-xl`, `#0F172A`). Bottom row splits comparative breakdown (e.g., \"Metered: $14,290 | Citations: $3,420\") in muted, tracked micro-text.\n\n### 3. Data Visualization Cards\n- Built to frame chart libraries (Recharts) with zero chrome visual clutter.\n- Cartesians use `#F1F5F9` grid lines with no vertical bars.\n- Revenue trends utilize primary gradient stroke from `#059669` down to transparent fill.\n- Occupancy meters use horizontal stacked progress tracks with `0.25rem` height: Normal (`#059669`), Warning (`#D97706`), Critical (`#DC2626`), and Empty (`#E2E8F0`).\n\n### 4. Pending AI Enforcement Queue\n- List or grid item showing license plate capture (styled as an authentic registration tag with monospaced tracking), confidence score metric (`98.2% AI Conf`), zone chip (`Zone 4B - Downtown North`), violation reason tag, and dual quick-action CTA buttons: \"Confirm Citation\" (Solid Emerald `#059669`) and \"Dismiss\" (Ghost Slate `#94A3B8` hover `#DC2626`).\n\n### 5. Form Elements, Buttons & Chips\n- **Primary Buttons:** `#059669` fill, white text, 600 weight, hover state `#047857`.\n- **Secondary Buttons:** White fill, `#E2E8F0` border, `#0F172A` text, hover `#F8FAFC`.\n- **Status Chips:** Inset tinting: Green (`#ECFDF5` bg / `#065F46` text), Amber (`#FFFBEB` bg / `#92400E` text), Red (`#FEF2F2` bg / `#991B1B` text).\n\n### 6. System State Variations\n- **Loading State:** Skeleton loaders with a shimmering sweep from `#F1F5F9` to `#E2E8F0`.\n- **Empty State:** Centered container with a faded topological parking slot illustration, subtle label (\"No enforcement reviews pending\"), and secondary refresh CTA.\n- **Error State:** Warning banner with Crimson left-border, amber-tinted info card, and explicit retry trigger.",
+          "theme": {
+            "bodyFont": "PLUS_JAKARTA_SANS",
+            "bodyFontFamily": "Plus Jakarta Sans",
+            "colorMode": "LIGHT",
+            "colorVariant": "FIDELITY",
+            "customColor": "#059669",
+            "designMd": "---\nname: OpenParking Administrative System\ncolors:\n  surface: '#f8f9ff'\n  surface-dim: '#ccdbf3'\n  surface-bright: '#f8f9ff'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#eff4ff'\n  surface-container: '#e6eeff'\n  surface-container-high: '#dce9ff'\n  surface-container-highest: '#d5e3fc'\n  on-surface: '#0d1c2e'\n  on-surface-variant: '#3d4a42'\n  inverse-surface: '#233144'\n  inverse-on-surface: '#eaf1ff'\n  outline: '#6d7a72'\n  outline-variant: '#bccac0'\n  surface-tint: '#006c4a'\n  primary: '#006948'\n  on-primary: '#ffffff'\n  primary-container: '#00855d'\n  on-primary-container: '#f5fff7'\n  inverse-primary: '#68dba9'\n  secondary: '#4b6457'\n  on-secondary: '#ffffff'\n  secondary-container: '#cde9d9'\n  on-secondary-container: '#516a5d'\n  tertiary: '#006947'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#00855b'\n  on-tertiary-container: '#f5fff6'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#85f8c4'\n  primary-fixed-dim: '#68dba9'\n  on-primary-fixed: '#002114'\n  on-primary-fixed-variant: '#005137'\n  secondary-fixed: '#cde9d9'\n  secondary-fixed-dim: '#b2cdbd'\n  on-secondary-fixed: '#082016'\n  on-secondary-fixed-variant: '#344c40'\n  tertiary-fixed: '#6ffbbe'\n  tertiary-fixed-dim: '#4edea3'\n  on-tertiary-fixed: '#002113'\n  on-tertiary-fixed-variant: '#005236'\n  background: '#f8f9ff'\n  on-background: '#0d1c2e'\n  surface-variant: '#d5e3fc'\ntypography:\n  display-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 32px\n    fontWeight: '700'\n    lineHeight: 40px\n  headline-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 24px\n    fontWeight: '600'\n    lineHeight: 32px\n  headline-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 20px\n    fontWeight: '600'\n    lineHeight: 28px\n  headline-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '600'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 24px\n  body-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  body-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 13px\n    fontWeight: '400'\n    lineHeight: 18px\n  metric-xl:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 30px\n    fontWeight: '700'\n    lineHeight: 36px\n  label-mono-sm:\n    fontFamily: JetBrains Mono\n    fontSize: 12px\n    fontWeight: '500'\n    lineHeight: 16px\n  label-mono-xs:\n    fontFamily: JetBrains Mono\n    fontSize: 10px\n    fontWeight: '600'\n    lineHeight: 14px\n  caption-caps:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 11px\n    fontWeight: '700'\n    lineHeight: 16px\nrounded:\n  sm: 0.125rem\n  DEFAULT: 0.25rem\n  md: 0.375rem\n  lg: 0.5rem\n  xl: 0.75rem\n  full: 9999px\nspacing:\n  gutter: 1rem\n  gutter-desktop: 1.5rem\n  margin: 1rem\n  margin-desktop: 2rem\n  space-xs: 0.25rem\n  space-sm: 0.5rem\n  space-md: 1rem\n  space-lg: 1.5rem\n  space-xl: 2rem\n---\n\n## Brand & Style\n\nThis design system is engineered for municipal mobility directors, enterprise asset managers, and civil enforcement teams who govern physical infrastructure through digital interfaces. The visual tone is grounded, authoritative, and operational: balancing the gravitas of civil infrastructure with the velocity and legibility of contemporary operational intelligence software.\n\nThe design movement mixes **Modern High-Density SaaS** with **Architectural Minimalism**. Structural grounding is established through deep forest-green navigational anchors, high-fidelity crisp data cards, and an uncluttered stone-toned background that prevents ocular fatigue during extended shifts.\n\nInteractions are rapid and decisive. Density is tuned for situational awareness: high-density statistical readouts, monospaced tabular coordinates, and instantly distinguishable status badges (Available, Moderate, Critical, AI Pending) provide critical clarity without visual dissonance.\n\n## Colors\n\nThe palette establishes deliberate separation between structural chrome and the operational canvas:\n\n- **Primary Canvas & Surfaces:** The root viewport uses `#F8FAFC` (Slate Tint Stone), creating an organic contrast against `#FFFFFF` elevated cards and panels.\n- **Deep Forest Dark Chrome:** Navigation sidebars and anchor elements employ an abyssal foliage spectrum: `#081C14` (Root Dark), `#0B2319` (Sidebar Fill), and `#123326` (Active Item / Inset Surface).\n- **Brand & Action Emerald:** Interactive primaries, focus states, and verification indicators use Emerald `#059669` paired with high-luminance text accents `#10B981` and `#34D399` against dark backgrounds.\n- **Semantic Status Spectrum:**\n  - *Normal / Optimal:* Forest Emerald (`#059669` fill, `#ECFDF5` background).\n  - *Moderate / Warning:* Amber Ochre (`#D97706` fill, `#FFFBEB` background).\n  - *Critical / Violations / Denied:* Crimson Red (`#DC2626` fill, `#FEF2F2` background).\n  - *AI Automated / In Review:* Violet Indigo (`#6366F1` fill, `#EEF2FF` background).\n- **Neutrals & Typographic Ink:** Text hierarchy is locked to Slate metrics: `#0F172A` (Primary/Headlines), `#475569` (Body / Metric descriptions), `#64748B` (Secondary captions / Table headers), and `#E2E8F0` (Borders and divider rules).\n\n## Typography\n\nThe type scale combines **Plus Jakarta Sans** for interfaces and executive summaries with **JetBrains Mono** for numerical telemetry, zone identifiers, license plates, and monetary values.\n\n- **Micro-labels and Section Headers:** Navigation groupings and metadata sublabels use `caption-caps` transformed to uppercase with a tracking metric of `+0.06em` to maintain legibility at sub-12px sizes.\n- **Numerical Alignment:** All occupancy figures, currency figures, and percentages must enable font-variant tabular figures (`font-variant-numeric: tabular-nums;`) to eliminate vertical layout shift during live automated updates.\n- **Hierarchy Rules:** Metric cards pair an authoritative bold numeral (`metric-xl`) with split context sublabels (`label-mono-xs`) to communicate comparative change at a glance.\n\n## Layout & Spacing\n\nThis layout uses a fixed-rail collapsible sidebar coupled with an adaptive 12-column fluid grid system across the primary operational workspace.\n\n- **Sidebar Metrics:** Fixed `260px` standard width, compacting to `72px` in icon-only mode.\n- **Main Viewport Bounds:** Fluid grid with a strict minimum screen target of `1280px` for optimal multi-card data density. Margins transition from `1rem` on mobile/tablet viewports to `2rem` on administrative desktop displays.\n- **Card and Component Spacing:**\n  - Compact stat containers utilize `space-md` (`1rem`) internal padding.\n  - Complex visual charts and high-priority queues utilize `space-lg` (`1.5rem`) internal padding to isolate actionable modules.\n  - Sibling elements within control bars adhere to `space-sm` (`0.5rem`) gaps.\n\n## Elevation & Depth\n\nVisual hierarchy uses **Delicate Boundary Separation** paired with subtle ambient diffusion. Heavy shadows and harsh contrast drops are avoided to preserve interface cleanliness across dense data tables.\n\n- **Base Surfaces (Level 0):** Canvas `#F8FAFC`. Completely flat.\n- **Card Containers (Level 1):** Solid `#FFFFFF`, bordered by 1px solid `#E2E8F0` with dual micro-shadow: `0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)`.\n- **Active Navigation & Focused Items (Level 2):** In the dark sidebar, active buttons utilize `#123326` background with a 1px internal border (`rgba(255, 255, 255, 0.06)`).\n- **Overlays & Drawers (Level 3):** Modals, flyout context menus, and review drawers utilize `#FFFFFF` with `0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06)` anchored by an exterior `#0B2319` scrim blurred at `backdrop-filter: blur(4px)` and opacity `0.4`.\n\n## Shapes\n\nThe design system adopts a **Soft (Level 1)** geometric standard. This geometry produces a structured, engineered appearance well-suited for tabular data, camera telemetry feeds, and precise metric units.\n\n- **Containers & Data Cards:** `0.5rem` (`rounded-lg` equivalent) border-radius creates a clean, architectural silhouette.\n- **Buttons, Form Controls & Inputs:** `0.375rem` (6px) roundedness for compact tactical utility.\n- **Status Tags & Pill Badges:** Pill-shaped (`9999px`) styling reserved strictly for real-time status indicators (e.g., \"Active\", \"Available\", \"Under AI Review\", \"Violated\").\n\n## Components\n\n### 1. Navigation Rail & Workspace Header\n- **Sidebar Rail:** Deep background (`#0B2319`) with a distinct 64px header holding the circular emerald 'P' brand mark and a sharp `Plus Jakarta Sans` wordmark (`#FFFFFF`). Categorized into tracking groups: `OPERATIONS` and `MANAGEMENT` in `10px` uppercase (`#64748B`). Nav items include an unselected state (`#94A3B8` text, transparent background) and an active state (`#10B981` text, `#123326` fill, with a 3px active emerald left border indicator). Footer features an admin profile cell with presence indicator.\n- **Header Console:** Sticky top layout (`#FFFFFF` with `#E2E8F0` border-b). Contains breadcrumbs (`Dashboard / Real-Time Enforcement`), administrative currency toggle (`USD $`), status refresh indicators, and an admin user avatar circle (`#0B2319` fill with `#10B981` typography initials).\n\n### 2. Metric Stat Cards\n- Single card wrapper: White surface, 1px `#E2E8F0` border.\n- Layout: Top row hosts descriptive title (`#64748B`, 12px) and trend chip (`+8.4%` in emerald pill). Center row holds large monospaced metric value (`metric-xl`, `#0F172A`). Bottom row splits comparative breakdown (e.g., \"Metered: $14,290 | Citations: $3,420\") in muted, tracked micro-text.\n\n### 3. Data Visualization Cards\n- Built to frame chart libraries (Recharts) with zero chrome visual clutter.\n- Cartesians use `#F1F5F9` grid lines with no vertical bars.\n- Revenue trends utilize primary gradient stroke from `#059669` down to transparent fill.\n- Occupancy meters use horizontal stacked progress tracks with `0.25rem` height: Normal (`#059669`), Warning (`#D97706`), Critical (`#DC2626`), and Empty (`#E2E8F0`).\n\n### 4. Pending AI Enforcement Queue\n- List or grid item showing license plate capture (styled as an authentic registration tag with monospaced tracking), confidence score metric (`98.2% AI Conf`), zone chip (`Zone 4B - Downtown North`), violation reason tag, and dual quick-action CTA buttons: \"Confirm Citation\" (Solid Emerald `#059669`) and \"Dismiss\" (Ghost Slate `#94A3B8` hover `#DC2626`).\n\n### 5. Form Elements, Buttons & Chips\n- **Primary Buttons:** `#059669` fill, white text, 600 weight, hover state `#047857`.\n- **Secondary Buttons:** White fill, `#E2E8F0` border, `#0F172A` text, hover `#F8FAFC`.\n- **Status Chips:** Inset tinting: Green (`#ECFDF5` bg / `#065F46` text), Amber (`#FFFBEB` bg / `#92400E` text), Red (`#FEF2F2` bg / `#991B1B` text).\n\n### 6. System State Variations\n- **Loading State:** Skeleton loaders with a shimmering sweep from `#F1F5F9` to `#E2E8F0`.\n- **Empty State:** Centered container with a faded topological parking slot illustration, subtle label (\"No enforcement reviews pending\"), and secondary refresh CTA.\n- **Error State:** Warning banner with Crimson left-border, amber-tinted info card, and explicit retry trigger.",
+            "font": "PLUS_JAKARTA_SANS",
+            "headlineFont": "PLUS_JAKARTA_SANS",
+            "headlineFontFamily": "Plus Jakarta Sans",
+            "labelFont": "JETBRAINS_MONO",
+            "labelFontFamily": "JetBrains Mono",
+            "namedColors": {
+              "background": "#f8f9ff",
+              "error": "#ba1a1a",
+              "error_container": "#ffdad6",
+              "inverse_on_surface": "#eaf1ff",
+              "inverse_primary": "#68dba9",
+              "inverse_surface": "#233144",
+              "on_background": "#0d1c2e",
+              "on_error": "#ffffff",
+              "on_error_container": "#93000a",
+              "on_primary": "#ffffff",
+              "on_primary_container": "#f5fff7",
+              "on_primary_fixed": "#002114",
+              "on_primary_fixed_variant": "#005137",
+              "on_secondary": "#ffffff",
+              "on_secondary_container": "#516a5d",
+              "on_secondary_fixed": "#082016",
+              "on_secondary_fixed_variant": "#344c40",
+              "on_surface": "#0d1c2e",
+              "on_surface_variant": "#3d4a42",
+              "on_tertiary": "#ffffff",
+              "on_tertiary_container": "#f5fff6",
+              "on_tertiary_fixed": "#002113",
+              "on_tertiary_fixed_variant": "#005236",
+              "outline": "#6d7a72",
+              "outline_variant": "#bccac0",
+              "primary": "#006948",
+              "primary_container": "#00855d",
+              "primary_fixed": "#85f8c4",
+              "primary_fixed_dim": "#68dba9",
+              "secondary": "#4b6457",
+              "secondary_container": "#cde9d9",
+              "secondary_fixed": "#cde9d9",
+              "secondary_fixed_dim": "#b2cdbd",
+              "surface": "#f8f9ff",
+              "surface_bright": "#f8f9ff",
+              "surface_container": "#e6eeff",
+              "surface_container_high": "#dce9ff",
+              "surface_container_highest": "#d5e3fc",
+              "surface_container_low": "#eff4ff",
+              "surface_container_lowest": "#ffffff",
+              "surface_dim": "#ccdbf3",
+              "surface_tint": "#006c4a",
+              "surface_variant": "#d5e3fc",
+              "tertiary": "#006947",
+              "tertiary_container": "#00855b",
+              "tertiary_fixed": "#6ffbbe",
+              "tertiary_fixed_dim": "#4edea3"
+            },
+            "overrideNeutralColor": "#475569",
+            "overridePrimaryColor": "#059669",
+            "overrideSecondaryColor": "#0b2319",
+            "overrideTertiaryColor": "#10b981",
+            "roundness": "ROUND_FOUR",
+            "spacing": {
+              "gutter": "1rem",
+              "gutter-desktop": "1.5rem",
+              "margin": "1rem",
+              "margin-desktop": "2rem",
+              "space-lg": "1.5rem",
+              "space-md": "1rem",
+              "space-sm": "0.5rem",
+              "space-xl": "2rem",
+              "space-xs": "0.25rem"
+            },
+            "spacingScale": 2,
+            "typography": {
+              "body-lg": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "16px",
+                "fontWeight": "400",
+                "lineHeight": "24px"
+              },
+              "body-md": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "14px",
+                "fontWeight": "400",
+                "lineHeight": "20px"
+              },
+              "body-sm": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "13px",
+                "fontWeight": "400",
+                "lineHeight": "18px"
+              },
+              "caption-caps": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "11px",
+                "fontWeight": "700",
+                "lineHeight": "16px"
+              },
+              "display-lg": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "32px",
+                "fontWeight": "700",
+                "lineHeight": "40px"
+              },
+              "headline-lg": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "24px",
+                "fontWeight": "600",
+                "lineHeight": "32px"
+              },
+              "headline-md": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "20px",
+                "fontWeight": "600",
+                "lineHeight": "28px"
+              },
+              "headline-sm": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "16px",
+                "fontWeight": "600",
+                "lineHeight": "24px"
+              },
+              "label-mono-sm": {
+                "fontFamily": "JetBrains Mono",
+                "fontSize": "12px",
+                "fontWeight": "500",
+                "lineHeight": "16px"
+              },
+              "label-mono-xs": {
+                "fontFamily": "JetBrains Mono",
+                "fontSize": "10px",
+                "fontWeight": "600",
+                "lineHeight": "14px"
+              },
+              "metric-xl": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontSize": "30px",
+                "fontWeight": "700",
+                "lineHeight": "36px"
+              }
+            }
+          }
+        },
+        "name": "assets/0343ac1af1a84026a14b4ebb5913db16",
+        "version": "1"
+      }
+    },
+    {
+      "design": {
+        "screens": [
+          {
+            "designSystem": {
+              "designSystem": {
+                "displayName": "OpenParking Administrative System",
+                "styleGuidelines": "## Brand & Style\n\nThis design system is engineered for municipal mobility directors, enterprise asset managers, and civil enforcement teams who govern physical infrastructure through digital interfaces. The visual tone is grounded, authoritative, and operational: balancing the gravitas of civil infrastructure with the velocity and legibility of contemporary operational intelligence software.\n\nThe design movement mixes **Modern High-Density SaaS** with **Architectural Minimalism**. Structural grounding is established through deep forest-green navigational anchors, high-fidelity crisp data cards, and an uncluttered stone-toned background that prevents ocular fatigue during extended shifts.\n\nInteractions are rapid and decisive. Density is tuned for situational awareness: high-density statistical readouts, monospaced tabular coordinates, and instantly distinguishable status badges (Available, Moderate, Critical, AI Pending) provide critical clarity without visual dissonance.\n\n## Layout & Spacing\n\nThis layout uses a fixed-rail collapsible sidebar coupled with an adaptive 12-column fluid grid system across the primary operational workspace.\n\n- **Sidebar Metrics:** Fixed `260px` standard width, compacting to `72px` in icon-only mode.\n- **Main Viewport Bounds:** Fluid grid with a strict minimum screen target of `1280px` for optimal multi-card data density. Margins transition from `1rem` on mobile/tablet viewports to `2rem` on administrative desktop displays.\n- **Card and Component Spacing:**\n  - Compact stat containers utilize `space-md` (`1rem`) internal padding.\n  - Complex visual charts and high-priority queues utilize `space-lg` (`1.5rem`) internal padding to isolate actionable modules.\n  - Sibling elements within control bars adhere to `space-sm` (`0.5rem`) gaps.\n\n## Elevation & Depth\n\nVisual hierarchy uses **Delicate Boundary Separation** paired with subtle ambient diffusion. Heavy shadows and harsh contrast drops are avoided to preserve interface cleanliness across dense data tables.\n\n- **Base Surfaces (Level 0):** Canvas `#F8FAFC`. Completely flat.\n- **Card Containers (Level 1):** Solid `#FFFFFF`, bordered by 1px solid `#E2E8F0` with dual micro-shadow: `0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)`.\n- **Active Navigation & Focused Items (Level 2):** In the dark sidebar, active buttons utilize `#123326` background with a 1px internal border (`rgba(255, 255, 255, 0.06)`).\n- **Overlays & Drawers (Level 3):** Modals, flyout context menus, and review drawers utilize `#FFFFFF` with `0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06)` anchored by an exterior `#0B2319` scrim blurred at `backdrop-filter: blur(4px)` and opacity `0.4`.\n\n## Components\n\n### 1. Navigation Rail & Workspace Header\n- **Sidebar Rail:** Deep background (`#0B2319`) with a distinct 64px header holding the circular emerald 'P' brand mark and a sharp `Plus Jakarta Sans` wordmark (`#FFFFFF`). Categorized into tracking groups: `OPERATIONS` and `MANAGEMENT` in `10px` uppercase (`#64748B`). Nav items include an unselected state (`#94A3B8` text, transparent background) and an active state (`#10B981` text, `#123326` fill, with a 3px active emerald left border indicator). Footer features an admin profile cell with presence indicator.\n- **Header Console:** Sticky top layout (`#FFFFFF` with `#E2E8F0` border-b). Contains breadcrumbs (`Dashboard / Real-Time Enforcement`), administrative currency toggle (`USD $`), status refresh indicators, and an admin user avatar circle (`#0B2319` fill with `#10B981` typography initials).\n\n### 2. Metric Stat Cards\n- Single card wrapper: White surface, 1px `#E2E8F0` border.\n- Layout: Top row hosts descriptive title (`#64748B`, 12px) and trend chip (`+8.4%` in emerald pill). Center row holds large monospaced metric value (`metric-xl`, `#0F172A`). Bottom row splits comparative breakdown (e.g., \"Metered: $14,290 | Citations: $3,420\") in muted, tracked micro-text.\n\n### 3. Data Visualization Cards\n- Built to frame chart libraries (Recharts) with zero chrome visual clutter.\n- Cartesians use `#F1F5F9` grid lines with no vertical bars.\n- Revenue trends utilize primary gradient stroke from `#059669` down to transparent fill.\n- Occupancy meters use horizontal stacked progress tracks with `0.25rem` height: Normal (`#059669`), Warning (`#D97706`), Critical (`#DC2626`), and Empty (`#E2E8F0`).\n\n### 4. Pending AI Enforcement Queue\n- List or grid item showing license plate capture (styled as an authentic registration tag with monospaced tracking), confidence score metric (`98.2% AI Conf`), zone chip (`Zone 4B - Downtown North`), violation reason tag, and dual quick-action CTA buttons: \"Confirm Citation\" (Solid Emerald `#059669`) and \"Dismiss\" (Ghost Slate `#94A3B8` hover `#DC2626`).\n\n### 5. Form Elements, Buttons & Chips\n- **Primary Buttons:** `#059669` fill, white text, 600 weight, hover state `#047857`.\n- **Secondary Buttons:** White fill, `#E2E8F0` border, `#0F172A` text, hover `#F8FAFC`.\n- **Status Chips:** Inset tinting: Green (`#ECFDF5` bg / `#065F46` text), Amber (`#FFFBEB` bg / `#92400E` text), Red (`#FEF2F2` bg / `#991B1B` text).\n\n### 6. System State Variations\n- **Loading State:** Skeleton loaders with a shimmering sweep from `#F1F5F9` to `#E2E8F0`.\n- **Empty State:** Centered container with a faded topological parking slot illustration, subtle label (\"No enforcement reviews pending\"), and secondary refresh CTA.\n- **Error State:** Warning banner with Crimson left-border, amber-tinted info card, and explicit retry trigger.",
+                "theme": {
+                  "bodyFont": "PLUS_JAKARTA_SANS",
+                  "bodyFontFamily": "Plus Jakarta Sans",
+                  "colorMode": "LIGHT",
+                  "colorVariant": "FIDELITY",
+                  "customColor": "#059669",
+                  "designMd": "---\nname: OpenParking Administrative System\ncolors:\n  surface: '#f8f9ff'\n  surface-dim: '#ccdbf3'\n  surface-bright: '#f8f9ff'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#eff4ff'\n  surface-container: '#e6eeff'\n  surface-container-high: '#dce9ff'\n  surface-container-highest: '#d5e3fc'\n  on-surface: '#0d1c2e'\n  on-surface-variant: '#3d4a42'\n  inverse-surface: '#233144'\n  inverse-on-surface: '#eaf1ff'\n  outline: '#6d7a72'\n  outline-variant: '#bccac0'\n  surface-tint: '#006c4a'\n  primary: '#006948'\n  on-primary: '#ffffff'\n  primary-container: '#00855d'\n  on-primary-container: '#f5fff7'\n  inverse-primary: '#68dba9'\n  secondary: '#4b6457'\n  on-secondary: '#ffffff'\n  secondary-container: '#cde9d9'\n  on-secondary-container: '#516a5d'\n  tertiary: '#006947'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#00855b'\n  on-tertiary-container: '#f5fff6'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#85f8c4'\n  primary-fixed-dim: '#68dba9'\n  on-primary-fixed: '#002114'\n  on-primary-fixed-variant: '#005137'\n  secondary-fixed: '#cde9d9'\n  secondary-fixed-dim: '#b2cdbd'\n  on-secondary-fixed: '#082016'\n  on-secondary-fixed-variant: '#344c40'\n  tertiary-fixed: '#6ffbbe'\n  tertiary-fixed-dim: '#4edea3'\n  on-tertiary-fixed: '#002113'\n  on-tertiary-fixed-variant: '#005236'\n  background: '#f8f9ff'\n  on-background: '#0d1c2e'\n  surface-variant: '#d5e3fc'\ntypography:\n  display-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 32px\n    fontWeight: '700'\n    lineHeight: 40px\n  headline-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 24px\n    fontWeight: '600'\n    lineHeight: 32px\n  headline-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 20px\n    fontWeight: '600'\n    lineHeight: 28px\n  headline-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '600'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 24px\n  body-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  body-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 13px\n    fontWeight: '400'\n    lineHeight: 18px\n  metric-xl:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 30px\n    fontWeight: '700'\n    lineHeight: 36px\n  label-mono-sm:\n    fontFamily: JetBrains Mono\n    fontSize: 12px\n    fontWeight: '500'\n    lineHeight: 16px\n  label-mono-xs:\n    fontFamily: JetBrains Mono\n    fontSize: 10px\n    fontWeight: '600'\n    lineHeight: 14px\n  caption-caps:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 11px\n    fontWeight: '700'\n    lineHeight: 16px\nrounded:\n  sm: 0.125rem\n  DEFAULT: 0.25rem\n  md: 0.375rem\n  lg: 0.5rem\n  xl: 0.75rem\n  full: 9999px\nspacing:\n  gutter: 1rem\n  gutter-desktop: 1.5rem\n  margin: 1rem\n  margin-desktop: 2rem\n  space-xs: 0.25rem\n  space-sm: 0.5rem\n  space-md: 1rem\n  space-lg: 1.5rem\n  space-xl: 2rem\n---\n\n## Brand & Style\n\nThis design system is engineered for municipal mobility directors, enterprise asset managers, and civil enforcement teams who govern physical infrastructure through digital interfaces. The visual tone is grounded, authoritative, and operational: balancing the gravitas of civil infrastructure with the velocity and legibility of contemporary operational intelligence software.\n\nThe design movement mixes **Modern High-Density SaaS** with **Architectural Minimalism**. Structural grounding is established through deep forest-green navigational anchors, high-fidelity crisp data cards, and an uncluttered stone-toned background that prevents ocular fatigue during extended shifts.\n\nInteractions are rapid and decisive. Density is tuned for situational awareness: high-density statistical readouts, monospaced tabular coordinates, and instantly distinguishable status badges (Available, Moderate, Critical, AI Pending) provide critical clarity without visual dissonance.\n\n## Colors\n\nThe palette establishes deliberate separation between structural chrome and the operational canvas:\n\n- **Primary Canvas & Surfaces:** The root viewport uses `#F8FAFC` (Slate Tint Stone), creating an organic contrast against `#FFFFFF` elevated cards and panels.\n- **Deep Forest Dark Chrome:** Navigation sidebars and anchor elements employ an abyssal foliage spectrum: `#081C14` (Root Dark), `#0B2319` (Sidebar Fill), and `#123326` (Active Item / Inset Surface).\n- **Brand & Action Emerald:** Interactive primaries, focus states, and verification indicators use Emerald `#059669` paired with high-luminance text accents `#10B981` and `#34D399` against dark backgrounds.\n- **Semantic Status Spectrum:**\n  - *Normal / Optimal:* Forest Emerald (`#059669` fill, `#ECFDF5` background).\n  - *Moderate / Warning:* Amber Ochre (`#D97706` fill, `#FFFBEB` background).\n  - *Critical / Violations / Denied:* Crimson Red (`#DC2626` fill, `#FEF2F2` background).\n  - *AI Automated / In Review:* Violet Indigo (`#6366F1` fill, `#EEF2FF` background).\n- **Neutrals & Typographic Ink:** Text hierarchy is locked to Slate metrics: `#0F172A` (Primary/Headlines), `#475569` (Body / Metric descriptions), `#64748B` (Secondary captions / Table headers), and `#E2E8F0` (Borders and divider rules).\n\n## Typography\n\nThe type scale combines **Plus Jakarta Sans** for interfaces and executive summaries with **JetBrains Mono** for numerical telemetry, zone identifiers, license plates, and monetary values.\n\n- **Micro-labels and Section Headers:** Navigation groupings and metadata sublabels use `caption-caps` transformed to uppercase with a tracking metric of `+0.06em` to maintain legibility at sub-12px sizes.\n- **Numerical Alignment:** All occupancy figures, currency figures, and percentages must enable font-variant tabular figures (`font-variant-numeric: tabular-nums;`) to eliminate vertical layout shift during live automated updates.\n- **Hierarchy Rules:** Metric cards pair an authoritative bold numeral (`metric-xl`) with split context sublabels (`label-mono-xs`) to communicate comparative change at a glance.\n\n## Layout & Spacing\n\nThis layout uses a fixed-rail collapsible sidebar coupled with an adaptive 12-column fluid grid system across the primary operational workspace.\n\n- **Sidebar Metrics:** Fixed `260px` standard width, compacting to `72px` in icon-only mode.\n- **Main Viewport Bounds:** Fluid grid with a strict minimum screen target of `1280px` for optimal multi-card data density. Margins transition from `1rem` on mobile/tablet viewports to `2rem` on administrative desktop displays.\n- **Card and Component Spacing:**\n  - Compact stat containers utilize `space-md` (`1rem`) internal padding.\n  - Complex visual charts and high-priority queues utilize `space-lg` (`1.5rem`) internal padding to isolate actionable modules.\n  - Sibling elements within control bars adhere to `space-sm` (`0.5rem`) gaps.\n\n## Elevation & Depth\n\nVisual hierarchy uses **Delicate Boundary Separation** paired with subtle ambient diffusion. Heavy shadows and harsh contrast drops are avoided to preserve interface cleanliness across dense data tables.\n\n- **Base Surfaces (Level 0):** Canvas `#F8FAFC`. Completely flat.\n- **Card Containers (Level 1):** Solid `#FFFFFF`, bordered by 1px solid `#E2E8F0` with dual micro-shadow: `0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)`.\n- **Active Navigation & Focused Items (Level 2):** In the dark sidebar, active buttons utilize `#123326` background with a 1px internal border (`rgba(255, 255, 255, 0.06)`).\n- **Overlays & Drawers (Level 3):** Modals, flyout context menus, and review drawers utilize `#FFFFFF` with `0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06)` anchored by an exterior `#0B2319` scrim blurred at `backdrop-filter: blur(4px)` and opacity `0.4`.\n\n## Shapes\n\nThe design system adopts a **Soft (Level 1)** geometric standard. This geometry produces a structured, engineered appearance well-suited for tabular data, camera telemetry feeds, and precise metric units.\n\n- **Containers & Data Cards:** `0.5rem` (`rounded-lg` equivalent) border-radius creates a clean, architectural silhouette.\n- **Buttons, Form Controls & Inputs:** `0.375rem` (6px) roundedness for compact tactical utility.\n- **Status Tags & Pill Badges:** Pill-shaped (`9999px`) styling reserved strictly for real-time status indicators (e.g., \"Active\", \"Available\", \"Under AI Review\", \"Violated\").\n\n## Components\n\n### 1. Navigation Rail & Workspace Header\n- **Sidebar Rail:** Deep background (`#0B2319`) with a distinct 64px header holding the circular emerald 'P' brand mark and a sharp `Plus Jakarta Sans` wordmark (`#FFFFFF`). Categorized into tracking groups: `OPERATIONS` and `MANAGEMENT` in `10px` uppercase (`#64748B`). Nav items include an unselected state (`#94A3B8` text, transparent background) and an active state (`#10B981` text, `#123326` fill, with a 3px active emerald left border indicator). Footer features an admin profile cell with presence indicator.\n- **Header Console:** Sticky top layout (`#FFFFFF` with `#E2E8F0` border-b). Contains breadcrumbs (`Dashboard / Real-Time Enforcement`), administrative currency toggle (`USD $`), status refresh indicators, and an admin user avatar circle (`#0B2319` fill with `#10B981` typography initials).\n\n### 2. Metric Stat Cards\n- Single card wrapper: White surface, 1px `#E2E8F0` border.\n- Layout: Top row hosts descriptive title (`#64748B`, 12px) and trend chip (`+8.4%` in emerald pill). Center row holds large monospaced metric value (`metric-xl`, `#0F172A`). Bottom row splits comparative breakdown (e.g., \"Metered: $14,290 | Citations: $3,420\") in muted, tracked micro-text.\n\n### 3. Data Visualization Cards\n- Built to frame chart libraries (Recharts) with zero chrome visual clutter.\n- Cartesians use `#F1F5F9` grid lines with no vertical bars.\n- Revenue trends utilize primary gradient stroke from `#059669` down to transparent fill.\n- Occupancy meters use horizontal stacked progress tracks with `0.25rem` height: Normal (`#059669`), Warning (`#D97706`), Critical (`#DC2626`), and Empty (`#E2E8F0`).\n\n### 4. Pending AI Enforcement Queue\n- List or grid item showing license plate capture (styled as an authentic registration tag with monospaced tracking), confidence score metric (`98.2% AI Conf`), zone chip (`Zone 4B - Downtown North`), violation reason tag, and dual quick-action CTA buttons: \"Confirm Citation\" (Solid Emerald `#059669`) and \"Dismiss\" (Ghost Slate `#94A3B8` hover `#DC2626`).\n\n### 5. Form Elements, Buttons & Chips\n- **Primary Buttons:** `#059669` fill, white text, 600 weight, hover state `#047857`.\n- **Secondary Buttons:** White fill, `#E2E8F0` border, `#0F172A` text, hover `#F8FAFC`.\n- **Status Chips:** Inset tinting: Green (`#ECFDF5` bg / `#065F46` text), Amber (`#FFFBEB` bg / `#92400E` text), Red (`#FEF2F2` bg / `#991B1B` text).\n\n### 6. System State Variations\n- **Loading State:** Skeleton loaders with a shimmering sweep from `#F1F5F9` to `#E2E8F0`.\n- **Empty State:** Centered container with a faded topological parking slot illustration, subtle label (\"No enforcement reviews pending\"), and secondary refresh CTA.\n- **Error State:** Warning banner with Crimson left-border, amber-tinted info card, and explicit retry trigger.",
+                  "font": "PLUS_JAKARTA_SANS",
+                  "headlineFont": "PLUS_JAKARTA_SANS",
+                  "headlineFontFamily": "Plus Jakarta Sans",
+                  "labelFont": "JETBRAINS_MONO",
+                  "labelFontFamily": "JetBrains Mono",
+                  "namedColors": {
+                    "background": "#f8f9ff",
+                    "error": "#ba1a1a",
+                    "error_container": "#ffdad6",
+                    "inverse_on_surface": "#eaf1ff",
+                    "inverse_primary": "#68dba9",
+                    "inverse_surface": "#233144",
+                    "on_background": "#0d1c2e",
+                    "on_error": "#ffffff",
+                    "on_error_container": "#93000a",
+                    "on_primary": "#ffffff",
+                    "on_primary_container": "#f5fff7",
+                    "on_primary_fixed": "#002114",
+                    "on_primary_fixed_variant": "#005137",
+                    "on_secondary": "#ffffff",
+                    "on_secondary_container": "#516a5d",
+                    "on_secondary_fixed": "#082016",
+                    "on_secondary_fixed_variant": "#344c40",
+                    "on_surface": "#0d1c2e",
+                    "on_surface_variant": "#3d4a42",
+                    "on_tertiary": "#ffffff",
+                    "on_tertiary_container": "#f5fff6",
+                    "on_tertiary_fixed": "#002113",
+                    "on_tertiary_fixed_variant": "#005236",
+                    "outline": "#6d7a72",
+                    "outline_variant": "#bccac0",
+                    "primary": "#006948",
+                    "primary_container": "#00855d",
+                    "primary_fixed": "#85f8c4",
+                    "primary_fixed_dim": "#68dba9",
+                    "secondary": "#4b6457",
+                    "secondary_container": "#cde9d9",
+                    "secondary_fixed": "#cde9d9",
+                    "secondary_fixed_dim": "#b2cdbd",
+                    "surface": "#f8f9ff",
+                    "surface_bright": "#f8f9ff",
+                    "surface_container": "#e6eeff",
+                    "surface_container_high": "#dce9ff",
+                    "surface_container_highest": "#d5e3fc",
+                    "surface_container_low": "#eff4ff",
+                    "surface_container_lowest": "#ffffff",
+                    "surface_dim": "#ccdbf3",
+                    "surface_tint": "#006c4a",
+                    "surface_variant": "#d5e3fc",
+                    "tertiary": "#006947",
+                    "tertiary_container": "#00855b",
+                    "tertiary_fixed": "#6ffbbe",
+                    "tertiary_fixed_dim": "#4edea3"
+                  },
+                  "overrideNeutralColor": "#475569",
+                  "overridePrimaryColor": "#059669",
+                  "overrideSecondaryColor": "#0b2319",
+                  "overrideTertiaryColor": "#10b981",
+                  "roundness": "ROUND_FOUR",
+                  "spacing": {
+                    "gutter": "1rem",
+                    "gutter-desktop": "1.5rem",
+                    "margin": "1rem",
+                    "margin-desktop": "2rem",
+                    "space-lg": "1.5rem",
+                    "space-md": "1rem",
+                    "space-sm": "0.5rem",
+                    "space-xl": "2rem",
+                    "space-xs": "0.25rem"
+                  },
+                  "spacingScale": 2,
+                  "typography": {
+                    "body-lg": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "16px",
+                      "fontWeight": "400",
+                      "lineHeight": "24px"
+                    },
+                    "body-md": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "14px",
+                      "fontWeight": "400",
+                      "lineHeight": "20px"
+                    },
+                    "body-sm": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "13px",
+                      "fontWeight": "400",
+                      "lineHeight": "18px"
+                    },
+                    "caption-caps": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "11px",
+                      "fontWeight": "700",
+                      "lineHeight": "16px"
+                    },
+                    "display-lg": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "32px",
+                      "fontWeight": "700",
+                      "lineHeight": "40px"
+                    },
+                    "headline-lg": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "24px",
+                      "fontWeight": "600",
+                      "lineHeight": "32px"
+                    },
+                    "headline-md": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "20px",
+                      "fontWeight": "600",
+                      "lineHeight": "28px"
+                    },
+                    "headline-sm": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "16px",
+                      "fontWeight": "600",
+                      "lineHeight": "24px"
+                    },
+                    "label-mono-sm": {
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": "12px",
+                      "fontWeight": "500",
+                      "lineHeight": "16px"
+                    },
+                    "label-mono-xs": {
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": "10px",
+                      "fontWeight": "600",
+                      "lineHeight": "14px"
+                    },
+                    "metric-xl": {
+                      "fontFamily": "Plus Jakarta Sans",
+                      "fontSize": "30px",
+                      "fontWeight": "700",
+                      "lineHeight": "36px"
+                    }
+                  }
+                }
+              },
+              "name": "assets/0343ac1af1a84026a14b4ebb5913db16",
+              "version": "1"
+            },
+            "deviceType": "DESKTOP",
+            "generatedBy": "figaro_agent",
+            "height": "3686",
+            "htmlCode": {
+              "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sX2ViNjc0NTMwMDliZDRjZGZhMTNjYTQ2MTg5YzYxN2M3EgsSBxDC0frSmwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNzU0NDQ5MjY1Nzk4NTE2MjkxOA&filename=&opi=96797242",
+              "mimeType": "text/html",
+              "name": "projects/17544492657985162918/files/c71e6ee4df524d9c853c097bdaee6ed8"
+            },
+            "id": "669fdb1877da428fa56953d49c864eea",
+            "name": "projects/17544492657985162918/screens/669fdb1877da428fa56953d49c864eea",
+            "prompt": "Create the definitive, polished responsive OpenParking Parking Administrator Dashboard. VISUAL DESIGN ONLY for React 18 TypeScript Vite app matching Lucide icons aesthetic and Recharts visual language.\n\nLAYOUT & STRUCTURE:\n- Fixed or sticky left dark forest green sidebar (#0B2319 / #0A1E16) with subtle emerald highlights.\n  - Header: Elegant emerald rounded square logo mark with clean white bold capital 'P', followed by 'OpenParking' in white font with small badge 'ADMIN'.\n  - Mobile hamburger toggle button to test collapsed/expanded drawer.\n  - Navigation grouped into two crisp uppercase section titles with tracking-wider:\n    1. 'OPERATIONS':\n       - Dashboard (/) - ACTIVE STATE with soft emerald green tinted background pill (bg-emerald-950/70 or bg-[#143d2c]), bright emerald-400 indicator bar or icon, text-white font-medium.\n       - Parking Zones (/zones)\n       - AI Enforcement (/ai-enforcement)\n       - Analytics (/analytics)\n       - Hardware Logs (/hardware)\n    2. 'MANAGEMENT':\n       - Permits Review (/permits)\n       - Settings (/settings)\n       - Slot Mapping (/slot-mapping)\n       - Book Parking (/book-parking)\n  - Footer profile block: User initials avatar 'PA' (ParkingAdmin / SystemAdmin badge), username 'Elena Vance', role 'ParkingAdmin', and subtle 'Sign Out' action link with icon.\n\n- Top Workspace App Bar:\n  - Clean light bar (bg-white border-b border-slate-200/80 px-8 py-3.5 flex items-center justify-between).\n  - Left: Breadcrumb 'Workspace / Dashboard' in slate-500 with 'Dashboard' in slate-900 font-semibold.\n  - Right:\n    - Currency indicator pill: 'USD ($)' in delicate border badge (border-slate-200 bg-slate-50 text-slate-700 text-xs font-mono font-medium px-2.5 py-1 rounded).\n    - User avatar initials badge 'PA' with subtle green online status dot.\n\n- Main Canvas Workspace (bg-[#F8FAFC] or light off-white, p-6 md:p-8 min-h-screen):\n  - Page Header:\n    - Title: 'Parking at a glance' (text-2xl font-bold tracking-tight text-slate-900).\n    - Subtitle: 'Real-time multi-zone occupancy, revenue analytics, and automated enforcement workflows.'\n    - Right Controls:\n      - Period selector segmented button with options: [7 Days (active), 30 Days, 90 Days].\n      - Refresh button with sync/refresh icon ('Refresh').\n      - Quick links pills: 'Slot Mapping ↗' and 'Book Parking ↗' with clean subtle secondary styling.\n    - State switcher bar (small tab or toggle to showcase standard Active View vs Loading State vs Empty State vs Network Error State visual accommodations as requested).\n\n  - 4 Core Metric Cards (White background, border border-slate-200/90, rounded-xl p-5 shadow-sm hover:shadow transition):\n    1. Total Sessions:\n       - Value: '4,892'\n       - Sublabels breakdown: '348 Active' (with small green dot) · '4,544 Completed' (with slate dot).\n    2. Parking Revenue & Penalties:\n       - Value: '$38,420.50'\n       - Sublabels breakdown: '$31,180 Parking' · '$7,240.50 Penalties'.\n    3. Average Stay Duration:\n       - Value: '2h 14m'\n       - Sublabel: 'Across all active municipal and commercial zones'.\n    4. Enforcement Overstays:\n       - Value: '42 Violations'\n       - Sublabels: '18 Pending workflows' (amber highlight badge) · '24 Escalated'.\n\n  - Grid Section 1 (Two Columns):\n    - Left Column (Daily Revenue Line Chart):\n      - Card with title 'Daily Revenue & Citations', subtitle 'Breakdown of standard parking fees vs citation penalties over selected period'.\n      - High fidelity SVG line/area chart rendering representing Recharts aesthetic with custom tooltips, dual lines (emerald green for parking revenue, amber/rose for penalties), clean x-axis days (Mon, Tue, Wed, Thu, Fri, Sat, Sun), y-axis values ($0 to $8,000), dotted gridlines.\n    - Right Column (Live Occupancy by Zone):\n      - Card with title 'Live Occupancy by Zone', subtitle 'Capacity thresholds and real-time bay utilization'.\n      - Zone list with color-coded horizontal multi-segment progress bars:\n        * Downtown Core (Zone A): 92% (Critical Red/Coral bar) - 276 Occupied · 14 Available · 10 Reserved (Total 300)\n        * Waterfront Pier (Zone B): 68% (Amber/Yellow bar) - 136 Occupied · 54 Available · 10 Reserved (Total 200)\n        * Financial Center Garage (Zone C): 45% (Emerald Green bar) - 180 Occupied · 200 Available · 20 Reserved (Total 400)\n        * Medical District (Zone D): 84% (Amber/Coral bar) - 210 Occupied · 30 Available · 10 Reserved (Total 250)\n\n  - Grid Section 2 (Two Columns):\n    - Left Column (Weekly Violations Bar Chart):\n      - Card with title 'Weekly Violations by Type', subtitle 'Enforcement infractions tracked across all monitored sectors'.\n      - Recharts styled bar chart showing categorized infractions: Overstay (78), No Permit (44), Fire Hydrant / Blockage (19), Unauthorized EV Bay (29).\n    - Right Column (AI Workflow Status Breakdown):\n      - Card with title 'AI Workflow Status', subtitle 'Distribution of optical license plate recognition and meter audit decisions'.\n      - Metric overview with badges:\n        * Auto-Approved: 1,420 (68%) - green badge\n        * Approved: 480 (23%) - emerald badge\n        * Pending Review: 72 (4%) - amber badge\n        * Rejected: 64 (3%) - slate badge\n        * Failed / Ambiguous: 44 (2%) - rose badge\n      - Visual distribution bar or donut presentation showing the 5 states.\n\n  - Pending AI Workflow Approval Queue Table / Card:\n    - Title: 'Pending AI Enforcement Workflows', badge '6 Awaiting Decision'.\n    - Clean tabular interface with columns:\n      * Objective & Details (e.g., 'Overstay beyond 2hr paid window', 'Unregistered overnight parking', 'Commercial loading bay obstruction')\n      * Workflow Type (tag: 'Overstay Detection', 'Permit Mismatch', 'Zone Restriction')\n      * Zone & Session ID (e.g., 'Zone A - Bay #14', 'Zone C - Bay #102') with monospace session ID '#SES-9821'\n      * Timestamp (e.g., '4 mins ago', '12 mins ago')\n      * Actions: Distinct 'Approve' (emerald green button) and 'Reject' (subtle outlined button) controls for the administrator.\n\n  - Visual State Accommodations section / preview toggles:\n    - Interactive switch or accordion to reveal:\n      1. Loading State (shimmer skeletons for metrics and charts)\n      2. Empty State (clean illustrated parking pin with 'No recent enforcement events found for this filter')\n      3. Network Error Banner (non-intrusive alert: 'Unable to reach enforcement telemetry service. Retrying in 12s... [Retry Now]').\n\nSTYLING & REFINEMENT:\n- Beautiful typography, generous whitespace, pristine borders (border-slate-200), subtle shadows (shadow-xs/shadow-sm).\n- Do not invent search bars, unrequested notification counters, sensors online claims, or growth comparison percentages (+14%).\n- Completely responsive: on mobile the sidebar collapses into a drawer, metrics stack to 1 column, charts stack vertically, and approval queue actions wrap cleanly.",
+            "screenMetadata": {
+              "agentType": "PRO_AGENT",
+              "status": "COMPLETE"
+            },
+            "screenType": "DESIGN",
+            "screenshot": {
+              "downloadUrl": "https://lh3.googleusercontent.com/aida/AEtjO1UWcJq6JN9UAwcls3VNHIOsas0XFWq-DqvNXFO1bWDeFX_J6QikaTQHZBS0b_SlZhvwdCgvSDzRpIRRaqcdW3ilFNca4fScaAajA1uQclfzJhLja6AtjO7FkcO0RrrpI7Ux9mvD9OhGtU2JkY6cYN7Fpub1PYQXf9ULessubNf9bo5FVeu8ZQFe2koE954hZfb1HSgwaEoUg79kaX0VLepvN4_4IdGTVYZHwVg4MHMx9W8Lt9lKzAVQwDg",
+              "name": "projects/17544492657985162918/files/d38d1b495d85448980b7001fe2e30e33"
+            },
+            "theme": {
+              "bodyFont": "PLUS_JAKARTA_SANS",
+              "bodyFontFamily": "Plus Jakarta Sans",
+              "colorMode": "LIGHT",
+              "colorVariant": "FIDELITY",
+              "customColor": "#059669",
+              "font": "PLUS_JAKARTA_SANS",
+              "headlineFont": "PLUS_JAKARTA_SANS",
+              "headlineFontFamily": "Plus Jakarta Sans",
+              "labelFont": "JETBRAINS_MONO",
+              "labelFontFamily": "JetBrains Mono",
+              "namedColors": {
+                "background": "#f8f9ff",
+                "error": "#ba1a1a",
+                "error_container": "#ffdad6",
+                "inverse_on_surface": "#eaf1ff",
+                "inverse_primary": "#68dba9",
+                "inverse_surface": "#233144",
+                "on_background": "#0d1c2e",
+                "on_error": "#ffffff",
+                "on_error_container": "#93000a",
+                "on_primary": "#ffffff",
+                "on_primary_container": "#f5fff7",
+                "on_primary_fixed": "#002114",
+                "on_primary_fixed_variant": "#005137",
+                "on_secondary": "#ffffff",
+                "on_secondary_container": "#516a5d",
+                "on_secondary_fixed": "#082016",
+                "on_secondary_fixed_variant": "#344c40",
+                "on_surface": "#0d1c2e",
+                "on_surface_variant": "#3d4a42",
+                "on_tertiary": "#ffffff",
+                "on_tertiary_container": "#f5fff6",
+                "on_tertiary_fixed": "#002113",
+                "on_tertiary_fixed_variant": "#005236",
+                "outline": "#6d7a72",
+                "outline_variant": "#bccac0",
+                "primary": "#006948",
+                "primary_container": "#00855d",
+                "primary_fixed": "#85f8c4",
+                "primary_fixed_dim": "#68dba9",
+                "secondary": "#4b6457",
+                "secondary_container": "#cde9d9",
+                "secondary_fixed": "#cde9d9",
+                "secondary_fixed_dim": "#b2cdbd",
+                "surface": "#f8f9ff",
+                "surface_bright": "#f8f9ff",
+                "surface_container": "#e6eeff",
+                "surface_container_high": "#dce9ff",
+                "surface_container_highest": "#d5e3fc",
+                "surface_container_low": "#eff4ff",
+                "surface_container_lowest": "#ffffff",
+                "surface_dim": "#ccdbf3",
+                "surface_tint": "#006c4a",
+                "surface_variant": "#d5e3fc",
+                "tertiary": "#006947",
+                "tertiary_container": "#00855b",
+                "tertiary_fixed": "#6ffbbe",
+                "tertiary_fixed_dim": "#4edea3"
+              },
+              "overrideNeutralColor": "#475569",
+              "overridePrimaryColor": "#059669",
+              "overrideSecondaryColor": "#0b2319",
+              "overrideTertiaryColor": "#10b981",
+              "roundness": "ROUND_FOUR",
+              "spacing": {
+                "gutter": "1rem",
+                "gutter-desktop": "1.5rem",
+                "margin": "1rem",
+                "margin-desktop": "2rem",
+                "space-lg": "1.5rem",
+                "space-md": "1rem",
+                "space-sm": "0.5rem",
+                "space-xl": "2rem",
+                "space-xs": "0.25rem"
+              },
+              "spacingScale": 2,
+              "typography": {
+                "body-lg": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "16px",
+                  "fontWeight": "400",
+                  "lineHeight": "24px"
+                },
+                "body-md": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "14px",
+                  "fontWeight": "400",
+                  "lineHeight": "20px"
+                },
+                "body-sm": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "13px",
+                  "fontWeight": "400",
+                  "lineHeight": "18px"
+                },
+                "caption-caps": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "11px",
+                  "fontWeight": "700",
+                  "lineHeight": "16px"
+                },
+                "display-lg": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "32px",
+                  "fontWeight": "700",
+                  "lineHeight": "40px"
+                },
+                "headline-lg": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "24px",
+                  "fontWeight": "600",
+                  "lineHeight": "32px"
+                },
+                "headline-md": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "20px",
+                  "fontWeight": "600",
+                  "lineHeight": "28px"
+                },
+                "headline-sm": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "16px",
+                  "fontWeight": "600",
+                  "lineHeight": "24px"
+                },
+                "label-mono-sm": {
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": "12px",
+                  "fontWeight": "500",
+                  "lineHeight": "16px"
+                },
+                "label-mono-xs": {
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": "10px",
+                  "fontWeight": "600",
+                  "lineHeight": "14px"
+                },
+                "metric-xl": {
+                  "fontFamily": "Plus Jakarta Sans",
+                  "fontSize": "30px",
+                  "fontWeight": "700",
+                  "lineHeight": "36px"
+                }
+              }
+            },
+            "title": "OpenParking Administrator Dashboard",
+            "width": "2560"
+          }
+        ],
+        "theme": {}
+      }
+    },
+    {
+      "text": "I have designed the responsive **OpenParking Administrator Dashboard** adhering strictly to your visual requirements, technical constraints, and brand specifications.\n\n### Key Design & Architectural Highlights\n\n1. **Brand & Sidebar Navigation:**\n   - **Deep Forest Green Theme (`#0B2319`)** with crisp typography, subtle emerald borders, and the signature **'P' logo mark** alongside the **OpenParking** wordmark and `ADMIN` badge.\n   - Grouped navigation preserving all requested destinations:\n     - **OPERATIONS**: *Dashboard (`/` - active emerald pill state)*, *Parking Zones (`/zones`)*, *AI Enforcement (`/ai-enforcement`)*, *Analytics (`/analytics`)*, *Hardware Logs (`/hardware`)*.\n     - **MANAGEMENT**: *Permits Review (`/permits`)*, *Settings (`/settings`)*, *Slot Mapping (`/slot-mapping`)*, *Book Parking (`/book-parking`)*.\n   - Dedicated footer profile block showcasing **Elena Vance (ParkingAdmin)**, user avatar initials badge `PA`, and accessible sign-out action.\n\n2. **Top Workspace Bar:**\n   - Subtle breadcrumbs: `Workspace / Dashboard`.\n   - Native currency indicator pill (`$ USD`) and user initials badge with live status.\n\n3. **Workspace Header & Controls:**\n   - Title: **Parking at a glance** with descriptive subtitle.\n   - Quick navigational link pills: **Slot Mapping ↗** and **Book Parking ↗**.\n   - Period selector segmented button: **7 Days** (active), **30 Days**, **90 Days**, alongside the **Refresh Status** trigger.\n   - Interactive visual state switches allowing instant toggling between **Standard View**, **Loading Skeleton**, **Empty State**, and **Network Error Alert**.\n\n4. **Supported Metric Cards:**\n   - **Total Sessions** (`4,892`) with micro-indicators for **348 Active** and **4,544 Completed**.\n   - **Parking Revenue & Penalties** (`$38,420.50`) partitioned into `$31,180 Parking` and `$7,240.50 Penalties`.\n   - **Average Stay Duration** (`2h 14m`) across municipal and commercial bays.\n   - **Enforcement Overstays** (`42 Violations`) with sublabels for **18 Pending workflows** (flagged as Action Needed) and **24 Escalated**.\n\n5. **Data Visualizations (Recharts Aesthetic):**\n   - **Daily Revenue & Citations**: Dual-trend line chart mapping daily standard fees against citations with tooltip highlights.\n   - **Live Occupancy by Zone**: Color-coded threshold progress bars (Green, Amber, Critical Red) with exact occupied, available, and reserved counts across Downtown Core, Waterfront Pier, Financial Center Garage, and Medical District.\n   - **Weekly Violations by Type**: Ranked distribution across Overstay, No Permit, Unauthorized EV Bay, and Fire Hydrant / Blockage.\n   - **AI Workflow Status Breakdown**: Visual distribution and count badges for Auto-Approved (1,420), Approved (480), Pending Review (72), Rejected (64), and Failed/Ambiguous (44).\n\n6. **Pending AI Enforcement Approval Queue:**\n   - High-fidelity decision queue presenting objective details, license plate recognition confidence, tagged workflow types (*Overstay Detection*, *Permit Mismatch*, *Zone Restriction*), zone/session ID (`#SES-9821`), relative timestamp, and direct **Approve** (emerald) and **Reject** (ghost outline) action buttons.\n\n7. **Strict Negative Constraints & Responsiveness:**\n   - Excluded extraneous elements (no generic search bars, fictional growth comparisons, sensor claims, or notification popovers).\n   - Designed for seamless mobile collapsing where sidebar drawer, metrics, and chart grids stack and wrap cleanly."
+    },
+    {
+      "suggestion": "Generate the Slot Mapping interactive screen (/slot-mapping)"
+    },
+    {
+      "suggestion": "Design the AI Enforcement dedicated queue and review screen (/ai-enforcement)"
+    },
+    {
+      "suggestion": "Create the detailed Parking Zones overview (/zones)"
+    }
+  ],
+  "projectId": "17544492657985162918",
+  "sessionId": "5217137747742590167"
+}

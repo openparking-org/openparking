@@ -14,6 +14,8 @@ public class UsersController(IUserService userService) : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponse<AuthResult>>> Register([FromBody] RegisterRequest req)
     {
+        if (req.Role != UserRole.Driver && !User.IsInRole("SystemAdmin"))
+            throw new AppException(ErrorCodes.Forbidden, "Only a SystemAdmin can create administrative accounts.", 403);
         var result = await userService.RegisterAsync(req);
         return Ok(ApiResponse<AuthResult>.Ok(result, HttpContext.TraceIdentifier));
     }

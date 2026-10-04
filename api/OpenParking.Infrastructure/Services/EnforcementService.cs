@@ -55,13 +55,15 @@ public class EnforcementService(
 
     public async Task<List<Guid>> DetectAndTriggerOverstaysAsync()
     {
+        var grace = await settings.GetIntAsync("overstay.grace_period_mins", 15);
+        var cutoff = DateTime.UtcNow.AddMinutes(-Math.Max(0, grace));
         // Find all active sessions where the booking's end time has passed
         var overstayed = await db.ParkingSessions
             .Include(s => s.Booking)
             .Include(s => s.Slot)
             .Where(s => s.Status == SessionStatus.Active &&
                         s.Booking != null &&
-                        s.Booking.EndTime < DateTime.UtcNow)
+                        s.Booking.EndTime < cutoff)
             .ToListAsync();
 
         var triggered = new List<Guid>();
@@ -122,16 +124,27 @@ public class EnforcementService(
         // 2. POST to LangGraph service
         try
         {
+            var session = sessionId.HasValue ? await db.ParkingSessions.Include(s => s.Booking).AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId) : null;
+            var zone = zoneId.HasValue ? await db.Zones.Include(z => z.Slots).AsNoTracking().FirstOrDefaultAsync(z => z.Id == zoneId) : null;
             var payload = new
             {
-                run_id     = run.Id.ToString(),
-                type       = workflowType,
+                workflow_id = run.Id.ToString(),
+                workflow_type = workflowType == WorkflowTypeOverstay ? "OVERSTAY_ENFORCEMENT" : "DYNAMIC_PRICING",
                 objective,
                 session_id = sessionId?.ToString(),
-                zone_id    = zoneId?.ToString()
+                zone_id    = zoneId?.ToString(),
+                input_data = new
+                {
+                    overstay_minutes = session?.OverstayMinutes ?? 0,
+                    base_penalty_per_hour = await settings.GetDecimalAsync("overstay.penalty_per_hour", 25m),
+                    total_slots = zone?.Slots.Count ?? 0,
+                    occupied_slots = zone?.Slots.Count(s => s.Status == SlotStatus.Occupied) ?? 0,
+                    base_hourly_rate = zone?.BaseHourlyRate ?? 0m,
+                    recent_arrivals = 0
+                }
             };
 
-            var response = await http.PostAsJsonAsync($"{AiServiceUrl}/workflows", payload);
+            using var response = await http.PostAsJsonAsync($"{AiServiceUrl}/workflows/execute", payload);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -142,6 +155,23 @@ public class EnforcementService(
             }
             else
             {
+                var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+                if (result.TryGetProperty("plan", out var plan)) run.PlanJson = plan.GetRawText();
+                if (result.TryGetProperty("action_proposal", out var proposal) && proposal.ValueKind == JsonValueKind.Object)
+                    run.StepResultsJson = proposal.GetRawText();
+                else if (result.TryGetProperty("step_results", out var steps)) run.StepResultsJson = steps.GetRawText();
+                if (result.TryGetProperty("reason", out var reason) && reason.ValueKind == JsonValueKind.String)
+                    run.DecisionReason = reason.GetString() ?? "";
+                if (result.TryGetProperty("status", out var state) && state.GetString() == "FAILED")
+                {
+                    run.Status = WorkflowStatus.Failed;
+                    run.ErrorLog = "AI workflow failed. Inspect its plan and retry.";
+                }
+                else if (run.StepResultsJson != "{}")
+                {
+                    // Python proposes actions; .NET persists actual effects only after admin review.
+                    run.Status = WorkflowStatus.AwaitingApproval;
+                }
                 logger.LogInformation("Workflow {RunId} ({Type}) triggered successfully.", run.Id, workflowType);
             }
         }
@@ -193,11 +223,32 @@ public class EnforcementService(
             throw new AppException(ErrorCodes.WorkflowNotPending,
                 $"Workflow is in status '{run.Status}' — only AwaitingApproval workflows can be approved.", 409);
 
+        if (run.WorkflowType == WorkflowTypeSurgePricing)
+        {
+            using var pricing = JsonDocument.Parse(run.StepResultsJson);
+            if (!pricing.RootElement.TryGetProperty("calculated_rate", out var rateElement) || !rateElement.TryGetDecimal(out var rate) || rate < 0)
+                throw new AppException(ErrorCodes.ValidationFailed, "The workflow has no valid proposed rate.");
+            var zone = await db.Zones.FirstOrDefaultAsync(z => z.Id == run.ZoneId)
+                ?? throw new AppException(ErrorCodes.NotFound, "Pricing zone not found.", 404);
+            var limit = await settings.GetDecimalAsync("pricing.max_surge_multiplier", 2.5m);
+            if (rate > zone.BaseHourlyRate * limit)
+                throw new AppException(ErrorCodes.ValidationFailed, "Proposed rate exceeds the configured surge limit.");
+            zone.BaseHourlyRate = rate;
+            zone.UpdatedAt = DateTime.UtcNow;
+            run.Status = WorkflowStatus.Approved; run.ApprovedBy = approvedByUserId; run.ApprovedAt = DateTime.UtcNow; run.UpdatedAt = DateTime.UtcNow;
+            run.DecisionReason = "Pricing approved by administrator.";
+            await db.SaveChangesAsync();
+            await WriteAuditLogAsync("AgentWorkflowRun", run.Id, "Approved", new { rate }, approvedByUserId, "admin", "system");
+            return;
+        }
+        if (run.Session == null || run.SessionId == null)
+            throw new AppException(ErrorCodes.ValidationFailed, "A penalty proposal must be linked to a parking session.");
+
         // Read penalty cap from SystemSettings
         var maxPenalty = await settings.GetDecimalAsync("max_penalty_amount", 5000m);
 
         // Parse Action Agent's PenaltyProposal from StepResultsJson
-        decimal penaltyAmount = 500m; // safe default
+        decimal? proposedAmount = null;
         string  penaltyReason = "Overstay penalty";
 
         if (!string.IsNullOrEmpty(run.StepResultsJson))
@@ -206,17 +257,21 @@ public class EnforcementService(
             {
                 using var doc = JsonDocument.Parse(run.StepResultsJson);
                 if (doc.RootElement.TryGetProperty("amount", out var amountEl))
-                    penaltyAmount = amountEl.GetDecimal();
+                    proposedAmount = amountEl.GetDecimal();
+                else if (doc.RootElement.TryGetProperty("proposed_amount", out var proposalEl))
+                    proposedAmount = proposalEl.GetDecimal();
                 if (doc.RootElement.TryGetProperty("reason", out var reasonEl))
                     penaltyReason = reasonEl.GetString() ?? penaltyReason;
             }
             catch (JsonException ex)
             {
-                logger.LogWarning(ex, "Could not parse StepResultsJson for run {RunId}, using defaults.", workflowRunId);
+                throw new AppException(ErrorCodes.ValidationFailed, $"Invalid proposal JSON: {ex.Message}");
             }
         }
 
-        penaltyAmount = Math.Min(penaltyAmount, maxPenalty);
+        if (!proposedAmount.HasValue || proposedAmount < 0)
+            throw new AppException(ErrorCodes.ValidationFailed, "A valid proposed penalty amount is required.");
+        var penaltyAmount = Math.Min(proposedAmount.Value, maxPenalty);
 
         // Create penalty record
         var penalty = new Penalty
@@ -237,6 +292,7 @@ public class EnforcementService(
         run.ApprovedBy = approvedByUserId;
         run.ApprovedAt = DateTime.UtcNow;
         run.UpdatedAt  = DateTime.UtcNow;
+        run.DecisionReason = "Penalty approved by administrator.";
 
         db.Penalties.Add(penalty);
         await db.SaveChangesAsync();
@@ -281,6 +337,7 @@ public class EnforcementService(
         run.Status    = WorkflowStatus.Rejected;
         run.UpdatedAt = DateTime.UtcNow;
         run.ErrorLog  = JsonSerializer.Serialize(new { rejectionReason = reason });
+        run.DecisionReason = reason;
 
         await db.SaveChangesAsync();
 

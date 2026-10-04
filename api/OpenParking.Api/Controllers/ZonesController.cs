@@ -338,7 +338,9 @@ public class ZoneDetailDto : ZoneDto
         {
             Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString(),
             Floor = s.Floor, BoundingBoxJson = s.BoundingBoxJson,
-            AssignedSensorId = s.AssignedSensorId, AssignedCameraId = s.AssignedCameraId
+            AssignedSensorId = s.AssignedSensorId, AssignedCameraId = s.AssignedCameraId,
+            CanvasX = s.CanvasX, CanvasY = s.CanvasY, CanvasWidth = s.CanvasWidth, CanvasHeight = s.CanvasHeight,
+            NearestWaypointId = s.NearestWaypointId
         }).ToList(),
         FloorPlans = zone.FloorPlans.Select(f => new FloorPlanSummaryDto
         {
@@ -359,6 +361,11 @@ public class SlotSummaryDto
     public string? BoundingBoxJson { get; set; }
     public Guid? AssignedSensorId { get; set; }
     public Guid? AssignedCameraId { get; set; }
+    public double? CanvasX { get; set; }
+    public double? CanvasY { get; set; }
+    public double? CanvasWidth { get; set; }
+    public double? CanvasHeight { get; set; }
+    public string? NearestWaypointId { get; set; }
 }
 
 public class FloorPlanSummaryDto

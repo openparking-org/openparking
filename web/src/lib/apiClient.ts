@@ -39,7 +39,8 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     let errorMessage = 'An error occurred';
     try {
       const errorData = await response.json();
-      errorMessage = errorData.error?.message || errorData.message || errorMessage;
+      errorMessage = errorData.error?.message || errorData.message || errorData.title || errorMessage;
+      if (errorData.errors) errorMessage = Object.values(errorData.errors).flat().join(' ');
     } catch {
       // Fallback if not JSON
     }
@@ -57,7 +58,9 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     return null;
   }
 
-  return response.json();
+  const payload = await response.json();
+  if (payload?.success === false) throw new ApiError(response.status, payload.error?.message || 'Request failed');
+  return payload;
 }
 
 export const apiClient = {

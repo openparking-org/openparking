@@ -23,6 +23,10 @@ export const LoginPage: React.FC = () => {
       const response = await apiClient.post('/api/users/login', { email: email.trim(), password });
       
       if (response.data) {
+        if (!['ParkingAdmin', 'SystemAdmin'].includes(response.data.user?.role)) {
+          setError('This workspace is for parking administrators. Sign in with an admin account.');
+          return;
+        }
         setAuth(response.data.token, response.data.user);
         
         // Redirect to intended page or dashboard
@@ -41,7 +45,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ 
+    <div className="login-screen" style={{
       display: 'flex', 
       justifyContent: 'center', 
       alignItems: 'center', 

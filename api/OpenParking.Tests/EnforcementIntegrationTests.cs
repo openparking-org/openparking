@@ -45,6 +45,33 @@ public class EnforcementIntegrationTests
     }
 
     [Fact]
+    public async Task TriggerWorkflow_UsesPythonExecutionContract_AndPersistsProposalForAdminReview()
+    {
+        var (db, httpMock, service) = CreateService();
+        var booking = new Booking();
+        var session = new ParkingSession { BookingId = booking.Id, Booking = booking, OverstayMinutes = 180 };
+        db.AddRange(booking, session);
+        await db.SaveChangesAsync();
+        string? path = null;
+        string? payload = null;
+        httpMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Returns(async (HttpRequestMessage request, CancellationToken _) =>
+            {
+                path = request.RequestUri!.AbsolutePath;
+                payload = await request.Content!.ReadAsStringAsync();
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"status\":\"PENDING_APPROVAL\",\"plan\":{\"steps\":[]},\"action_proposal\":{\"proposed_amount\":125,\"reason\":\"Overstay\"}}") };
+            });
+        var run = await service.TriggerWorkflowAsync("OVERSTAY", "Review overstay", session.Id, null);
+        Assert.Equal("/workflows/execute", path);
+        using var input = JsonDocument.Parse(payload!);
+        Assert.Equal("OVERSTAY_ENFORCEMENT", input.RootElement.GetProperty("workflow_type").GetString());
+        Assert.Equal(180, input.RootElement.GetProperty("input_data").GetProperty("overstay_minutes").GetInt32());
+        Assert.Equal(WorkflowStatus.AwaitingApproval, run.Status);
+        Assert.Contains("proposed_amount", run.StepResultsJson);
+        Assert.Equal("{\"steps\":[]}", run.PlanJson);
+    }
+
+    [Fact]
     public async Task TriggerWorkflowAsync_WhenAiServiceReturnsSuccess_SetsStatusToRunning()
     {
         var (db, httpMock, service) = CreateService();

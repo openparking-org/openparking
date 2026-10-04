@@ -150,6 +150,13 @@ public class UserService(
         var user = await db.Users.FindAsync(userId)
             ?? throw new AppException(ErrorCodes.NotFound, "User not found.", 404);
 
+        if (!Enum.IsDefined(newRole)) throw new AppException(ErrorCodes.ValidationFailed, "Invalid role.");
+        if (userId == actorId && newRole != UserRole.SystemAdmin)
+            throw new AppException(ErrorCodes.ValidationFailed, "You cannot remove your own SystemAdmin access.", 409);
+        if (user.Role == UserRole.SystemAdmin && newRole != UserRole.SystemAdmin &&
+            !await db.Users.AnyAsync(u => u.Id != userId && u.Role == UserRole.SystemAdmin && u.IsActive))
+            throw new AppException(ErrorCodes.ValidationFailed, "The final SystemAdmin cannot be demoted.", 409);
+
         user.Role      = newRole;
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -212,7 +219,7 @@ public class UserService(
                 if (aiResult.TryGetProperty("confidence", out var confidenceProp))
                 {
                     var confidence = confidenceProp.GetDecimal();
-                    var thresholdStr = config["permits.auto_approve_confidence"] ?? "0.90";
+                    var thresholdStr = (await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "permits.auto_approve_confidence"))?.Value ?? "0.90";
                     if (decimal.TryParse(thresholdStr, out var threshold) && confidence >= threshold)
                     {
                         permit.Status = PermitStatus.Verified;
@@ -240,6 +247,10 @@ public class UserService(
     public async Task<DisabilityPermit> ReviewPermitAsync(
         Guid permitId, PermitStatus decision, string? notes, Guid reviewerId)
     {
+        if (decision != PermitStatus.Verified && decision != PermitStatus.Rejected)
+            throw new AppException(ErrorCodes.ValidationFailed, "Review decision must be Verified or Rejected.");
+        if (decision == PermitStatus.Rejected && string.IsNullOrWhiteSpace(notes))
+            throw new AppException(ErrorCodes.ValidationFailed, "A rejection reason is required.");
         var permit = await db.DisabilityPermits
             .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.Id == permitId)
@@ -249,7 +260,12 @@ public class UserService(
             throw new AppException(ErrorCodes.PermitAlreadyVerified,
                 $"Permit is already in status '{permit.Status}' and cannot be reviewed.", 409);
 
+        if (decision == PermitStatus.Verified && permit.ExpiryDate <= DateTime.UtcNow)
+            throw new AppException(ErrorCodes.ValidationFailed, "Expired permits cannot be verified.");
+
         permit.Status          = decision;
+        permit.ReviewNotes = notes;
+        permit.ReviewedAt = DateTime.UtcNow;
         permit.RejectionReason = decision == PermitStatus.Rejected ? notes : null;
         permit.UpdatedAt       = DateTime.UtcNow;
 
