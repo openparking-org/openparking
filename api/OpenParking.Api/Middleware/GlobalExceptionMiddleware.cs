@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OpenParking.Core.Models;
 using System.Net;
@@ -40,6 +41,16 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
             context.Response.ContentType = "application/json";
 
             var response = ApiResponse<object>.Fail(ex.Code, ex.Message, traceId);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            logger.LogWarning(ex, "Concurrent update [{TraceId}] | Path={Path}",
+                context.TraceIdentifier, context.Request.Path);
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            context.Response.ContentType = "application/json";
+            var response = ApiResponse<object>.Fail(ErrorCodes.Conflict,
+                "The parking state changed during this request. Refresh and try again.", context.TraceIdentifier);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
         }
         catch (Exception ex)

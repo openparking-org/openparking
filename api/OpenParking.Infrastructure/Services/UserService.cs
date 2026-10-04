@@ -49,10 +49,11 @@ public class UserService(
     private const int BcryptWorkFactor = 12;
 
     private string JwtSecret =>
-        config["JWT:Secret"] ?? throw new InvalidOperationException("JWT:Secret not configured.");
+        config["JWT_SECRET"] ?? config["JWT:Secret"]
+        ?? throw new InvalidOperationException("JWT secret not configured.");
 
     private int JwtExpiryHours =>
-        int.TryParse(config["JWT:ExpiryHours"], out var h) ? h : 24;
+        int.TryParse(config["JWT_EXPIRY_HOURS"] ?? config["JWT:ExpiryHours"], out var h) ? h : 24;
 
     private string JwtIssuer   => config["JWT:Issuer"]   ?? "openparking-api";
     private string JwtAudience => config["JWT:Audience"] ?? "openparking-clients";
@@ -100,7 +101,7 @@ public class UserService(
     {
         // Single query — never distinguish "not found" vs "wrong password" (prevents enumeration)
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant());
+            .FirstOrDefaultAsync(u => u.Email == email.Trim().ToLowerInvariant());
 
         var validPassword = user is not null &&
                             BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);

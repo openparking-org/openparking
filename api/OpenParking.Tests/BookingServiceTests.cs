@@ -62,8 +62,10 @@ public class BookingServiceTests
         Assert.Equal(SlotStatus.Occupied, updatedSlot!.Status);
     }
 
-    [Fact]
-    public async Task CheckInAsync_AlreadyActiveSession_ThrowsAppException()
+    [Theory]
+    [InlineData(SessionStatus.Active)]
+    [InlineData(SessionStatus.OverstayDetected)]
+    public async Task CheckInAsync_AlreadyActiveSession_ThrowsAppException(SessionStatus status)
     {
         var db = GetInMemoryDbContext();
         
@@ -77,7 +79,7 @@ public class BookingServiceTests
             BookingId = booking.Id,
             UserId = user.Id, 
             SlotId = slot.Id, 
-            Status = SessionStatus.Active,
+            Status = status,
             CheckInTime = DateTime.UtcNow
         };
         
@@ -193,8 +195,12 @@ public class BookingServiceTests
         Assert.Equal(SlotStatus.Available, updatedSlot!.Status);
     }
 
-    [Fact]
-    public async Task CheckOutAsync_ActiveSession_CompletesAndReleasesSlot()
+    [Theory]
+    [InlineData(SessionStatus.Active, false)]
+    [InlineData(SessionStatus.OverstayDetected, false)]
+    [InlineData(SessionStatus.Active, true)]
+    [InlineData(SessionStatus.OverstayDetected, true)]
+    public async Task CheckOutAsync_ActiveSession_CompletesAndReleasesSlot(SessionStatus status, bool byBookingId)
     {
         var db = GetInMemoryDbContext();
 
@@ -217,7 +223,7 @@ public class BookingServiceTests
             UserId = user.Id,
             SlotId = slot.Id,
             CheckInTime = DateTime.UtcNow.AddMinutes(-45),
-            Status = SessionStatus.Active
+            Status = status
         };
 
         db.Users.Add(user);
@@ -235,9 +241,13 @@ public class BookingServiceTests
 
         var service = new BookingService(db, emailMock.Object, notifierMock.Object, loggerMock.Object, configMock.Object, httpClientFactoryMock.Object);
 
-        var result = await service.CheckOutAsync(new CheckOutRequest { SessionId = session.Id }, "127.0.0.1");
+        var request = byBookingId
+            ? new CheckOutRequest { BookingId = booking.Id }
+            : new CheckOutRequest { SessionId = session.Id };
+        var result = await service.CheckOutAsync(request, "127.0.0.1");
 
         Assert.NotNull(result);
+        Assert.NotNull(result.Session);
         Assert.Equal(SessionStatus.Completed, result.Session.Status);
         Assert.True(result.Session.TotalFee > 0);
 

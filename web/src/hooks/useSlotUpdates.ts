@@ -4,7 +4,7 @@ import * as signalR from '@microsoft/signalr';
 export interface SlotStatusUpdate {
   slotId: string;
   status: 'Available' | 'Reserved' | 'Occupied' | 'Maintenance';
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export function useSlotUpdates(zoneId: string) {
@@ -13,6 +13,9 @@ export function useSlotUpdates(zoneId: string) {
 
   useEffect(() => {
     if (!zoneId) return;
+    setUpdates({});
+    setIsConnected(false);
+    let disposed = false;
 
     const hubUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/hubs/slots`;
     const connection = new signalR.HubConnectionBuilder()
@@ -20,24 +23,38 @@ export function useSlotUpdates(zoneId: string) {
       .withAutomaticReconnect()
       .build();
 
-    connection.start()
-      .then(() => {
+    connection.onreconnecting(() => setIsConnected(false));
+    connection.onclose(() => setIsConnected(false));
+    connection.onreconnected(async () => {
+      if (disposed) return;
+      try {
+        await connection.invoke('JoinZoneGroup', zoneId);
         setIsConnected(true);
-        connection.invoke('JoinZoneGroup', zoneId);
+      } catch (err) {
+        console.warn('SignalR zone subscription failed:', err);
+      }
+    });
+
+    connection.start()
+      .then(async () => {
+        if (disposed) {
+          await connection.stop();
+          return;
+        }
+        await connection.invoke('JoinZoneGroup', zoneId);
+        setIsConnected(true);
       })
       .catch((err: any) => {
         console.warn('SignalR connection failed (running in fallback mock mode):', err?.message);
       });
 
-    connection.on('SlotStatusChanged', (update: SlotStatusUpdate) => {
+    connection.on('SlotUpdated', (update: SlotStatusUpdate) => {
       setUpdates((prev: Record<string, SlotStatusUpdate>) => ({ ...prev, [update.slotId]: update }));
     });
 
     return () => {
-      if (connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke('LeaveZoneGroup', zoneId);
-        connection.stop();
-      }
+      disposed = true;
+      void connection.stop().catch((err) => console.warn('SignalR cleanup failed:', err));
     };
   }, [zoneId]);
 

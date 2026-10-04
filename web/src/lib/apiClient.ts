@@ -11,9 +11,10 @@ export class ApiError extends Error {
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = useAuthStore.getState().token;
+  const isAuthRequest = endpoint === '/api/users/login' || endpoint === '/api/users/register';
   
   const headers = new Headers(options.headers || {});
-  if (token) {
+  if (token && !isAuthRequest) {
     headers.set('Authorization', `Bearer ${token}`);
   }
   
@@ -21,24 +22,32 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 401) {
-    useAuthStore.getState().logout();
-    window.location.href = '/login';
-    throw new ApiError(401, 'Unauthorized');
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new ApiError(0, 'Unable to connect to the server. Please try again shortly.');
+    }
+    throw err;
   }
 
   if (!response.ok) {
     let errorMessage = 'An error occurred';
     try {
       const errorData = await response.json();
-      errorMessage = errorData.message || errorMessage;
+      errorMessage = errorData.error?.message || errorData.message || errorMessage;
     } catch {
       // Fallback if not JSON
+    }
+    if (response.status === 401 && !isAuthRequest) {
+      useAuthStore.getState().logout();
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     throw new ApiError(response.status, errorMessage);
   }

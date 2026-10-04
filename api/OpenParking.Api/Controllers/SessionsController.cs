@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenParking.Core.Interfaces;
 using OpenParking.Core.Models;
@@ -7,6 +8,7 @@ namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SessionsController(IBookingService bookingService, ISettingsService settingsService) : ControllerBase
 {
     [HttpPost("check-in")]
@@ -14,10 +16,10 @@ public class SessionsController(IBookingService bookingService, ISettingsService
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         
-        if (request.UserId == null && request.BookingId == null && string.IsNullOrWhiteSpace(request.BookingCode) && request.SlotId.HasValue)
-        {
-             request.UserId = GetCurrentUserId();
-        }
+        var callerId = RequireCurrentUserId();
+        request.UserId = IsAdmin() ? request.UserId : callerId;
+        if (!request.BookingId.HasValue && string.IsNullOrWhiteSpace(request.BookingCode))
+            request.UserId ??= callerId;
 
         var session = await bookingService.CheckInAsync(request, ip);
         var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
@@ -28,6 +30,14 @@ public class SessionsController(IBookingService bookingService, ISettingsService
     public async Task<ActionResult<ApiResponse<SessionDto>>> CheckOut([FromBody] CheckOutRequest request)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var session = request.SessionId.HasValue && request.SessionId.Value != Guid.Empty
+            ? await bookingService.GetSessionAsync(request.SessionId.Value)
+            : request.BookingId.HasValue && request.BookingId.Value != Guid.Empty
+                ? await bookingService.GetActiveSessionAsync(null, request.BookingId.Value)
+                : null;
+        if (session == null)
+            throw new AppException(ErrorCodes.NotFound, "No active parking session found.", 404);
+        EnsureAccess(session.UserId);
         var result = await bookingService.CheckOutAsync(request, ip);
         var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         
@@ -39,11 +49,13 @@ public class SessionsController(IBookingService bookingService, ISettingsService
     [HttpGet("active")]
     public async Task<ActionResult<ApiResponse<SessionDto>>> GetActiveSession([FromQuery] Guid? userId = null, [FromQuery] Guid? bookingId = null)
     {
-        var targetUserId = userId ?? GetCurrentUserId();
+        var targetUserId = userId ?? RequireCurrentUserId();
+        EnsureAccess(targetUserId);
         var session = await bookingService.GetActiveSessionAsync(targetUserId, bookingId);
         
         if (session == null)
             throw new AppException(ErrorCodes.NotFound, "No active parking session found.", 404);
+        EnsureAccess(session.UserId);
 
         var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
@@ -53,15 +65,25 @@ public class SessionsController(IBookingService bookingService, ISettingsService
     public async Task<ActionResult<ApiResponse<SessionDto>>> GetSessionById(Guid id)
     {
         var session = await bookingService.GetSessionAsync(id);
+        EnsureAccess(session.UserId);
         var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
     }
 
-    private Guid? GetCurrentUserId()
+    private bool IsAdmin() => User.IsInRole("SystemAdmin") || User.IsInRole("ParkingAdmin");
+
+    private void EnsureAccess(Guid ownerId)
+    {
+        var callerId = RequireCurrentUserId();
+        if (ownerId != callerId && !IsAdmin())
+            throw new AppException(ErrorCodes.Forbidden, "You can only access your own sessions.", 403);
+    }
+
+    private Guid RequireCurrentUserId()
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         if (Guid.TryParse(sub, out var guid)) return guid;
-        return null;
+        throw new AppException(ErrorCodes.Unauthorized, "User context not found.", 401);
     }
 }
 

@@ -6,6 +6,9 @@ using OpenParking.Infrastructure.Data;
 using OpenParking.Infrastructure.Services;
 using Xunit;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace OpenParking.Tests;
 
@@ -27,6 +30,34 @@ public class UserServiceTests
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         return new AppDbContext(options);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LoginAsync_EnvironmentJwtSecret_MatchesApiValidationKey(bool environmentOnly)
+    {
+        const string environmentSecret = "EnvironmentJwtSecretWithAtLeast32Bytes!";
+        _configMock.Setup(c => c["JWT_SECRET"]).Returns(environmentSecret);
+        if (environmentOnly) _configMock.Setup(c => c["JWT:Secret"]).Returns((string?)null);
+        using var db = GetInMemoryDbContext();
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(), Email = "admin@example.test", Role = UserRole.SystemAdmin,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
+        });
+        await db.SaveChangesAsync();
+        var service = new UserService(db, Mock.Of<OpenParking.Core.Interfaces.IEmailService>(), _configMock.Object,
+            Mock.Of<Microsoft.Extensions.Logging.ILogger<UserService>>(), Mock.Of<IHttpClientFactory>());
+        var result = await service.LoginAsync("  ADMIN@example.test  ", "TestPassword123!");
+        var principal = new JwtSecurityTokenHandler().ValidateToken(result.Token, new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(environmentSecret)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        }, out _);
+        Assert.True(principal.IsInRole("SystemAdmin"));
     }
 
     [Fact]

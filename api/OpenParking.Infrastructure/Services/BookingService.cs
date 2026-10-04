@@ -124,7 +124,9 @@ public class BookingService(
                 var totalSlots = await db.Slots.CountAsync(s => s.ZoneId == slot.ZoneId);
                 var occupiedSlots = await db.Slots.CountAsync(s => s.ZoneId == slot.ZoneId && s.Status != SlotStatus.Available);
                 var congestionScore = totalSlots > 0 ? (double)occupiedSlots / totalSlots : 0;
-                string congestionLevel = congestionScore >= 0.9 ? "CRITICAL" : (congestionScore >= 0.7 ? "HIGH" : "MODERATE");
+                string congestionLevel = congestionScore >= 0.9 ? "CRITICAL"
+                    : congestionScore >= 0.7 ? "HIGH"
+                    : congestionScore >= 0.5 ? "MODERATE" : "LOW";
 
                 var aiUrl = config["AI_SERVICE_URL"] ?? "http://localhost:8000";
                 var client = httpClientFactory.CreateClient();
@@ -198,6 +200,12 @@ public class BookingService(
                 await emailService.SendBookingConfirmationAsync(user.Email, user.FullName, booking);
 
             return booking;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await tx.RollbackAsync();
+            throw new AppException(ErrorCodes.SlotUnavailable,
+                "This slot was reserved by another request. Please choose another slot.", 409);
         }
         catch
         {
@@ -277,16 +285,22 @@ public class BookingService(
             booking = await db.Bookings
                 .Include(b => b.Slot)
                 .ThenInclude(s => s!.Zone)
-                .FirstOrDefaultAsync(b => b.QrCodeContent.Contains(request.BookingCode) || b.Id.ToString() == request.BookingCode);
+                .FirstOrDefaultAsync(b => b.QrCodeContent == request.BookingCode || b.Id.ToString() == request.BookingCode);
         }
 
         if (booking == null)
         {
+            if (request.BookingId.HasValue || !string.IsNullOrWhiteSpace(request.BookingCode))
+                throw new AppException(ErrorCodes.NotFound, "Booking not found for the scanned QR code.", 404);
+
             if (request.SlotId.HasValue && request.SlotId.Value != Guid.Empty)
             {
                 var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == request.SlotId.Value);
                 if (slot == null)
                     throw new AppException(ErrorCodes.NotFound, "Booking or slot not found for provided check-in QR.", 404);
+
+                if (slot.Status != SlotStatus.Available)
+                    throw new AppException(ErrorCodes.SlotUnavailable, "This slot is not available.", 409);
 
                 var userId = request.UserId ?? Guid.NewGuid();
                 booking = new Booking
@@ -311,8 +325,12 @@ public class BookingService(
             }
         }
 
+        if (request.UserId.HasValue && booking.UserId != request.UserId.Value)
+            throw new AppException(ErrorCodes.Forbidden, "You can only check in your own bookings.", 403);
+
         var existingActiveSession = await db.ParkingSessions
-            .FirstOrDefaultAsync(s => s.BookingId == booking.Id && s.Status == SessionStatus.Active);
+            .FirstOrDefaultAsync(s => s.BookingId == booking.Id &&
+                (s.Status == SessionStatus.Active || s.Status == SessionStatus.OverstayDetected));
 
         if (existingActiveSession != null)
             throw new AppException(ErrorCodes.SessionActive, "An active parking session is already running for this booking.", 409);
@@ -343,14 +361,17 @@ public class BookingService(
         {
             targetSlot.Status = SlotStatus.Occupied;
             targetSlot.UpdatedAt = DateTime.UtcNow;
+        }
 
+        await db.SaveChangesAsync();
+
+        if (targetSlot != null)
+        {
             await realtimeNotifier.NotifySlotUpdatedAsync(
                 targetSlot.ZoneId.ToString(), 
                 targetSlot.Id.ToString(), 
                 SlotStatus.Occupied.ToString());
         }
-
-        await db.SaveChangesAsync();
 
         session.Booking = booking;
         session.Slot = targetSlot;
@@ -375,7 +396,8 @@ public class BookingService(
         {
             session = await db.ParkingSessions
                 .Include(s => s.Booking).ThenInclude(b => b!.User)
-                .Where(s => s.BookingId == request.BookingId.Value && s.Status == SessionStatus.Active)
+                .Where(s => s.BookingId == request.BookingId.Value &&
+                    (s.Status == SessionStatus.Active || s.Status == SessionStatus.OverstayDetected))
                 .OrderByDescending(s => s.CheckInTime)
                 .FirstOrDefaultAsync();
         }
@@ -435,14 +457,18 @@ public class BookingService(
         {
             slot.Status = SlotStatus.Available;
             slot.UpdatedAt = now;
-            
+        }
+
+        await db.SaveChangesAsync();
+
+        if (slot != null)
+        {
             await realtimeNotifier.NotifySlotUpdatedAsync(
                 slot.ZoneId.ToString(), 
                 slot.Id.ToString(), 
                 SlotStatus.Available.ToString());
         }
 
-        await db.SaveChangesAsync();
         session.Slot = slot;
 
         // Send receipt email

@@ -460,6 +460,7 @@ namespace OpenParking.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.Property<int>("Type")

@@ -20,7 +20,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/api/users/login', { email, password });
+      const response = await apiClient.post('/api/users/login', { email: email.trim(), password });
       
       if (response.data) {
         setAuth(response.data.token, response.data.user);
@@ -100,7 +100,7 @@ export const LoginPage: React.FC = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              placeholder="admin@openparking.com"
+              placeholder="admin@openparking.local"
               style={{
                 background: 'rgba(0, 0, 0, 0.3)',
                 border: '1px solid var(--border-color)',

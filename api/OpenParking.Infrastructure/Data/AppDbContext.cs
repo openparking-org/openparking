@@ -52,6 +52,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Slot>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.Status).IsConcurrencyToken();
             // Filter index: quickly find all available slots in a zone
             e.HasIndex(x => new { x.ZoneId, x.Status });
             e.HasOne(x => x.Zone)

@@ -199,9 +199,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SlotHub>("/hubs/slots");  // IHubContext<ISlotHub> is now available via DI
 
-// Health probe (used by Docker and CF Tunnel health checks)
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", utc = DateTime.UtcNow }))
-   .AllowAnonymous();
+// HealthController owns /health and checks database connectivity for every module.
 
 // Fast exit for CI swagger-check mode
 if (args.Contains("--swagger-check"))
