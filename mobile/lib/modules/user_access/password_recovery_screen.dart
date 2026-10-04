@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../services/api_config.dart';
 import '../../services/api_response.dart';
+import '../../core/widgets/app_widgets.dart';
 
 class PasswordRecoveryScreen extends StatefulWidget {
   const PasswordRecoveryScreen({super.key});
@@ -66,10 +67,13 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen> {
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(title: const Text('Reset password')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: pagePadding(context),
         child: Form(
             key: form,
             child: Column(children: [
+              const PageIntro(
+                  title: 'Reset your password',
+                  subtitle: 'Enter your account email to get a reset code.'),
               TextFormField(
                   controller: email,
                   enabled: !busy && !sent,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// OpenParking "Monochrome Mobility" Design System
 /// Based on Stitch Design System: Plus Jakarta Sans, B&W Uber-inspired palette
@@ -167,11 +166,11 @@ class AppTheme {
 
   // ── MATERIAL THEME ────────────────────────────────────────────
   static ThemeData get lightTheme {
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme();
+    final textTheme = ThemeData.light().textTheme.apply(fontFamily: fontFamily);
     return ThemeData(
       useMaterial3: true,
       textTheme: textTheme,
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: fontFamily,
       brightness: Brightness.light,
       scaffoldBackgroundColor: surface,
       colorScheme: const ColorScheme.light(
@@ -224,6 +223,7 @@ class AppTheme {
         }),
       ),
       cardTheme: CardThemeData(
+        margin: const EdgeInsets.only(bottom: 12),
         color: surfacePure,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -263,8 +263,18 @@ class AppTheme {
           textStyle: labelLg.copyWith(color: onPrimary),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusXl)),
+          textStyle: labelLg,
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
           foregroundColor: primary,
           side: const BorderSide(color: borderSubtle),
           shape: RoundedRectangleBorder(
@@ -275,6 +285,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
+          minimumSize: const Size(48, 48),
           foregroundColor: primary,
           textStyle: labelLg,
         ),

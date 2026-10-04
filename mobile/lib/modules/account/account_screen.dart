@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../enforcement/penalties_screen.dart';
 import '../user_access/permit_upload_screen.dart';
 
@@ -19,8 +20,11 @@ class AccountScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppTheme.margin),
+        padding: pagePadding(context),
         children: [
+          const PageIntro(
+              title: 'Your account',
+              subtitle: 'Manage your permits and parking activity.'),
           // Profile Header
           Container(
             padding: const EdgeInsets.all(AppTheme.spaceMd),
@@ -102,7 +106,6 @@ class AccountScreen extends ConsumerWidget {
           // Logout Button
           SizedBox(
             width: double.infinity,
-            height: 48,
             child: OutlinedButton.icon(
               onPressed: () {
                 ref.read(authProvider.notifier).logout();

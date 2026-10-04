@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../services/user_service.dart';
 import 'password_recovery_screen.dart';
 
@@ -94,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             // ── TOP BAR ──
             Container(
-              height: 56,
+              constraints: const BoxConstraints(minHeight: 56),
               padding: const EdgeInsets.symmetric(horizontal: AppTheme.margin),
               decoration: const BoxDecoration(
                 color: AppTheme.surfacePure,
@@ -118,15 +119,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     constraints:
                         const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
-                  Row(
+                  Expanded(
+                      child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                      Flexible(
+                          child: Text(
                         'OpenParking',
+                        textAlign: TextAlign.center,
                         style: AppTheme.titleMd.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                         ),
-                      ),
+                      )),
                       const SizedBox(width: 4),
                       Container(
                         width: 6,
@@ -137,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ],
-                  ),
+                  )),
                   IconButton(
                     icon: const Icon(Icons.help_outline, size: 20),
                     color: AppTheme.textSecondary,
@@ -153,10 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             // ── FORM CONTENT ──
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.margin,
-                  vertical: AppTheme.spaceLg,
-                ),
+                padding: pagePadding(context, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -175,13 +177,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const Icon(Icons.local_parking,
                               size: 14, color: AppTheme.textPrimary),
                           const SizedBox(width: 4),
-                          Text(
+                          Flexible(
+                              child: Text(
                             'DRIVER & FLEET PORTAL',
                             style: AppTheme.labelSm.copyWith(
                               color: AppTheme.textSecondary,
                               letterSpacing: 0.8,
                             ),
-                          ),
+                          )),
                         ],
                       ),
                     ),
@@ -264,10 +267,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Remember & Forgot
                     if (!_isRegisterMode)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 16,
+                        runSpacing: 12,
                         children: [
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               SizedBox(
                                 width: 18,
@@ -285,12 +292,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text(
+                              Flexible(
+                                  child: Text(
                                 'Remember this device',
                                 style: AppTheme.bodySm.copyWith(
                                   color: AppTheme.textSecondary,
                                 ),
-                              ),
+                              )),
                             ],
                           ),
                           GestureDetector(
@@ -312,9 +320,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppTheme.spaceMd),
 
                     // ── SIGN IN BUTTON ──
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 48,
+                      constraints: const BoxConstraints(minHeight: 48),
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
@@ -376,8 +384,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         _isRegisterMode
@@ -398,8 +407,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: AppTheme.spaceSm),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Icon(Icons.verified_user,
                           size: 15, color: AppTheme.textTertiary),

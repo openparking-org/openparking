@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/providers/permit_provider.dart';
 import '../../core/auth_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 
 class PermitUploadScreen extends ConsumerStatefulWidget {
   const PermitUploadScreen({super.key});
@@ -68,7 +69,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
             backgroundColor: AppTheme.surfacePure,
             surfaceTintColor: Colors.transparent,
             title: Text(
-              'Disability Permit Verification',
+              'Disability Permit',
               style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
             ),
             actions: [
@@ -81,7 +82,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
             ],
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(AppTheme.margin),
+            padding: pagePadding(context),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Header Info Card

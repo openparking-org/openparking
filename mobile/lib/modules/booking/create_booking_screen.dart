@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/booking_provider.dart';
-import '../../core/providers/zone_provider.dart';
 import '../../core/providers/permit_provider.dart';
+import '../../core/providers/zone_provider.dart' as zones;
 import '../../models/slot.dart';
+import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../space_availability/indoor_map_screen.dart';
 
 class CreateBookingScreen extends ConsumerStatefulWidget {
@@ -39,7 +41,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final zoneState = ref.watch(zoneDetailProvider(widget.zoneId));
+    final zoneState = ref.watch(zones.zoneDetailProvider(widget.zoneId));
     final bookingState = ref.watch(bookingProvider);
     final permitState = ref.watch(permitProvider);
 
@@ -67,30 +69,30 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: AppTheme.surface,
       appBar: AppBar(
         title: const Text('New Reservation',
             style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: AppTheme.surfacePure,
         elevation: 0,
       ),
       body: zoneState.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+              child: CircularProgressIndicator(color: AppTheme.primary))
           : zoneState.hasError
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Text('${zoneState.error}',
-                        style: const TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: AppTheme.textPrimary)),
                     TextButton(
-                      onPressed: () =>
-                          ref.invalidate(zoneDetailProvider(widget.zoneId)),
+                      onPressed: () => ref
+                          .invalidate(zones.zoneDetailProvider(widget.zoneId)),
                       child: const Text('Retry'),
                     ),
                   ]),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: pagePadding(context),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -100,14 +102,14 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
+                            color: AppTheme.surfacePure,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF334155)),
+                            border: Border.all(color: AppTheme.borderSubtle),
                           ),
                           child: Row(
                             children: [
                               const Icon(Icons.local_parking,
-                                  color: Color(0xFF6366F1), size: 36),
+                                  color: AppTheme.primary, size: 36),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
@@ -118,14 +120,15 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: AppTheme.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       'Rate: ${zone?.currency ?? "USD"} ${baseRate.toStringAsFixed(2)}/hr',
                                       style: const TextStyle(
-                                          color: Colors.white70, fontSize: 13),
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 13),
                                     ),
                                   ],
                                 ),
@@ -139,21 +142,22 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         const Text(
                           'Select Slot',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<SlotModel>(
                           initialValue: _selectedSlot,
-                          dropdownColor: const Color(0xFF1E293B),
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surfacePure,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: const Color(0xFF1E293B),
+                            fillColor: AppTheme.surfacePure,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  const BorderSide(color: Color(0xFF334155)),
+                              borderSide: const BorderSide(
+                                  color: AppTheme.borderSubtle),
                             ),
                           ),
                           items: availableSlots.map((slot) {
@@ -161,7 +165,10 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                               value: slot,
                               child: Text(
                                 'Slot ${slot.slotNumber} (${slot.type}) - Floor ${slot.floor}',
-                                style: const TextStyle(color: Colors.white),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: AppTheme.textPrimary),
                               ),
                             );
                           }).toList(),
@@ -201,25 +208,26 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         const Text(
                           'Vehicle License Plate',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16),
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _plateController,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: AppTheme.textPrimary),
                           decoration: InputDecoration(
                             hintText: 'e.g. ABC-1234',
-                            hintStyle: const TextStyle(color: Colors.white38),
+                            hintStyle:
+                                const TextStyle(color: AppTheme.textTertiary),
                             prefixIcon: const Icon(Icons.directions_car,
-                                color: Color(0xFF6366F1)),
+                                color: AppTheme.primary),
                             filled: true,
-                            fillColor: const Color(0xFF1E293B),
+                            fillColor: AppTheme.surfacePure,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  const BorderSide(color: Color(0xFF334155)),
+                              borderSide: const BorderSide(
+                                  color: AppTheme.borderSubtle),
                             ),
                           ),
                           validator: (val) => val == null || val.trim().isEmpty
@@ -235,22 +243,23 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.blueAccent.withValues(alpha: 0.15),
+                              color: AppTheme.accentSuccess
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color:
-                                      Colors.blueAccent.withValues(alpha: 0.4)),
+                                  color: AppTheme.accentSuccess
+                                      .withValues(alpha: 0.4)),
                             ),
                             child: const Row(
                               children: [
                                 Icon(Icons.accessible,
-                                    color: Colors.blueAccent),
+                                    color: AppTheme.accentSuccess),
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     '15% Disability Discount Automatically Applied',
                                     style: TextStyle(
-                                        color: Colors.blueAccent,
+                                        color: AppTheme.accentSuccess,
                                         fontWeight: FontWeight.bold),
                                   ),
                                 ),
@@ -263,42 +272,47 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF111827),
+                            color: AppTheme.surfacePure,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF334155)),
+                            border: Border.all(color: AppTheme.borderSubtle),
                           ),
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 16,
+                                runSpacing: 8,
                                 children: [
                                   const Text('Duration',
-                                      style: TextStyle(color: Colors.white60)),
+                                      style: TextStyle(
+                                          color: AppTheme.textSecondary)),
                                   Text(
                                       '${durationHours.toStringAsFixed(1)} hrs',
                                       style: const TextStyle(
-                                          color: Colors.white,
+                                          color: AppTheme.textPrimary,
                                           fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const Divider(
-                                  color: Color(0xFF334155), height: 20),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                  color: AppTheme.borderSubtle, height: 20),
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 16,
+                                runSpacing: 8,
                                 children: [
                                   const Text(
                                     'Estimated Total',
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: AppTheme.textPrimary,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold),
                                   ),
                                   Text(
                                     '${zone?.currency ?? "USD"} ${estimatedFee.toStringAsFixed(2)}',
                                     style: const TextStyle(
-                                      color: Color(0xFF10B981),
+                                      color: AppTheme.accentSuccess,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -317,15 +331,15 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                             onPressed:
                                 bookingState.isCreating ? null : _submitBooking,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6366F1),
-                              foregroundColor: Colors.white,
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: AppTheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
                             ),
                             child: bookingState.isCreating
                                 ? const CircularProgressIndicator(
-                                    color: Colors.white)
+                                    color: AppTheme.onPrimary)
                                 : const Text(
                                     'Confirm & Reserve',
                                     style: TextStyle(
@@ -352,26 +366,27 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppTheme.surfacePure,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF334155)),
+          border: Border.all(color: AppTheme.borderSubtle),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                style: const TextStyle(
+                    color: AppTheme.textSecondary, fontSize: 12)),
             const SizedBox(height: 4),
             Row(
               children: [
                 const Icon(Icons.access_time,
-                    color: Color(0xFF6366F1), size: 18),
+                    color: AppTheme.primary, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     DateFormat('MMM d, HH:mm').format(time),
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 13),
                   ),
@@ -445,7 +460,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         const SnackBar(
           content:
               Text('Reserved! Give your vehicle number to the gate attendant.'),
-          backgroundColor: Color(0xFF10B981),
+          backgroundColor: AppTheme.accentSuccess,
         ),
       );
 

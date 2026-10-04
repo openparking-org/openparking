@@ -10,6 +10,31 @@ import 'package:mobile/services/zone_service.dart';
 
 void main() {
   setUp(() => ApiConfig.setBaseUrl('https://parking.test'));
+  test(
+      'booking history falls back on an older backend and preserves pagination',
+      () async {
+    final paths = <String>[];
+    final service = BookingService(client: MockClient((request) async {
+      paths.add(request.url.path);
+      expect(request.url.queryParameters['page'], '2');
+      expect(request.url.queryParameters['pageSize'], '10');
+      if (request.url.path == '/api/customer/bookings') {
+        return http.Response('', 404);
+      }
+      return http.Response(
+          '{"data":{"items":[],"totalCount":25,"page":2,"pageSize":10}}', 200);
+    }));
+    final result = await service.getUserBookings(page: 2);
+    expect(paths, ['/api/customer/bookings', '/api/bookings/user']);
+    expect(result.page, 2);
+    expect(result.hasNextPage, isTrue);
+  });
+  test('a missing legacy route remains an error instead of empty bookings',
+      () async {
+    final service =
+        BookingService(client: MockClient((_) async => http.Response('', 404)));
+    await expectLater(service.getUserBookings(), throwsA(isA<Exception>()));
+  });
   test('booking history includes real session fees and payment state',
       () async {
     final service = BookingService(client: MockClient((request) async {

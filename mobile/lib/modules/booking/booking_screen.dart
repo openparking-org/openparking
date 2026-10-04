@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../core/providers/booking_provider.dart';
 import '../../core/providers/session_provider.dart';
 import '../../models/booking.dart';
+import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../space_availability/indoor_map_screen.dart';
 import '../space_availability/zone_discovery_screen.dart';
 
@@ -29,11 +31,12 @@ class BookingScreen extends ConsumerWidget {
           onRefresh: refresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
+            padding: pagePadding(context),
             children: [
-              const Text(
-                  'Give your vehicle number to the gate attendant. They will check you in and out.'),
-              const SizedBox(height: 16),
+              const PageIntro(
+                  title: 'Your reservations',
+                  subtitle:
+                      'Upcoming parking, active sessions and receipts in one place.'),
               active.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) =>
@@ -42,7 +45,7 @@ class BookingScreen extends ConsumerWidget {
                     ? const SizedBox.shrink()
                     : Card(
                         child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -52,6 +55,7 @@ class BookingScreen extends ConsumerWidget {
                                       : 'Parking session active',
                                   style:
                                       Theme.of(context).textTheme.titleMedium),
+                              const SizedBox(height: 12),
                               Text(
                                   '${session.vehiclePlate} · ${session.zoneName} · ${session.slotNumber}'),
                               Text(
@@ -67,13 +71,27 @@ class BookingScreen extends ConsumerWidget {
               if (state.error != null)
                 Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(state.error!)),
+                    child: Column(children: [
+                      const Text('Could not load your bookings.'),
+                      Text(state.error!.replaceFirst('Exception: ', '')),
+                      TextButton(
+                          onPressed: refresh, child: const Text('Retry')),
+                    ])),
               if (!state.isLoading &&
                   state.error == null &&
                   state.bookings.isEmpty) ...[
                 const Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text('You have no reservations yet.')),
+                    child: Column(children: [
+                      Icon(Icons.calendar_today_outlined,
+                          size: 40, color: AppTheme.textTertiary),
+                      SizedBox(height: 16),
+                      Text('You have no reservations yet.',
+                          textAlign: TextAlign.center, style: AppTheme.titleMd),
+                      SizedBox(height: 8),
+                      Text('Find a parking zone to reserve your first space.',
+                          textAlign: TextAlign.center, style: AppTheme.bodyMd),
+                    ])),
                 FilledButton(
                     onPressed: () => Navigator.push(
                         context,
@@ -106,25 +124,73 @@ class _BookingCard extends ConsumerWidget {
     final completed = session?.checkOutTime != null;
     return Card(
         child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(booking.zoneName ?? 'Parking reservation',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(booking.zoneName ?? 'Parking reservation',
+                        style: AppTheme.titleMd),
+                    StatusBadge(booking.status),
+                  ]),
+              const SizedBox(height: 16),
+              Text(booking.vehiclePlate ?? 'Vehicle number missing',
+                  style: AppTheme.headlineSm
+                      .copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text('Space ${booking.slot?.slotNumber ?? booking.slotId}',
+                  style:
+                      AppTheme.bodySm.copyWith(color: AppTheme.textSecondary)),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                    color: AppTheme.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DetailLine(
+                          icon: Icons.login,
+                          text:
+                              'From ${DateFormat('MMM d, HH:mm').format(booking.startTime.toLocal())}'),
+                      DetailLine(
+                          icon: Icons.logout,
+                          text:
+                              'Until ${DateFormat('MMM d, HH:mm').format(booking.endTime.toLocal())}'),
+                    ]),
+              ),
+              if (['Pending', 'Confirmed'].contains(booking.status))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: DetailLine(
+                    icon: Icons.info_outline,
+                    text:
+                        'At the gate, give the attendant your vehicle number: '
+                        '${booking.vehiclePlate ?? 'shown on this reservation'}.',
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Text(completed ? 'Final charge' : 'Estimate',
+                  style:
+                      AppTheme.bodySm.copyWith(color: AppTheme.textTertiary)),
               Text(
-                  '${booking.vehiclePlate ?? 'Vehicle number missing'} · Space ${booking.slot?.slotNumber ?? booking.slotId}'),
-              Text(
-                  '${DateFormat('MMM d, HH:mm').format(booking.startTime.toLocal())} – ${DateFormat('MMM d, HH:mm').format(booking.endTime.toLocal())}'),
-              Text('Status: ${booking.status}'),
-              Text(
-                  '${completed ? 'Final charge' : 'Estimate'}: ${booking.currency} ${(completed ? session!.totalFee : booking.estimatedFee).toStringAsFixed(2)}'),
+                  '${booking.currency} ${(completed ? session!.totalFee : booking.estimatedFee).toStringAsFixed(2)}',
+                  style: AppTheme.titleMd),
               if (completed)
                 Text(booking.isPaid
                     ? 'Payment received'
                     : 'Payment due at the gate'),
-              Wrap(spacing: 8, children: [
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 8, children: [
                 if (booking.zoneId != null)
-                  TextButton.icon(
+                  OutlinedButton.icon(
                       icon: const Icon(Icons.map_outlined),
                       label: const Text('View space'),
                       onPressed: () => Navigator.push(
@@ -199,8 +265,8 @@ class ReceiptScreen extends StatelessWidget {
         'Payment: ${booking.isPaid ? 'Received at gate' : 'Due at gate'}';
     return Scaffold(
         appBar: AppBar(title: const Text('Parking receipt')),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
+        body: SingleChildScrollView(
+          padding: pagePadding(context),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             SelectableText(receipt),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/penalty_provider.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../models/penalty.dart';
 
 class PenaltiesScreen extends ConsumerWidget {
@@ -35,7 +36,7 @@ class PenaltiesScreen extends ConsumerWidget {
             ],
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(AppTheme.margin),
+            padding: pagePadding(context),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // ── AI OVERSTAY BANNER ──

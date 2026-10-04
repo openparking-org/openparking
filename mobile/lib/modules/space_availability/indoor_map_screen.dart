@@ -8,6 +8,7 @@ import '../../models/route.dart';
 import '../../services/zone_service.dart';
 import '../../services/floor_plan_service.dart';
 import '../booking/create_booking_screen.dart';
+import '../../core/widgets/app_widgets.dart';
 
 class IndoorMapScreen extends StatefulWidget {
   final String zoneId;
@@ -110,7 +111,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                   Text(error!),
                   TextButton(onPressed: _load, child: const Text('Retry'))
                 ]))
-              : ListView(padding: const EdgeInsets.all(16), children: [
+              : ListView(padding: pagePadding(context), children: [
                   if (routeNotice != null)
                     Padding(
                         padding: const EdgeInsets.only(bottom: 12),

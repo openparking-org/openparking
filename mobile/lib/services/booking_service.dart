@@ -55,14 +55,22 @@ class BookingService {
     return null;
   }
 
-  /// GET /api/bookings/user?page=1&pageSize=10
+  /// Prefer enriched history, with compatibility for older backends.
   Future<PaginatedResponse<BookingModel>> getUserBookings({
     int page = 1,
     int pageSize = 10,
   }) async {
     final url = Uri.parse(
         '${ApiConfig.baseUrl}/api/customer/bookings?page=$page&pageSize=$pageSize');
-    final response = await _client.get(url, headers: ApiConfig.headers);
+    var response = await _client.get(url, headers: ApiConfig.headers);
+    if (response.statusCode == 404) {
+      final legacyUrl = Uri.parse('${ApiConfig.baseUrl}/api/bookings/user')
+          .replace(queryParameters: {
+        'page': '$page',
+        'pageSize': '$pageSize',
+      });
+      response = await _client.get(legacyUrl, headers: ApiConfig.headers);
+    }
 
     if (response.statusCode == 200) {
       final data = responseData(response);
