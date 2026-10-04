@@ -22,8 +22,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isRegisterMode = false;
   final _nameController = TextEditingController();
 
-  // Tab state
-  bool _isPhoneTab = true;
 
   @override
   void dispose() {
@@ -199,97 +197,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     const SizedBox(height: AppTheme.spaceLg),
 
-                    // Tab Switcher
-                    if (!_isRegisterMode)
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceSubtle,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusXl),
-                          border: Border.all(color: AppTheme.borderSubtle),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _isPhoneTab = true),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: _isPhoneTab
-                                        ? AppTheme.surfacePure
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.radiusLg),
-                                    boxShadow: _isPhoneTab
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black
-                                                  .withValues(alpha: 0.04),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Phone Number',
-                                    style: AppTheme.labelMd.copyWith(
-                                      color: _isPhoneTab
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _isPhoneTab = false),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: !_isPhoneTab
-                                        ? AppTheme.surfacePure
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(
-                                        AppTheme.radiusLg),
-                                    boxShadow: !_isPhoneTab
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black
-                                                  .withValues(alpha: 0.04),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Email',
-                                    style: AppTheme.labelMd.copyWith(
-                                      color: !_isPhoneTab
-                                          ? AppTheme.textPrimary
-                                          : AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: AppTheme.spaceLg),
-
                     // ── NAME FIELD (Register mode only) ──
                     if (_isRegisterMode) ...[
                       const Text('Full Name', style: AppTheme.labelMd),
@@ -307,27 +214,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
 
                     // ── EMAIL FIELD ──
-                    Text(
-                      _isPhoneTab && !_isRegisterMode
-                          ? 'Mobile Phone'
-                          : 'Email Address',
-                      style: AppTheme.labelMd,
-                    ),
+                    const Text('Email Address', style: AppTheme.labelMd),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _emailController,
-                      keyboardType: _isPhoneTab && !_isRegisterMode
-                          ? TextInputType.phone
-                          : TextInputType.emailAddress,
+                      keyboardType: TextInputType.emailAddress,
                       style: AppTheme.bodyMd,
-                      decoration: InputDecoration(
-                        hintText: _isPhoneTab && !_isRegisterMode
-                            ? '(555) 000-0000'
-                            : 'name@domain.com',
+                      decoration: const InputDecoration(
+                        hintText: 'name@domain.com',
                         prefixIcon: Icon(
-                          _isPhoneTab && !_isRegisterMode
-                              ? Icons.phone_outlined
-                              : Icons.mail_outline,
+                          Icons.mail_outline,
                           color: AppTheme.textTertiary,
                           size: 18,
                         ),
@@ -451,118 +347,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: AppTheme.spaceLg),
 
-                    // ── BIOMETRICS BUTTON ──
-                    if (!_isRegisterMode)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceSubtle,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusXl),
-                          border: Border.all(color: AppTheme.borderSubtle),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusXl),
-                            onTap: () {},
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.surfacePure,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                          color: AppTheme.borderSubtle),
-                                    ),
-                                    child: const Icon(Icons.fingerprint,
-                                        size: 20, color: AppTheme.textPrimary),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Sign in with Biometrics',
-                                          style: AppTheme.labelMd.copyWith(
-                                            color: AppTheme.textPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Touch ID or Face ID',
-                                          style: AppTheme.bodySm.copyWith(
-                                            color: AppTheme.textTertiary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.arrow_forward,
-                                      size: 18, color: AppTheme.textSecondary),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    const SizedBox(height: AppTheme.spaceLg),
-
-                    // ── DIVIDER ──
-                    if (!_isRegisterMode)
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Divider(color: AppTheme.borderSubtle),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              'OR CONTINUE WITH',
-                              style: AppTheme.labelSm.copyWith(
-                                color: AppTheme.textTertiary,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                          const Expanded(
-                            child: Divider(color: AppTheme.borderSubtle),
-                          ),
-                        ],
-                      ),
-
-                    const SizedBox(height: AppTheme.spaceMd),
-
-                    // ── SOCIAL BUTTONS ──
-                    if (!_isRegisterMode)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SocialButton(
-                              icon: Icons.apple,
-                              label: 'Apple',
-                              onTap: () {},
-                            ),
-                          ),
-                          const SizedBox(width: AppTheme.spaceSm),
-                          Expanded(
-                            child: _SocialButton(
-                              icon: Icons.g_mobiledata,
-                              label: 'Google',
-                              onTap: () {},
-                            ),
-                          ),
-                        ],
-                      ),
 
                     const SizedBox(height: AppTheme.spaceMd),
 
@@ -658,43 +443,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 46,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: AppTheme.surfacePure,
-          foregroundColor: AppTheme.textPrimary,
-          side: const BorderSide(color: AppTheme.borderSubtle),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: AppTheme.textPrimary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTheme.labelMd.copyWith(color: AppTheme.textPrimary),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
