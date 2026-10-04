@@ -138,6 +138,7 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
           // ── ZONE LIST ──
           if (zoneState.isLoading)
             const SliverFillRemaining(
+              hasScrollBody: false,
               child: Center(
                 child: CircularProgressIndicator(
                   color: AppTheme.primary,
@@ -147,16 +148,17 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
             )
           else if (zoneState.error != null)
             SliverFillRemaining(
+                hasScrollBody: false,
                 child: Center(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(zoneState.error!),
-              TextButton(
-                  onPressed: () =>
-                      ref.read(zoneListProvider.notifier).fetchZones(),
-                  child: const Text('Retry')),
-            ])))
+                  Text(zoneState.error!),
+                  TextButton(
+                      onPressed: () =>
+                          ref.read(zoneListProvider.notifier).fetchZones(),
+                      child: const Text('Retry')),
+                ])))
           else if (zoneState.zones.isEmpty)
-            SliverFillRemaining(child: _buildEmptyState())
+            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
           else
             SliverPadding(
               padding: const EdgeInsets.all(AppTheme.margin),
@@ -230,7 +232,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
 
   Widget _buildZoneCard(BuildContext context, ZoneModel zone) {
     final occupancyRatio = zone.totalCapacity > 0
-        ? (zone.totalCapacity - zone.availableCount) / zone.totalCapacity
+        ? ((zone.totalCapacity - zone.availableCount) / zone.totalCapacity)
+            .clamp(0.0, 1.0)
         : 0.0;
 
     final Color statusColor = zone.availableCount == 0
@@ -365,10 +368,13 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                       top: BorderSide(color: AppTheme.borderSubtle),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.payments_outlined,
                               color: AppTheme.textSecondary, size: 16),
@@ -428,6 +434,7 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.location_off_outlined,

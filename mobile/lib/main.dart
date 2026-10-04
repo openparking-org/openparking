@@ -141,12 +141,13 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Expanded(
+        child: GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -158,6 +159,7 @@ class _NavBarItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: AppTheme.labelSm.copyWith(
                 color: isActive ? AppTheme.primary : AppTheme.textTertiary,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
@@ -166,6 +168,6 @@ class _NavBarItem extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }

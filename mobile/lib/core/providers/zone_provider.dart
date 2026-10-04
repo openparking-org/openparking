@@ -119,14 +119,17 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
         hasNextPage: state.hasNextPage);
     try {
       final detail = await _service.getZoneDetail(zoneId);
-      if (detail != null) {
-        if (mounted) {
-          state = state.copyWith(selectedZone: detail, isLoading: false);
-        }
+      if (mounted) {
+        state = state.copyWith(
+          selectedZone: detail,
+          isLoading: false,
+          error: detail == null ? 'Parking zone could not be found.' : null,
+        );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
@@ -136,6 +139,13 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
 }
 
 final zoneServiceProvider = Provider<ZoneService>((ref) => ZoneService());
+
+final zoneDetailProvider =
+    FutureProvider.autoDispose.family<ZoneModel, String>((ref, zoneId) async {
+  final zone = await ref.watch(zoneServiceProvider).getZoneDetail(zoneId);
+  if (zone == null) throw Exception('Parking zone could not be found.');
+  return zone;
+});
 
 final zoneListProvider =
     StateNotifierProvider<ZoneListNotifier, ZoneListState>((ref) {

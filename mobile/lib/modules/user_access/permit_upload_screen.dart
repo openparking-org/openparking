@@ -38,16 +38,18 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
-      if (bytes.length > 5 * 1024 * 1024)
+      if (bytes.length > 5 * 1024 * 1024) {
         throw Exception('Choose an image smaller than 5 MB.');
+      }
       setState(() {
         _selectedImageFile = File(picked.path);
         _base64Image = base64Encode(bytes);
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Could not attach image: $e')));
+      }
     }
   }
 

@@ -44,8 +44,9 @@ class PermitNotifier extends StateNotifier<PermitState> {
       final permit = await _service.getMyPermit();
       if (mounted) state = PermitState(permit: permit);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 

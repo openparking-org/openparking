@@ -66,6 +66,7 @@ class ZoneService {
 
     if (response.statusCode == 200) {
       final data = responseData(response);
+      if (data == null) return null;
       return ZoneModel.fromJson(data as Map<String, dynamic>);
     }
     responseData(response);
