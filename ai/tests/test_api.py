@@ -57,4 +57,4 @@ async def test_cartographer_endpoint():
     data = response.json()
     assert data["total_detected"] == 4
     assert len(data["detected_slots"]) == 4
-    assert data["algorithm"] == "YOLOv8-Aerial-PKLot-Inference"
+    assert data["algorithm"] == "Geometric-grid-preview"

@@ -1,14 +1,22 @@
 class SlotModel {
+  final String? floorPlanId;
+  final double? canvasX, canvasY, canvasWidth, canvasHeight;
   final String id;
   final String slotNumber;
   final String type; // Standard, EVCharging, Disability, Reserved, Compact
-  final String status; // Available, Occupied, Reserved, Maintenance, OutOfService
+  final String
+      status; // Available, Occupied, Reserved, Maintenance, OutOfService
   final int floor;
   final String? boundingBoxJson;
   final String? assignedSensorId;
   final String? assignedCameraId;
 
   SlotModel({
+    this.floorPlanId,
+    this.canvasX,
+    this.canvasY,
+    this.canvasWidth,
+    this.canvasHeight,
     required this.id,
     required this.slotNumber,
     required this.type,
@@ -23,6 +31,11 @@ class SlotModel {
 
   factory SlotModel.fromJson(Map<String, dynamic> json) {
     return SlotModel(
+      floorPlanId: json['floorPlanId']?.toString(),
+      canvasX: (json['canvasX'] as num?)?.toDouble(),
+      canvasY: (json['canvasY'] as num?)?.toDouble(),
+      canvasWidth: (json['canvasWidth'] as num?)?.toDouble(),
+      canvasHeight: (json['canvasHeight'] as num?)?.toDouble(),
       id: json['id']?.toString() ?? '',
       slotNumber: json['slotNumber']?.toString() ?? '',
       type: json['type']?.toString() ?? 'Standard',

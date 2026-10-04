@@ -21,6 +21,9 @@ public class EmailService(
     private readonly string _from =
         $"{config["RESEND_FROM_NAME"] ?? "OpenParking"} <{config["RESEND_FROM_EMAIL"] ?? "noreply@openparking.lk"}>";
 
+    public Task SendPasswordResetAsync(string toEmail, string token) => SendAsync(toEmail, "Reset your OpenParking password",
+        $"<p>Paste this reset code in the app. It expires in 20 minutes and works once.</p><pre>{token}</pre><p>If you did not request this, ignore this email.</p>", throwOnFailure: true);
+
     public async Task SendWelcomeAsync(string toEmail, string name)
     {
         await SendAsync(toEmail, "Welcome to OpenParking 🅿️", $"""
@@ -42,7 +45,7 @@ public class EmailService(
               <li><strong>End:</strong> {booking.EndTime:dd MMM yyyy HH:mm} UTC</li>
               <li><strong>Estimated Fee:</strong> LKR {booking.EstimatedFee:F2}</li>
             </ul>
-            <p>Open the OpenParking app to view your QR code for entry.</p>
+            <p>Give your vehicle number to the gate attendant at entry and exit. View your reservation and parking status in the OpenParking app.</p>
             """);
     }
 
@@ -99,7 +102,7 @@ public class EmailService(
 
     // ── Private send helper ────────────────────────────────────────────────
 
-    private async Task SendAsync(string toEmail, string subject, string htmlBody, int attempt = 1)
+    private async Task SendAsync(string toEmail, string subject, string htmlBody, int attempt = 1, bool throwOnFailure = false)
     {
         const int MaxRetries = 2;
         try
@@ -125,7 +128,7 @@ public class EmailService(
             logger.LogWarning(ex, "Email send attempt {Attempt}/{Max} failed for {Email}. Retrying…",
                 attempt, MaxRetries, toEmail);
             await Task.Delay(500 * attempt); // back off before retry
-            await SendAsync(toEmail, subject, htmlBody, attempt + 1);
+            await SendAsync(toEmail, subject, htmlBody, attempt + 1, throwOnFailure);
         }
         catch (Exception ex)
         {
@@ -133,6 +136,7 @@ public class EmailService(
             logger.LogError(ex,
                 "DEAD_LETTER_EMAIL: Failed to send '{Subject}' to {Email} after {Max} attempts.",
                 subject, toEmail, MaxRetries);
+            if (throwOnFailure) throw new OpenParking.Core.Models.AppException(OpenParking.Core.Models.ErrorCodes.ValidationFailed, "Could not send the reset email. Please try again later.", 503);
             // Do NOT rethrow — email failure must never crash a user-facing request
         }
     }

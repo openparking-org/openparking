@@ -53,6 +53,14 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 "The parking state changed during this request. Refresh and try again.", context.TraceIdentifier);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
         }
+        catch (Exception ex) when (IsSerializationConflict(ex))
+        {
+            logger.LogWarning(ex, "Concurrent gate operation [{TraceId}]", context.TraceIdentifier);
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync(JsonSerializer.Serialize(ApiResponse<object>.Fail(ErrorCodes.Conflict,
+                "Another attendant updated this parking session. Refresh and try again.", context.TraceIdentifier), _jsonOptions));
+        }
         catch (Exception ex)
         {
             // Unknown exception — log as Error with full stack trace
@@ -72,4 +80,8 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
         }
     }
+
+    private static bool IsSerializationConflict(Exception error) =>
+        error is Npgsql.PostgresException { SqlState: "40001" or "40P01" } ||
+        error.InnerException != null && IsSerializationConflict(error.InnerException);
 }

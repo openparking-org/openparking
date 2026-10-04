@@ -62,7 +62,7 @@ def get_llm() -> BaseChatModel:
     api_token = os.getenv("CF_AI_TOKEN")
     
     # We route requests through the Cloudflare AI Gateway for caching and analytics
-    gateway_url = f"https://gateway.ai.cloudflare.com/v1/{account_id}/openparking/workers-ai/"
+    gateway_id = os.getenv("CF_AI_GATEWAY") or None
 
     if not account_id or not api_token:
         raise ValueError("CF_ACCOUNT_ID and CF_AI_TOKEN must be set when CF_AI_MODE is not 'mock'")
@@ -71,5 +71,8 @@ def get_llm() -> BaseChatModel:
         account_id=account_id,
         api_token=api_token,
         model="@cf/meta/llama-3.1-8b-instruct",
-        base_url=gateway_url
+        temperature=0,
+        max_tokens=1024,
+        model_kwargs={"response_format": {"type": "json_object"}},
+        ai_gateway=gateway_id
     )

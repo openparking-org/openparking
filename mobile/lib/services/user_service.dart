@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
 import 'api_config.dart';
+import 'api_response.dart';
 
 class UserService {
   final http.Client _client;
 
-  UserService({http.Client? client}) : _client = client ?? http.Client();
+  UserService({http.Client? client}) : _client = client ?? ParkingHttpClient();
 
   /// GET /api/users/me
   Future<UserModel?> getProfile() async {
@@ -14,8 +15,7 @@ class UserService {
     final response = await _client.get(url, headers: ApiConfig.headers);
 
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      final data = json['data'] ?? json;
+      final data = responseData(response);
       return UserModel.fromJson(data as Map<String, dynamic>);
     }
     return null;
@@ -41,15 +41,10 @@ class UserService {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final json = jsonDecode(response.body);
-      return (json['data'] ?? json) as Map<String, dynamic>;
+      return responseData(response) as Map<String, dynamic>;
     }
 
-    String errorMsg = 'Registration failed';
-    try {
-      final err = jsonDecode(response.body);
-      if (err is Map && err['message'] != null) errorMsg = err['message'];
-    } catch (_) {}
-    throw Exception(errorMsg);
+    responseData(response);
+    throw Exception("Registration failed.");
   }
 }

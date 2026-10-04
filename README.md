@@ -32,7 +32,7 @@ The project is architected following an **OpenMRS-inspired modular service patte
 |---|---|---|---|
 | **Yowun** | **User & Access** | Identity, JWT auth, RBAC (Driver, ParkingAdmin, SystemAdmin), System Settings UI, Permit uploads | **Validator Agent** — Regulatory schema checks & dynamic penalty cap enforcement |
 | **Supun** | **Space & Availability** | Zone & slot layout management, SignalR real-time slot occupancy, Blueprint Editor (React), Mobile indoor map view | **Analyzer Agent** — Real-time lot congestion analysis & arrival velocity scoring |
-| **Dev** | **Booking & Payment** | Reservation lifecycle, check-in/out session timing, digital QR pass generation, fee calculation & receipts | **Action Agent** — Dynamic surge pricing multipliers & structured penalty proposals |
+| **Dev** | **Booking & Payment** | Reservation lifecycle, check-in/out session timing, attendant vehicle-number entry and exit, fee calculation & receipts | **Action Agent** — Dynamic surge pricing multipliers & structured penalty proposals |
 | **Karuna** | **Enforcement & AI Orchestration** | Overstay detection, LangGraph state machine workflow, React AI approval dashboard, audit logging | **Planner Agent** — Goal decomposition, agent delegation, and human-in-the-loop checkpoint gating |
 
 ---
@@ -44,7 +44,7 @@ The project is architected following an **OpenMRS-inspired modular service patte
 | **Backend API** | ASP.NET Core Web API (.NET 8) | Business logic, JWT auth, SignalR hubs, EF Core 8 |
 | **Database** | PostgreSQL 16 (Neon / Local) | Relational schema, transactional sessions, settings store |
 | **Web Dashboard** | React 18, TypeScript, Zustand, Vite | Administrative console, blueprint editor, AI approval queue |
-| **Mobile App** | Flutter 3, Dart, Riverpod 2 | Driver application, digital QR ticket, indoor floor map |
+| **Mobile App** | Flutter 3, Dart, Riverpod 2 | Driver application, reservation and live session tracking, indoor floor map |
 | **AI Subsystem** | Python 3.11, FastAPI, LangGraph | Multi-agent state machine, A* pathfinder, Cloudflare Workers AI |
 | **Edge Gateway** | Cloudflare Workers & Cloudflare Tunnel | Global edge routing, CORS, rate limiting, secure VM tunnel |
 | **CI / CD** | GitHub Actions & ghcr.io | Path-filtered automated linting, test suites, and Docker image builds |
@@ -75,7 +75,7 @@ openparking-org/openparking/
 │
 ├── mobile/                           # Driver Mobile Application (Flutter 3 + Riverpod 2)
 │   ├── lib/
-│   │   ├── modules/booking/            # Digital QR parking pass
+│   │   ├── modules/booking/            # Customer reservations, live sessions, and receipts
 │   │   ├── modules/space_availability/ # Indoor blueprint navigation screen
 │   │   ├── modules/user_access/        # Disability permit upload screen
 │   │   ├── modules/enforcement/        # Overstay alert & penalty notice

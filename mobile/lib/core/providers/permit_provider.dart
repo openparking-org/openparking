@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth_provider.dart';
 import '../../models/permit.dart';
 import '../../services/permit_service.dart';
 
@@ -41,9 +42,10 @@ class PermitNotifier extends StateNotifier<PermitState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final permit = await _service.getMyPermit();
-      state = state.copyWith(permit: permit, isLoading: false);
+      if (mounted) state = PermitState(permit: permit);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted)
+        state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -76,7 +78,9 @@ class PermitNotifier extends StateNotifier<PermitState> {
 
 final permitServiceProvider = Provider<PermitService>((ref) => PermitService());
 
-final permitProvider = StateNotifierProvider<PermitNotifier, PermitState>((ref) {
+final permitProvider =
+    StateNotifierProvider<PermitNotifier, PermitState>((ref) {
+  ref.watch(authProvider.select((auth) => auth.user?.id));
   final service = ref.watch(permitServiceProvider);
   return PermitNotifier(service);
 });

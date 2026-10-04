@@ -1,114 +1,155 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/booking.dart';
 import '../../services/booking_service.dart';
+import '../auth_provider.dart';
 
 class BookingListState {
   final List<BookingModel> bookings;
-  final bool isLoading;
-  final bool isCreating;
+  final bool isLoading, isCreating, isLoadingMore, hasNextPage;
+  final int page;
   final BookingModel? createdBooking;
   final String? error;
-
-  BookingListState({
-    this.bookings = const [],
-    this.isLoading = false,
-    this.isCreating = false,
-    this.createdBooking,
-    this.error,
-  });
-
-  BookingListState copyWith({
-    List<BookingModel>? bookings,
-    bool? isLoading,
-    bool? isCreating,
-    BookingModel? createdBooking,
-    String? error,
-  }) {
-    return BookingListState(
-      bookings: bookings ?? this.bookings,
-      isLoading: isLoading ?? this.isLoading,
-      isCreating: isCreating ?? this.isCreating,
-      createdBooking: createdBooking ?? this.createdBooking,
-      error: error,
-    );
-  }
+  BookingListState(
+      {this.bookings = const [],
+      this.isLoading = false,
+      this.isCreating = false,
+      this.isLoadingMore = false,
+      this.hasNextPage = false,
+      this.page = 1,
+      this.createdBooking,
+      this.error});
+  BookingListState copyWith(
+          {List<BookingModel>? bookings,
+          bool? isLoading,
+          bool? isCreating,
+          bool? isLoadingMore,
+          bool? hasNextPage,
+          int? page,
+          BookingModel? createdBooking,
+          String? error}) =>
+      BookingListState(
+          bookings: bookings ?? this.bookings,
+          isLoading: isLoading ?? this.isLoading,
+          isCreating: isCreating ?? this.isCreating,
+          isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+          hasNextPage: hasNextPage ?? this.hasNextPage,
+          page: page ?? this.page,
+          createdBooking: createdBooking,
+          error: error);
 }
 
 class BookingNotifier extends StateNotifier<BookingListState> {
   final BookingService _service;
-
-  BookingNotifier(this._service) : super(BookingListState());
-
-  Future<void> fetchUserBookings() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Timer? _timer;
+  bool _fetching = false;
+  BookingNotifier(this._service, {bool authenticated = false})
+      : super(BookingListState()) {
+    if (authenticated) {
+      fetchUserBookings();
+      _timer = Timer.periodic(
+          const Duration(seconds: 30), (_) => fetchUserBookings(silent: true));
+    }
+  }
+  Future<void> fetchUserBookings({bool silent = false}) async {
+    if (_fetching) return;
+    _fetching = true;
+    state = state.copyWith(isLoading: !silent);
     try {
-      final response = await _service.getUserBookings();
-      state = state.copyWith(bookings: response.items, isLoading: false);
+      final collected = <BookingModel>[];
+      final pages = silent ? state.page : 1;
+      var hasNext = false;
+      for (var page = 1; page <= pages; page++) {
+        final result = await _service.getUserBookings(page: page);
+        collected.addAll(result.items);
+        hasNext = result.hasNextPage;
+        if (!result.hasNextPage) {
+          break;
+        }
+      }
+      if (mounted) {
+        state = state.copyWith(
+            bookings: collected,
+            isLoading: false,
+            hasNextPage: hasNext,
+            page: pages);
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, error: '$e');
+    } finally {
+      _fetching = false;
     }
   }
 
-  Future<BookingModel?> createBooking({
-    required String slotId,
-    required DateTime startTime,
-    required DateTime endTime,
-    String? vehiclePlate,
-  }) async {
-    state = state.copyWith(isCreating: true, error: null, createdBooking: null);
+  Future<void> loadMore() async {
+    if (_fetching || !state.hasNextPage) return;
+    _fetching = true;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final result = await _service.getUserBookings(page: state.page + 1);
+      if (mounted) {
+        state = state.copyWith(
+            bookings: [...state.bookings, ...result.items],
+            page: result.page,
+            hasNextPage: result.hasNextPage,
+            isLoadingMore: false);
+      }
+    } catch (e) {
+      if (mounted) state = state.copyWith(isLoadingMore: false, error: '$e');
+    } finally {
+      _fetching = false;
+    }
+  }
+
+  Future<BookingModel?> createBooking(
+      {required String slotId,
+      required DateTime startTime,
+      required DateTime endTime,
+      String? vehiclePlate}) async {
+    if (state.isCreating) return null;
+    state = state.copyWith(isCreating: true);
     try {
       final booking = await _service.createBooking(
-        slotId: slotId,
-        startTime: startTime,
-        endTime: endTime,
-        vehiclePlate: vehiclePlate,
-      );
-      state = state.copyWith(
-        isCreating: false,
-        createdBooking: booking,
-        bookings: [booking, ...state.bookings],
-      );
+          slotId: slotId,
+          startTime: startTime,
+          endTime: endTime,
+          vehiclePlate: vehiclePlate);
+      if (mounted) {
+        state = state.copyWith(
+            isCreating: false,
+            createdBooking: booking,
+            bookings: [booking, ...state.bookings]);
+      }
       return booking;
     } catch (e) {
-      state = state.copyWith(isCreating: false, error: e.toString());
+      if (mounted) state = state.copyWith(isCreating: false, error: '$e');
       return null;
     }
   }
 
-  Future<bool> cancelBooking(String bookingId) async {
+  Future<bool> cancelBooking(String id) async {
     try {
-      final success = await _service.cancelBooking(bookingId);
-      if (success) {
-        state = state.copyWith(
-          bookings: state.bookings
-              .map((b) => b.id == bookingId
-                  ? BookingModel(
-                      id: b.id,
-                      userId: b.userId,
-                      slotId: b.slotId,
-                      startTime: b.startTime,
-                      endTime: b.endTime,
-                      vehiclePlate: b.vehiclePlate,
-                      status: 'Cancelled',
-                      qrCodeContent: b.qrCodeContent,
-                      estimatedFee: b.estimatedFee,
-                      slot: b.slot,
-                    )
-                  : b)
-              .toList(),
-        );
-      }
-      return success;
+      await _service.cancelBooking(id);
+      await fetchUserBookings();
+      return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      if (mounted) state = state.copyWith(error: '$e');
       return false;
     }
   }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 }
 
-final bookingServiceProvider = Provider<BookingService>((ref) => BookingService());
-
-final bookingProvider = StateNotifierProvider<BookingNotifier, BookingListState>((ref) {
-  final service = ref.watch(bookingServiceProvider);
-  return BookingNotifier(service);
+final bookingServiceProvider =
+    Provider<BookingService>((ref) => BookingService());
+final bookingProvider =
+    StateNotifierProvider<BookingNotifier, BookingListState>((ref) {
+  final userId = ref.watch(authProvider.select((auth) => auth.user?.id));
+  return BookingNotifier(ref.watch(bookingServiceProvider),
+      authenticated: userId != null);
 });

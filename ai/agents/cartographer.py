@@ -77,8 +77,8 @@ class CartographerAgent:
         # 1. Fetch real satellite image
         image_path = await self._fetch_satellite_image(center_lat, center_lng)
         
-        # 2. "Run YOLO inference" (Simulated by geospatial subdivision)
-        logger.info(f"Running YOLOv8 inference on {image_path or 'mock image'}")
+        # 2. Generate a geometric preview. This is not image-based detection.
+        logger.info("Generating geometric grid preview; no vision model is configured")
         
         detected: list[DetectedSlot] = []
         d_lat = (north - south) / max(rows, 1)
@@ -116,7 +116,7 @@ class CartographerAgent:
                 detected.append(
                     DetectedSlot(
                         slot_code=f"{slot_prefix}-{slot_idx:03d}",
-                        confidence=round(random.uniform(0.85, 0.99), 2),
+                        confidence=0.0,
                         bounds=poly,
                         type=slot_type
                     )
@@ -126,6 +126,6 @@ class CartographerAgent:
         return CartographerResult(
             detected_slots=detected,
             total_detected=len(detected),
-            algorithm="YOLOv8-Aerial-PKLot-Inference",
+            algorithm="Geometric-grid-preview",
             satellite_image_path=image_path
         )

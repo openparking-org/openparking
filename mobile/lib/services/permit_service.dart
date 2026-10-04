@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/permit.dart';
 import 'api_config.dart';
+import 'api_response.dart';
 
 class PermitService {
   final http.Client _client;
 
-  PermitService({http.Client? client}) : _client = client ?? http.Client();
+  PermitService({http.Client? client})
+      : _client = client ?? ParkingHttpClient();
 
   /// POST /api/users/{userId}/permits
   Future<DisabilityPermitModel> submitPermit({
@@ -20,7 +22,7 @@ class PermitService {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/users/$userId/permits');
     final payload = {
       'permitNumber': permitNumber,
-      'issuingAuthority': issuingAuthority,
+      'jurisdiction': issuingAuthority,
       'expiryDate': expiryDate.toIso8601String(),
       if (documentBase64 != null) 'documentBase64': documentBase64,
       if (documentImageUrl != null) 'documentImageUrl': documentImageUrl,
@@ -33,17 +35,12 @@ class PermitService {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final json = jsonDecode(response.body);
-      final data = json['data'] ?? json;
+      final data = responseData(response);
       return DisabilityPermitModel.fromJson(data as Map<String, dynamic>);
     }
 
-    String errorMsg = 'Failed to submit disability permit';
-    try {
-      final err = jsonDecode(response.body);
-      if (err is Map && err['message'] != null) errorMsg = err['message'];
-    } catch (_) {}
-    throw Exception(errorMsg);
+    responseData(response);
+    throw Exception("Could not submit permit.");
   }
 
   /// GET /api/users/me/permit
@@ -52,10 +49,10 @@ class PermitService {
     final response = await _client.get(url, headers: ApiConfig.headers);
 
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      final data = json['data'] ?? json;
+      final data = responseData(response);
       return DisabilityPermitModel.fromJson(data as Map<String, dynamic>);
     }
+    if (response.statusCode != 404) responseData(response);
     return null;
   }
 }

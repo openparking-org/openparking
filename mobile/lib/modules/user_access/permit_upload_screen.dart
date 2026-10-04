@@ -32,15 +32,22 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 70);
-
-    if (picked != null) {
+    try {
+      final picked = await ImagePicker()
+          .pickImage(source: source, imageQuality: 70, maxWidth: 2000);
+      if (picked == null) return;
       final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > 5 * 1024 * 1024)
+        throw Exception('Choose an image smaller than 5 MB.');
       setState(() {
         _selectedImageFile = File(picked.path);
         _base64Image = base64Encode(bytes);
       });
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not attach image: $e')));
     }
   }
 
@@ -310,7 +317,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
     Color statusColor;
     IconData icon;
     switch (permit.status.toLowerCase()) {
-      case 'approved':
+      case 'verified':
         statusColor = AppTheme.accentSuccess;
         icon = Icons.check_circle;
         break;
@@ -450,7 +457,12 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
   Future<void> _submitPermit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final userId = ref.read(authProvider).token ?? '';
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null || _base64Image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in and attach a permit image.')));
+      return;
+    }
     final success = await ref.read(permitProvider.notifier).submitPermit(
           userId: userId,
           permitNumber: _permitNumberController.text.trim(),
@@ -465,7 +477,7 @@ class _PermitUploadScreenState extends ConsumerState<PermitUploadScreen> {
           content: Text(
             success
                 ? 'Permit submitted for AI verification!'
-                : 'Permit submission failed.',
+                : ref.read(permitProvider).error ?? 'Permit submission failed.',
           ),
           backgroundColor:
               success ? AppTheme.accentSuccess : AppTheme.accentCritical,

@@ -8,6 +8,7 @@ import { LoginPage } from './modules/user-access/LoginPage';
 import { PermitReviewPage } from './modules/user-access/PermitReviewPage';
 import { EnforcementPage } from './modules/enforcement/EnforcementPage';
 import { CreateReservationPage } from './modules/booking/CreateReservationPage';
+import { GatePage } from './modules/booking/GatePage';
 import { ReservationsPage } from './modules/booking/ReservationsPage';
 import { ZonesPage } from './modules/space-availability/ZonesPage';
 import { MappingPage } from './modules/space-availability/MappingPage';
@@ -75,6 +76,7 @@ export default function App() {
       <Route path="/users" element={<ProtectedRoute roles={['SystemAdmin']}><UsersPage /></ProtectedRoute>} />
       <Route path="/slot-mapping" element={<MappingPage />} />
       <Route path="/book-parking" element={<CreateReservationPage />} />
+      <Route path="/gate" element={<GatePage />} />
       <Route path="/bookings" element={<ReservationsPage />} />
       <Route path="*" element={<div className="glass-panel admin-panel"><h1>Page not found</h1><Link to="/">Return to dashboard</Link></div>} />
     </Routes></Layout></ProtectedRoute></SessionGate>} />

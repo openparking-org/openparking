@@ -19,7 +19,7 @@ public class SurgePricingResult {
 
 /// <summary>
 /// Booking &amp; Payment module service — Student 3 (Dev).
-/// Handles reservation logic, QR generation, session lifecycle, and ANPR simulator.
+/// Handles reservation logic, attendant entry and exit, session lifecycle, and ANPR simulator.
 /// Design reference: design.md §3, §19, §20
 /// </summary>
 public class BookingService(
@@ -51,8 +51,6 @@ public class BookingService(
 
     // ── Constants ──────────────────────────────────────────────────────────
 
-    /// <summary>QR content prefix. Flutter scanner validates this prefix before calling check-in.</summary>
-    private const string QrPrefix = "openparking://session/start?bookingId=";
 
     /// <summary>Bill in 15-minute blocks, minimum 1 block (design.md §19.2).</summary>
     private const decimal BillBlockMinutes = 15m;
@@ -177,9 +175,9 @@ public class BookingService(
                 SlotId        = req.SlotId,
                 StartTime     = req.StartTime,
                 EndTime       = req.EndTime,
-                VehiclePlate  = req.VehiclePlate?.Trim().ToUpperInvariant(),
+                VehiclePlate  = string.IsNullOrWhiteSpace(req.VehiclePlate) ? null : GateService.NormalizePlate(req.VehiclePlate),
                 Status        = BookingStatus.Pending,
-                QrCodeContent = $"{QrPrefix}{bookingId}&slotId={req.SlotId}",
+                QrCodeContent = string.Empty,
                 EstimatedFee  = estimatedFee,
                 CreatedAt     = DateTime.UtcNow,
                 UpdatedAt     = DateTime.UtcNow,
@@ -276,7 +274,7 @@ public class BookingService(
         return booking;
     }
 
-    // ── QR Session Lifecycle ───────────────────────────────────────────────
+    // ── Attendant Session Lifecycle ───────────────────────────────────────────────
 
     public async Task<ParkingSession> CheckInAsync(CheckInRequest request, string ipAddress)
     {
@@ -289,24 +287,17 @@ public class BookingService(
                 .ThenInclude(s => s!.Zone)
                 .FirstOrDefaultAsync(b => b.Id == request.BookingId.Value);
         }
-        else if (!string.IsNullOrWhiteSpace(request.BookingCode))
-        {
-            booking = await db.Bookings
-                .Include(b => b.Slot)
-                .ThenInclude(s => s!.Zone)
-                .FirstOrDefaultAsync(b => b.QrCodeContent == request.BookingCode || b.Id.ToString() == request.BookingCode);
-        }
 
         if (booking == null)
         {
-            if (request.BookingId.HasValue || !string.IsNullOrWhiteSpace(request.BookingCode))
-                throw new AppException(ErrorCodes.NotFound, "Booking not found for the scanned QR code.", 404);
+            if (request.BookingId.HasValue)
+                throw new AppException(ErrorCodes.NotFound, "Booking not found.", 404);
 
             if (request.SlotId.HasValue && request.SlotId.Value != Guid.Empty)
             {
                 var slot = await db.Slots.Include(s => s.Zone).FirstOrDefaultAsync(s => s.Id == request.SlotId.Value);
                 if (slot == null)
-                    throw new AppException(ErrorCodes.NotFound, "Booking or slot not found for provided check-in QR.", 404);
+                    throw new AppException(ErrorCodes.NotFound, "Booking or space not found.", 404);
 
                 if (slot.Status != SlotStatus.Available)
                     throw new AppException(ErrorCodes.SlotUnavailable, "This slot is not available.", 409);
@@ -320,7 +311,7 @@ public class BookingService(
                     StartTime = DateTime.UtcNow,
                     EndTime = DateTime.UtcNow.AddHours(2),
                     Status = BookingStatus.Active,
-                    QrCodeContent = $"{QrPrefix}{request.BookingId}&slotId={slot.Id}",
+                    QrCodeContent = string.Empty,
                     EstimatedFee = slot.Zone?.BaseHourlyRate * 2 ?? 10m,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
@@ -330,7 +321,7 @@ public class BookingService(
             }
             else
             {
-                throw new AppException(ErrorCodes.NotFound, "Booking not found for the scanned QR code.", 404);
+                throw new AppException(ErrorCodes.NotFound, "Booking not found.", 404);
             }
         }
 
@@ -346,6 +337,11 @@ public class BookingService(
 
         if (booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.Cancelled)
             throw new AppException(ErrorCodes.ValidationFailed, $"Booking cannot be checked in because its status is {booking.Status}.");
+
+        if (booking.StartTime > DateTime.UtcNow || booking.EndTime <= DateTime.UtcNow || booking.Status == BookingStatus.Expired)
+            throw new AppException(ErrorCodes.ValidationFailed, "This reservation is not valid at the current time.", 409);
+        if (booking.Slot?.Status is SlotStatus.Occupied or SlotStatus.Maintenance)
+            throw new AppException(ErrorCodes.SlotUnavailable, "This space cannot accept the vehicle.", 409);
 
         var session = new ParkingSession
         {
@@ -457,7 +453,7 @@ public class BookingService(
         session.TotalFee = subtotal + penaltyFee;
         session.PenaltyFee = penaltyFee;
         session.OverstayMinutes = overstayMins;
-        session.ReceiptPdfUrl = $"/receipts/{session.Id}.pdf";
+        session.ReceiptPdfUrl = null; // Receipts are served by the authenticated session receipt endpoint.
 
         if (session.Booking != null)
             session.Booking.Status = BookingStatus.Completed;
@@ -552,7 +548,7 @@ public class BookingService(
             EndTime      = DateTime.UtcNow.AddHours(2),
             VehiclePlate = licensePlate.ToUpperInvariant(),
             Status       = BookingStatus.Active,
-            QrCodeContent = $"{QrPrefix}{bookingId}",
+            QrCodeContent = string.Empty,
             EstimatedFee = zone.BaseHourlyRate * 2,
             CreatedAt    = DateTime.UtcNow,
             UpdatedAt    = DateTime.UtcNow,
@@ -598,16 +594,6 @@ public class BookingService(
     }
 
     // ── Private Helpers ────────────────────────────────────────────────────
-
-    private static bool TryParseQr(string qrContent, out Guid bookingId)
-    {
-        bookingId = Guid.Empty;
-        if (!qrContent.StartsWith(QrPrefix)) return false;
-
-        var afterPrefix = qrContent[QrPrefix.Length..];
-        var guidPart    = afterPrefix.Split('&')[0];
-        return Guid.TryParse(guidPart, out bookingId);
-    }
 
     private async Task<decimal> GetPenaltyRateAsync()
     {

@@ -5,7 +5,7 @@ namespace OpenParking.Core.Interfaces;
 
 /// <summary>
 /// Booking &amp; Payment module — owned by Dev (Student 3).
-/// Covers: Reservation logic, session lifecycle (check-in / check-out via QR),
+/// Covers: Reservation logic, attendant session lifecycle,
 /// Mapbox navigation data, and Resend email confirmations.
 /// </summary>
 public interface IBookingService : IParkingModule
@@ -16,8 +16,8 @@ public interface IBookingService : IParkingModule
     Task<PagedResult<Booking>> GetUserBookingsAsync(Guid userId, PaginatedQuery query);
     Task<Booking> CancelBookingAsync(Guid bookingId, Guid userId);
 
-    // ── QR Session Lifecycle (called by the Flutter QR scanner) ───────────
-    /// <summary>Validates QR content or ad-hoc slot, opens a ParkingSession, marks slot Occupied.</summary>
+    // Attendant session lifecycle
+    /// <summary>Opens a ParkingSession for a reservation and marks its space occupied.</summary>
     Task<ParkingSession> CheckInAsync(CheckInRequest request, string ipAddress);
 
     /// <summary>Closes the session, calculates fee, marks slot Available, triggers email receipt.</summary>
@@ -42,13 +42,13 @@ public class CreateBookingRequest
     public Guid SlotId { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    [System.ComponentModel.DataAnnotations.Required]
     public string? VehiclePlate { get; set; }
 }
 
 public class CheckInRequest
 {
     public Guid? BookingId { get; set; }
-    public string? BookingCode { get; set; }
     public Guid? SlotId { get; set; }
     public Guid? UserId { get; set; }
 }

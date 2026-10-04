@@ -1,66 +1,99 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../models/user.dart';
 import '../services/api_config.dart';
+import '../services/api_response.dart';
 
 const secureStorage = FlutterSecureStorage();
 
 class AuthState {
   final bool isAuthenticated;
   final String? token;
+  final UserModel? user;
   final bool isLoading;
-
-  AuthState({this.isAuthenticated = false, this.token, this.isLoading = true});
+  final String? error;
+  AuthState(
+      {this.isAuthenticated = false,
+      this.token,
+      this.user,
+      this.isLoading = true,
+      this.error});
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState(isLoading: true)) {
+  AuthNotifier() : super(AuthState()) {
+    ApiConfig.onUnauthorized = logout;
     _init();
   }
-
   Future<void> _init() async {
-    final token = await secureStorage.read(key: 'jwt_token');
-    if (token != null) {
+    try {
+      final token = await secureStorage.read(key: 'jwt_token');
+      if (token == null) {
+        state = AuthState(isLoading: false);
+        return;
+      }
       ApiConfig.setAuthToken(token);
-      state = AuthState(isAuthenticated: true, token: token, isLoading: false);
-    } else {
-      state = AuthState(isAuthenticated: false, isLoading: false);
+      final response = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/api/users/me'),
+              headers: ApiConfig.headers)
+          .timeout(const Duration(seconds: 15));
+      final user =
+          UserModel.fromJson(responseData(response) as Map<String, dynamic>);
+      if (mounted) {
+        state = AuthState(
+            isAuthenticated: true, token: token, user: user, isLoading: false);
+      }
+    } catch (_) {
+      ApiConfig.setAuthToken(null);
+      if (mounted) {
+        state =
+            AuthState(isLoading: false, error: 'Please sign in to continue.');
+      }
     }
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password,
+      {bool remember = true}) async {
     try {
-      final baseUrl = ApiConfig.baseUrl;
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/users/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final token = data['data']['token'];
-
+      final response = await http
+          .post(Uri.parse('${ApiConfig.baseUrl}/api/users/login'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'email': email, 'password': password}))
+          .timeout(const Duration(seconds: 15));
+      final data = responseData(response) as Map<String, dynamic>;
+      final token = data['token'] as String;
+      final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      if (remember) {
         await secureStorage.write(key: 'jwt_token', value: token);
-        ApiConfig.setAuthToken(token);
-        state =
-            AuthState(isAuthenticated: true, token: token, isLoading: false);
-        return true;
+      } else {
+        await secureStorage.delete(key: 'jwt_token');
       }
+      ApiConfig.setAuthToken(token);
+      state = AuthState(
+          isAuthenticated: true, token: token, user: user, isLoading: false);
+      return true;
     } catch (e) {
-      // Ignore
+      state = AuthState(
+          isLoading: false,
+          error: e.toString().replaceFirst('Exception: ', ''));
+      return false;
     }
-    return false;
   }
 
   Future<void> logout() async {
-    await secureStorage.delete(key: 'jwt_token');
     ApiConfig.setAuthToken(null);
-    state = AuthState(isAuthenticated: false, isLoading: false);
+    if (mounted) state = AuthState(isLoading: false);
+    await secureStorage.delete(key: 'jwt_token');
+  }
+
+  @override
+  void dispose() {
+    ApiConfig.onUnauthorized = null;
+    super.dispose();
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
-});
+final authProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) => AuthNotifier());

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using OpenParking.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenParking.Core.Entities;
@@ -9,13 +10,13 @@ namespace OpenParking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ZonesController(IZoneService zoneService, ISettingsService settingsService) : ControllerBase
+public class ZonesController(IZoneService zoneService, ISettingsService settingsService, NavigationService navigation) : ControllerBase
 {
     // GET /api/zones — public, used by Flutter to list nearby lots
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<ZoneDto>>>> GetZones([FromQuery] PaginatedQuery query)
+    public async Task<ActionResult<ApiResponse<PagedResult<ZoneDto>>>> GetZones([FromQuery] PaginatedQuery query, [FromQuery] string? filter = null)
     {
-        var result = await zoneService.ListZonesAsync(query);
+        var result = await zoneService.ListZonesAsync(query, filter);
 
         var currency = await settingsService.GetStringAsync("pricing.default_currency", "USD");
         var dtos = result.Items.Select(z => new ZoneDto
@@ -31,7 +32,7 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
             Currency = currency
         }).ToList();
 
-        return Ok(ApiResponse<List<ZoneDto>>.Ok(dtos, HttpContext.TraceIdentifier));
+        return Ok(ApiResponse<PagedResult<ZoneDto>>.Ok(new PagedResult<ZoneDto> { Items = dtos, TotalCount = result.TotalCount, Page = result.Page, PageSize = result.PageSize }, HttpContext.TraceIdentifier));
     }
 
     // GET /api/zones/{id}
@@ -128,7 +129,7 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var slots = await zoneService.GetAvailableSlotsAsync(id, type);
         var dtos = slots.Select(s => new SlotSummaryDto
         {
-            Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString()
+            FloorPlanId = s.FloorPlanId, Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString()
         }).ToList();
         return Ok(ApiResponse<List<SlotSummaryDto>>.Ok(dtos, HttpContext.TraceIdentifier));
     }
@@ -213,7 +214,7 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var plans = await zoneService.GetFloorPlansForZoneAsync(id);
         var dtos = plans.Select(f => new FloorPlanSummaryDto
         {
-            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl,
+            Id = f.Id, FloorName = f.FloorName, FloorOrder = f.FloorOrder, ImageUrl = f.ImageUrl, ImageWidthPx = f.ImageWidthPx, ImageHeightPx = f.ImageHeightPx,
             AnchorNorthWestLat = f.AnchorNorthWestLat, AnchorNorthWestLng = f.AnchorNorthWestLng,
             AnchorSouthEastLat = f.AnchorSouthEastLat, AnchorSouthEastLng = f.AnchorSouthEastLng
         }).ToList();
@@ -227,7 +228,7 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         var plan = await zoneService.GetFloorPlanAsync(floorPlanId);
         var dto = new FloorPlanSummaryDto
         {
-            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl,
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl, ImageWidthPx = plan.ImageWidthPx, ImageHeightPx = plan.ImageHeightPx,
             AnchorNorthWestLat = plan.AnchorNorthWestLat, AnchorNorthWestLng = plan.AnchorNorthWestLng,
             AnchorSouthEastLat = plan.AnchorSouthEastLat, AnchorSouthEastLng = plan.AnchorSouthEastLng
         };
@@ -247,7 +248,7 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
         
         var dto = new FloorPlanSummaryDto
         {
-            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl,
+            Id = plan.Id, FloorName = plan.FloorName, FloorOrder = plan.FloorOrder, ImageUrl = plan.ImageUrl, ImageWidthPx = plan.ImageWidthPx, ImageHeightPx = plan.ImageHeightPx,
             AnchorNorthWestLat = plan.AnchorNorthWestLat, AnchorNorthWestLng = plan.AnchorNorthWestLng,
             AnchorSouthEastLat = plan.AnchorSouthEastLat, AnchorSouthEastLng = plan.AnchorSouthEastLng
         };
@@ -265,14 +266,10 @@ public class ZonesController(IZoneService zoneService, ISettingsService settings
     }
 
     [HttpGet("{id:guid}/route")]
-    public ActionResult<ApiResponse<object>> GetZoneRoute(Guid id, [FromQuery] Guid targetSlotId)
+    public async Task<ActionResult<ApiResponse<NavigationResult>>> GetZoneRoute(Guid id, [FromQuery] Guid targetSlotId)
     {
-        // Fallback route generation stub
-        var dummyRoute = new
-        {
-            Waypoints = new[] { new { X = 0, Y = 0 }, new { X = 10, Y = 10 } }
-        };
-        return Ok(ApiResponse<object>.Ok(dummyRoute, HttpContext.TraceIdentifier));
+        var route = await navigation.RouteAsync(id, targetSlotId);
+        return Ok(ApiResponse<NavigationResult>.Ok(route, HttpContext.TraceIdentifier));
     }
 
     private Guid? GetCurrentUserId()
@@ -336,7 +333,7 @@ public class ZoneDetailDto : ZoneDto
         Currency       = currency,
         Slots = zone.Slots.Select(s => new SlotSummaryDto
         {
-            Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString(),
+            FloorPlanId = s.FloorPlanId, Id = s.Id, SlotNumber = s.SlotNumber, Type = s.Type.ToString(), Status = s.Status.ToString(),
             Floor = s.Floor, BoundingBoxJson = s.BoundingBoxJson,
             AssignedSensorId = s.AssignedSensorId, AssignedCameraId = s.AssignedCameraId,
             CanvasX = s.CanvasX, CanvasY = s.CanvasY, CanvasWidth = s.CanvasWidth, CanvasHeight = s.CanvasHeight,
@@ -354,6 +351,7 @@ public class ZoneDetailDto : ZoneDto
 public class SlotSummaryDto
 {
     public Guid Id { get; set; }
+    public Guid? FloorPlanId { get; set; }
     public string SlotNumber { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -370,6 +368,8 @@ public class SlotSummaryDto
 
 public class FloorPlanSummaryDto
 {
+    public double ImageWidthPx { get; set; }
+    public double ImageHeightPx { get; set; }
     public Guid Id { get; set; }
     public string FloorName { get; set; } = string.Empty;
     public int FloorOrder { get; set; }

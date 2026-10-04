@@ -39,11 +39,17 @@ class ZoneModel {
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       baseHourlyRate: (json['baseHourlyRate'] as num?)?.toDouble() ?? 0.0,
-      totalCapacity: json['totalCapacity'] as int? ?? json['capacity'] as int? ?? 0,
-      availableCount: json['availableCount'] as int? ?? json['availableSlots'] as int? ?? 0,
+      totalCapacity:
+          json['totalCapacity'] as int? ?? json['capacity'] as int? ?? 0,
+      availableCount:
+          json['availableCount'] as int? ?? json['availableSlots'] as int? ?? 0,
       currency: json['currency']?.toString() ?? 'USD',
-      slots: rawSlots.map((s) => SlotModel.fromJson(s as Map<String, dynamic>)).toList(),
-      floorPlans: rawFloorPlans.map((f) => FloorPlanModel.fromJson(f as Map<String, dynamic>)).toList(),
+      slots: rawSlots
+          .map((s) => SlotModel.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      floorPlans: rawFloorPlans
+          .map((f) => FloorPlanModel.fromJson(f as Map<String, dynamic>))
+          .toList(),
     );
   }
 

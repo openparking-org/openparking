@@ -392,6 +392,9 @@ public class EnforcementService(
             throw new AppException(ErrorCodes.DisputeWindowExpired,
                 "The 7-day dispute window for this penalty has expired.", 409);
 
+        if (string.IsNullOrWhiteSpace(disputeNotes))
+            throw new AppException(ErrorCodes.ValidationFailed, "Explain why you are disputing this penalty.");
+        penalty.DisputeNotes = disputeNotes.Trim();
         penalty.Status      = PenaltyStatus.Disputed;
         penalty.UpdatedAt   = DateTime.UtcNow;
 

@@ -11,6 +11,7 @@ public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Email { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonIgnore]
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
@@ -145,6 +146,8 @@ public class Booking
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public BookingStatus Status { get; set; } = BookingStatus.Pending;
+    // Retained for database compatibility; no longer generated or exposed to customers.
+    [System.Text.Json.Serialization.JsonIgnore]
     public string QrCodeContent { get; set; } = string.Empty;
     public decimal EstimatedFee { get; set; }
     public string? VehiclePlate { get; set; }

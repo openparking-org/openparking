@@ -16,7 +16,6 @@ class ZoneDiscoveryScreen extends ConsumerStatefulWidget {
 class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  String _selectedFilter = 'All';
 
   @override
   void initState() {
@@ -86,8 +85,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                       style: AppTheme.bodyMd,
                       decoration: InputDecoration(
                         hintText: 'Search zone name or code...',
-                        hintStyle:
-                            AppTheme.bodyMd.copyWith(color: AppTheme.textTertiary),
+                        hintStyle: AppTheme.bodyMd
+                            .copyWith(color: AppTheme.textTertiary),
                         prefixIcon: const Icon(Icons.search,
                             color: AppTheme.primary, size: 20),
                         suffixIcon: _searchController.text.isNotEmpty
@@ -146,6 +145,16 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                 ),
               ),
             )
+          else if (zoneState.error != null)
+            SliverFillRemaining(
+                child: Center(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(zoneState.error!),
+              TextButton(
+                  onPressed: () =>
+                      ref.read(zoneListProvider.notifier).fetchZones(),
+                  child: const Text('Retry')),
+            ])))
           else if (zoneState.zones.isEmpty)
             SliverFillRemaining(child: _buildEmptyState())
           else
@@ -167,8 +176,7 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                     }
                     final zone = zoneState.zones[index];
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: AppTheme.spaceSm),
+                      padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
                       child: _buildZoneCard(context, zone),
                     );
                   },
@@ -183,9 +191,11 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   }
 
   Widget _buildFilterChip(String label, IconData icon) {
-    final isSelected = _selectedFilter == label;
+    final isSelected = ref.watch(zoneListProvider).filter == label;
     return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = label),
+      onTap: () {
+        ref.read(zoneListProvider.notifier).fetchZones(filter: label);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -208,10 +218,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
             Text(
               label,
               style: AppTheme.labelMd.copyWith(
-                color:
-                    isSelected ? AppTheme.onPrimary : AppTheme.textSecondary,
-                fontWeight:
-                    isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppTheme.onPrimary : AppTheme.textSecondary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],
@@ -227,7 +235,9 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
 
     final Color statusColor = zone.availableCount == 0
         ? AppTheme.accentCritical
-        : (occupancyRatio > 0.8 ? AppTheme.accentCritical : AppTheme.accentSuccess);
+        : (occupancyRatio > 0.8
+            ? AppTheme.accentCritical
+            : AppTheme.accentSuccess);
 
     return Container(
       decoration: BoxDecoration(
@@ -280,8 +290,8 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                                 decoration: BoxDecoration(
                                   color: AppTheme.surfaceSubtle,
                                   borderRadius: BorderRadius.circular(100),
-                                  border: Border.all(
-                                      color: AppTheme.borderSubtle),
+                                  border:
+                                      Border.all(color: AppTheme.borderSubtle),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -396,11 +406,10 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                             backgroundColor: AppTheme.primary,
                             foregroundColor: AppTheme.onPrimary,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusLg),
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusLg),
                             ),
                           ),
                         ),

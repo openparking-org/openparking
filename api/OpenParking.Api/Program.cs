@@ -24,6 +24,7 @@ if (builder.Environment.IsDevelopment())
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
@@ -120,6 +121,9 @@ builder.Services.AddScoped<IZoneService, ZoneService>();
 
 // Module 3 — Booking & Payment (Dev)
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<GateService>();
+builder.Services.AddScoped<PasswordRecoveryService>();
+builder.Services.AddScoped<NavigationService>();
 
 // Module 4 — Enforcement & AI Orchestration (Karuna)
 // Uses a named HttpClient for LangGraph calls (30s timeout for AI inference)

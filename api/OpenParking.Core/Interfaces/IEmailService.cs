@@ -8,6 +8,7 @@ namespace OpenParking.Core.Interfaces;
 /// </summary>
 public interface IEmailService
 {
+    Task SendPasswordResetAsync(string toEmail, string token);
     Task SendWelcomeAsync(string toEmail, string name);
     Task SendBookingConfirmationAsync(string toEmail, string name, Booking booking);
     Task SendReceiptAsync(string toEmail, string name, ParkingSession session);

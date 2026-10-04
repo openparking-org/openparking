@@ -258,7 +258,7 @@ class PenaltiesScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'USD ${penalty.amount.toStringAsFixed(2)}',
+                      '${penalty.currency} ${penalty.amount.toStringAsFixed(2)}',
                       style: AppTheme.titleMd.copyWith(
                         color: AppTheme.accentCritical,
                         fontWeight: FontWeight.w700,

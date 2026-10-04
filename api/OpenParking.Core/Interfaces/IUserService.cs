@@ -22,6 +22,7 @@ public interface IUserService : IParkingModule
     Task<User> UpdateRoleAsync(Guid userId, UserRole newRole, Guid actorId);
 
     // ── Disability permit verification (Validator Agent hook) ─────────────
+    Task<DisabilityPermit?> GetUserPermitAsync(Guid userId);
     Task<DisabilityPermit> SubmitPermitAsync(Guid userId, SubmitPermitRequest req);
     Task<DisabilityPermit> ReviewPermitAsync(Guid permitId, PermitStatus decision, string? notes, Guid reviewerId);
     Task<List<DisabilityPermit>> GetPendingPermitsAsync();
@@ -58,6 +59,7 @@ public class SubmitPermitRequest
 {
     public string PermitNumber { get; set; } = string.Empty;
     public string DocumentImageUrl { get; set; } = string.Empty;
+    public string? DocumentBase64 { get; set; }
     public string Jurisdiction { get; set; } = string.Empty;
     public DateTime ExpiryDate { get; set; }
 }

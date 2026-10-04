@@ -24,13 +24,14 @@ class DisabilityPermitModel {
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       permitNumber: json['permitNumber']?.toString() ?? '',
-      issuingAuthority: json['issuingAuthority']?.toString() ?? '',
+      issuingAuthority: json['jurisdiction']?.toString() ?? '',
       expiryDate: json['expiryDate'] != null
           ? DateTime.parse(json['expiryDate'].toString())
           : DateTime.now().add(const Duration(days: 365)),
       documentImageUrl: json['documentImageUrl']?.toString(),
       status: json['status']?.toString() ?? 'Pending',
-      rejectionNotes: json['rejectionNotes']?.toString(),
+      rejectionNotes:
+          (json['rejectionReason'] ?? json['reviewNotes'])?.toString(),
     );
   }
 }

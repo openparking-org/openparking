@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, group: 'Operations' },
   { to: '/zones', label: 'Parking Zones', icon: MapPin, group: 'Operations' },
+  { to: '/gate', label: 'Gate Entry / Exit', icon: Car, group: 'Operations' },
   { to: '/bookings', label: 'Reservations', icon: Calendar, group: 'Operations' },
   { to: '/ai-enforcement', label: 'AI Enforcement', icon: ShieldCheck, group: 'Operations' },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, group: 'Operations' },

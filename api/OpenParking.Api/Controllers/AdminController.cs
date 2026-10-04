@@ -116,7 +116,7 @@ public class AdminController(AppDbContext db, IBookingService bookings, ISetting
                 b.StartTime, b.EndTime, Status = b.Status.ToString(), b.EstimatedFee,
                 Session = db.ParkingSessions.Where(s => s.BookingId == b.Id).OrderByDescending(s => s.CheckInTime)
                     .Select(s => new { s.Id, Status = s.Status.ToString(), s.CheckInTime, s.CheckOutTime, s.TotalFee, s.PenaltyFee }).FirstOrDefault(),
-                IsPaid = db.AuditLogs.Any(a => a.EntityType == "Booking" && a.EntityId == b.Id && a.Action == "SIMULATED_PAY"),
+                IsPaid = db.AuditLogs.Any(a => a.EntityType == "Booking" && a.EntityId == b.Id && a.Action == "PAYMENT_RECEIVED"),
                 Currency = currency
             }).ToListAsync();
         return Ok(ApiResponse<object>.Ok(new { items = rows, totalCount = total, page = query.Page, pageSize = query.PageSize }, HttpContext.TraceIdentifier));
@@ -156,26 +156,26 @@ public class AdminController(AppDbContext db, IBookingService bookings, ISetting
         return Ok(ApiResponse<object>.Ok(new { id, status = "Cancelled" }));
     }
 
-    // Deliberately a simulation: no provider, card details, or money movement.
-    // Store the marker in the existing audit trail so Paid survives reloads.
+    // Attendant confirms payment collected at the gate; no online charge is made.
+    // Record the collection in the audit trail so payment status survives reloads.
     [HttpPost("bookings/{id:guid}/pay")]
     public async Task<IActionResult> Pay(Guid id)
     {
         var booking = await bookings.GetBookingAsync(id);
         if (booking.Status != BookingStatus.Completed)
             throw new AppException(ErrorCodes.ValidationFailed, "Check out the booking before marking it paid.", 409);
-        if (!await db.AuditLogs.AnyAsync(a => a.EntityType == "Booking" && a.EntityId == id && a.Action == "SIMULATED_PAY"))
+        if (!await db.AuditLogs.AnyAsync(a => a.EntityType == "Booking" && a.EntityId == id && a.Action == "PAYMENT_RECEIVED"))
         {
             db.AuditLogs.Add(new AuditLog
             {
-                EntityType = "Booking", EntityId = id, Action = "SIMULATED_PAY",
+                EntityType = "Booking", EntityId = id, Action = "PAYMENT_RECEIVED",
                 ActorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var actor) ? actor : null,
                 ActorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Admin",
-                PayloadJson = "{\"simulated\":true}", IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? ""
+                PayloadJson = "{\"method\":\"gate\"}", IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? ""
             });
             await db.SaveChangesAsync();
         }
-        return Ok(ApiResponse<object>.Ok(new { id, isPaid = true, simulated = true, message = "Paid" }));
+        return Ok(ApiResponse<object>.Ok(new { id, isPaid = true, message = "Payment received at gate" }));
     }
 
     [HttpGet("permits")]

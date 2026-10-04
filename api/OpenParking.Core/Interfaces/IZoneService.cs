@@ -11,7 +11,7 @@ namespace OpenParking.Core.Interfaces;
 public interface IZoneService : IParkingModule
 {
     // ── Zones ─────────────────────────────────────────────────────────────
-    Task<PagedResult<Zone>> ListZonesAsync(PaginatedQuery query);
+    Task<PagedResult<Zone>> ListZonesAsync(PaginatedQuery query, string? filter = null);
     Task<Zone> GetZoneAsync(Guid zoneId);
     Task<Zone> CreateZoneAsync(Zone zone, Guid actorId);
     Task<Zone> UpdateZoneAsync(Guid zoneId, UpdateZoneRequest req, Guid actorId);

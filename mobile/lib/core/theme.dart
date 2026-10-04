@@ -211,7 +211,8 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return labelSm.copyWith(color: primary, fontWeight: FontWeight.w700);
+            return labelSm.copyWith(
+                color: primary, fontWeight: FontWeight.w700);
           }
           return labelSm.copyWith(color: textTertiary);
         }),
@@ -233,7 +234,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceSubtle,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusXl),
           borderSide: BorderSide.none,

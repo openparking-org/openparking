@@ -76,9 +76,11 @@ class FloorPlanNotifier extends StateNotifier<FloorPlanState> {
   }
 }
 
-final floorPlanServiceProvider = Provider<FloorPlanService>((ref) => FloorPlanService());
+final floorPlanServiceProvider =
+    Provider<FloorPlanService>((ref) => FloorPlanService());
 
-final floorPlanProvider = StateNotifierProvider<FloorPlanNotifier, FloorPlanState>((ref) {
+final floorPlanProvider =
+    StateNotifierProvider<FloorPlanNotifier, FloorPlanState>((ref) {
   final service = ref.watch(floorPlanServiceProvider);
   return FloorPlanNotifier(service);
 });

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show SocketException;
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
+import 'api_response.dart';
 
 class SessionApiException implements Exception {
   final int statusCode;
@@ -14,6 +15,8 @@ class SessionApiException implements Exception {
 }
 
 class ParkingSessionModel {
+  final String currency;
+  final String vehiclePlate;
   final String id;
   final String bookingId;
   final String slotNumber;
@@ -29,6 +32,8 @@ class ParkingSessionModel {
   final String? receiptPdfUrl;
 
   const ParkingSessionModel({
+    this.currency = 'USD',
+    this.vehiclePlate = '',
     required this.id,
     required this.bookingId,
     required this.slotNumber,
@@ -46,6 +51,8 @@ class ParkingSessionModel {
 
   factory ParkingSessionModel.fromJson(Map<String, dynamic> json) {
     return ParkingSessionModel(
+      currency: json['currency']?.toString() ?? 'USD',
+      vehiclePlate: json['vehiclePlate']?.toString() ?? '',
       id: json['id']?.toString() ?? '',
       bookingId: json['bookingId']?.toString() ?? '',
       slotNumber: json['slotNumber']?.toString() ?? 'Unknown Slot',
@@ -78,71 +85,8 @@ class ParkingSessionModel {
 class SessionService {
   final http.Client _client;
 
-  SessionService({http.Client? client}) : _client = client ?? http.Client();
-
-  /// Performs QR check-in against ASP.NET Core endpoint POST /api/sessions/check-in.
-  Future<ParkingSessionModel> checkIn({
-    String? bookingId,
-    String? slotId,
-    String? bookingCode,
-    String? userId,
-  }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-in');
-    final payload = <String, dynamic>{};
-    if (bookingId != null && bookingId.isNotEmpty) {
-      payload['bookingId'] = bookingId;
-    }
-    if (slotId != null && slotId.isNotEmpty) payload['slotId'] = slotId;
-    if (bookingCode != null && bookingCode.isNotEmpty) {
-      payload['bookingCode'] = bookingCode;
-    }
-    if (userId != null && userId.isNotEmpty) payload['userId'] = userId;
-
-    try {
-      final response = await _client.post(
-        url,
-        headers: ApiConfig.headers,
-        body: jsonEncode(payload),
-      );
-
-      return _handleResponse(response);
-    } on SocketException {
-      throw SessionApiException(0,
-          'Unable to connect to OpenParking server. Please verify network or backend status.');
-    } on http.ClientException catch (e) {
-      throw SessionApiException(0, 'Network communication error: ${e.message}');
-    }
-  }
-
-  /// Performs QR check-out against ASP.NET Core endpoint POST /api/sessions/check-out.
-  Future<ParkingSessionModel> checkOut({
-    String? sessionId,
-    String? bookingId,
-  }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/check-out');
-    final payload = <String, dynamic>{};
-    if (sessionId != null && sessionId.isNotEmpty) {
-      payload['sessionId'] = sessionId;
-    }
-    if (bookingId != null && bookingId.isNotEmpty) {
-      payload['bookingId'] = bookingId;
-    }
-
-    try {
-      final response = await _client.post(
-        url,
-        headers: ApiConfig.headers,
-        body: jsonEncode(payload),
-      );
-
-      return _handleResponse(response);
-    } on SocketException {
-      throw SessionApiException(0,
-          'Unable to connect to OpenParking server. Please check your network connection.');
-    } on http.ClientException catch (e) {
-      throw SessionApiException(0, 'Network communication error: ${e.message}');
-    }
-  }
+  SessionService({http.Client? client})
+      : _client = client ?? ParkingHttpClient();
 
   /// Fetches the currently active session for driver tracker screen.
   Future<ParkingSessionModel?> getActiveSession({
@@ -165,8 +109,8 @@ class SessionService {
         return null;
       }
       return _handleResponse(response);
-    } catch (_) {
-      return null;
+    } on SocketException {
+      throw SessionApiException(0, "Unable to connect. Please try again.");
     }
   }
 
@@ -183,35 +127,13 @@ class SessionService {
           response.statusCode, 'Unexpected server response format.');
     }
 
-    String errorMsg = 'Operation failed with status ${response.statusCode}.';
     try {
-      final errData = jsonDecode(response.body);
-      if (errData is Map && errData['message'] != null) {
-        errorMsg = errData['message'].toString();
-      }
-    } catch (_) {}
-
-    switch (response.statusCode) {
-      case 400:
-        throw SessionApiException(
-            400, errorMsg.isNotEmpty ? errorMsg : 'Invalid QR request.');
-      case 401:
-        throw SessionApiException(
-            401, 'Authentication required. Please sign in.');
-      case 403:
-        throw SessionApiException(
-            403, 'Permission denied for this parking operation.');
-      case 404:
-        throw SessionApiException(404,
-            errorMsg.isNotEmpty ? errorMsg : 'Booking or session not found.');
-      case 409:
-        throw SessionApiException(
-            409,
-            errorMsg.isNotEmpty
-                ? errorMsg
-                : 'Conflicting parking state: session already active.');
-      default:
-        throw SessionApiException(response.statusCode, errorMsg);
+      responseData(response);
+    } catch (e) {
+      throw SessionApiException(
+          response.statusCode, e.toString().replaceFirst("Exception: ", ""));
     }
+    throw SessionApiException(
+        response.statusCode, "Unexpected session response.");
   }
 }

@@ -24,7 +24,8 @@ async def get_config(key: str, default: str | None = None) -> str:
                 headers={"X-Internal-Token": INTERNAL_API_TOKEN}
             )
             r.raise_for_status()
-            return str(r.json().get("value", default))
+            payload = r.json()
+            return str(payload.get("data", payload).get("value", default))
     except Exception:
         if default is not None:
             return default

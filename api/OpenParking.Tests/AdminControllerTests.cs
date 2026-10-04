@@ -29,7 +29,7 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task Pay_CompletedBooking_PersistsOneSimulationMarker()
+    public async Task Pay_CompletedBooking_PersistsOnePaymentMarker()
     {
         using var db = Database();
         var booking = new Booking { Status = BookingStatus.Completed };
@@ -39,7 +39,7 @@ public class AdminControllerTests
         Assert.IsType<OkObjectResult>(await controller.Pay(booking.Id));
         Assert.IsType<OkObjectResult>(await controller.Pay(booking.Id));
         Assert.Single(db.AuditLogs);
-        Assert.Equal("SIMULATED_PAY", db.AuditLogs.Single().Action);
+        Assert.Equal("PAYMENT_RECEIVED", db.AuditLogs.Single().Action);
         Assert.Equal(booking.Id, db.AuditLogs.Single().EntityId);
     }
 

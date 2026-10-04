@@ -9,7 +9,7 @@ def get_retriever():
     Used for fetching parking ordinances, regulations, and previous penalty decisions.
     """
     account_id = os.getenv("CF_ACCOUNT_ID")
-    api_token = os.getenv("CF_AI_TOKEN")
+    api_token = os.getenv("CF_AI_SEARCH_TOKEN") or os.getenv("CF_AI_TOKEN")
     
     if os.getenv("CF_AI_MODE") == "mock" or not account_id or not api_token:
         # Provide a mock retriever for local testing
@@ -24,6 +24,6 @@ def get_retriever():
     return CloudflareAISearchRetriever(
         account_id=account_id,
         api_token=api_token,
-        instance_name="openparking-knowledge-base",
+        instance_name=os.getenv("CF_AI_SEARCH_INSTANCE", "openparking-knowledge-base"),
         retrieval_type="hybrid",
     )

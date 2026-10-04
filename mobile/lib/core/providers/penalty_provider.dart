@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth_provider.dart';
 import '../../models/penalty.dart';
 import '../../services/penalty_service.dart';
 
@@ -40,10 +41,22 @@ class PenaltyNotifier extends StateNotifier<PenaltyListState> {
   Future<void> fetchPenalties() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await _service.getMyPenalties();
-      state = state.copyWith(penalties: response.items, isLoading: false);
+      final penalties = <PenaltyModel>[];
+      var page = 1;
+      for (;;) {
+        final response =
+            await _service.getMyPenalties(page: page, pageSize: 100);
+        penalties.addAll(response.items);
+        if (!response.hasNextPage) break;
+        page++;
+      }
+      if (mounted) {
+        state = state.copyWith(penalties: penalties, isLoading: false);
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
@@ -57,6 +70,7 @@ class PenaltyNotifier extends StateNotifier<PenaltyListState> {
           penalties: state.penalties
               .map((p) => p.id == penaltyId
                   ? PenaltyModel(
+                      currency: p.currency,
                       id: p.id,
                       userId: p.userId,
                       sessionId: p.sessionId,
@@ -81,9 +95,12 @@ class PenaltyNotifier extends StateNotifier<PenaltyListState> {
   }
 }
 
-final penaltyServiceProvider = Provider<PenaltyService>((ref) => PenaltyService());
+final penaltyServiceProvider =
+    Provider<PenaltyService>((ref) => PenaltyService());
 
-final penaltyProvider = StateNotifierProvider<PenaltyNotifier, PenaltyListState>((ref) {
+final penaltyProvider =
+    StateNotifierProvider<PenaltyNotifier, PenaltyListState>((ref) {
+  ref.watch(authProvider.select((auth) => auth.user?.id));
   final service = ref.watch(penaltyServiceProvider);
   return PenaltyNotifier(service);
 });

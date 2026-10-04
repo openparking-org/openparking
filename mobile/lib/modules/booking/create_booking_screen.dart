@@ -27,8 +27,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   final _plateController = TextEditingController();
 
   SlotModel? _selectedSlot;
-  DateTime _startTime = DateTime.now().add(const Duration(minutes: 5));
-  DateTime _endTime = DateTime.now().add(const Duration(hours: 2, minutes: 5));
+  DateTime _startTime = DateTime.now();
+  DateTime _endTime = DateTime.now().add(const Duration(hours: 2));
   final bool _applyDisabilityDiscount = false;
 
   @override
@@ -70,7 +70,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     final baseRate = zone?.baseHourlyRate ?? 5.0;
     double estimatedFee = durationHours > 0 ? durationHours * baseRate : 0.0;
     if (_applyDisabilityDiscount ||
-        (permitState.permit?.status.toLowerCase() == 'approved')) {
+        (permitState.permit?.status.toLowerCase() == 'verified')) {
       estimatedFee *= 0.85; // 15% disability discount
     }
 
@@ -224,7 +224,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
                     // Disability Discount Check
                     if (permitState.permit != null &&
-                        permitState.permit!.status.toLowerCase() == 'approved')
+                        permitState.permit!.status.toLowerCase() == 'verified')
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -380,7 +380,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
 
-    if (date == null || !mounted) return;
+    if (date == null || !context.mounted) return;
 
     final time = await showTimePicker(
       context: context,
@@ -406,18 +406,31 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate() || _selectedSlot == null) return;
+    if (!_endTime.isAfter(_startTime) || _endTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Choose a valid start and end time.')));
+      return;
+    }
 
     final booking = await ref.read(bookingProvider.notifier).createBooking(
           slotId: _selectedSlot!.id,
-          startTime: _startTime,
-          endTime: _endTime,
+          startTime: _startTime.toUtc(),
+          endTime: _endTime.toUtc(),
           vehiclePlate: _plateController.text.trim(),
         );
 
-    if (booking != null && mounted) {
+    if (!mounted) return;
+    if (booking == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ref.read(bookingProvider).error ??
+              'Could not reserve this space.')));
+      return;
+    }
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Reservation successful! Navigation route loaded.'),
+          content:
+              Text('Reserved! Give your vehicle number to the gate attendant.'),
           backgroundColor: Color(0xFF10B981),
         ),
       );

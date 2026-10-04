@@ -41,6 +41,8 @@ class SessionStateNotifier
     }
   }
 
+  Future<void> refresh() => _fetchSession();
+
   void updateSession(ParkingSessionModel? session) {
     if (mounted) {
       state = AsyncValue.data(session);

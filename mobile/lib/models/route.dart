@@ -21,12 +21,17 @@ class RoutePoint {
 }
 
 class NavigationRouteModel {
+  final String? floorPlanId;
+  final double imageWidthPx, imageHeightPx;
   final List<RoutePoint> points;
   final double distanceMeters;
   final int estimatedSeconds;
   final List<String> instructions;
 
   NavigationRouteModel({
+    this.floorPlanId,
+    this.imageWidthPx = 1000,
+    this.imageHeightPx = 600,
     required this.points,
     required this.distanceMeters,
     required this.estimatedSeconds,
@@ -34,13 +39,21 @@ class NavigationRouteModel {
   });
 
   factory NavigationRouteModel.fromJson(Map<String, dynamic> json) {
-    final rawPoints = json['points'] as List<dynamic>? ?? json['coordinates'] as List<dynamic>? ?? [];
+    final rawPoints = json['points'] as List<dynamic>? ??
+        json['coordinates'] as List<dynamic>? ??
+        [];
     final rawInstructions = json['instructions'] as List<dynamic>? ?? [];
 
     return NavigationRouteModel(
+      floorPlanId: json['floorPlanId']?.toString(),
+      imageWidthPx: (json['imageWidthPx'] as num?)?.toDouble() ?? 1000,
+      imageHeightPx: (json['imageHeightPx'] as num?)?.toDouble() ?? 600,
       points: rawPoints.map((p) => RoutePoint.fromJson(p)).toList(),
-      distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ?? (json['distance'] as num?)?.toDouble() ?? 0.0,
-      estimatedSeconds: json['estimatedSeconds'] as int? ?? json['duration'] as int? ?? 0,
+      distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ??
+          (json['distance'] as num?)?.toDouble() ??
+          0.0,
+      estimatedSeconds:
+          json['estimatedSeconds'] as int? ?? json['duration'] as int? ?? 0,
       instructions: rawInstructions.map((i) => i.toString()).toList(),
     );
   }

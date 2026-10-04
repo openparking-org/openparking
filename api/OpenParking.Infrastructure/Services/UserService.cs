@@ -168,15 +168,40 @@ public class UserService(
 
     // ── Disability Permits ─────────────────────────────────────────────────
 
+    public async Task<DisabilityPermit?> GetUserPermitAsync(Guid userId)
+    {
+        var permit = await db.DisabilityPermits.AsNoTracking().Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedAt).FirstOrDefaultAsync();
+        if (permit != null && permit.ExpiryDate <= DateTime.UtcNow) permit.Status = PermitStatus.Expired;
+        return permit;
+    }
+
     public async Task<DisabilityPermit> SubmitPermitAsync(Guid userId, SubmitPermitRequest req)
     {
         var user = await db.Users.FindAsync(userId)
             ?? throw new AppException(ErrorCodes.NotFound, "User not found.", 404);
 
+        if (string.IsNullOrWhiteSpace(req.PermitNumber) || string.IsNullOrWhiteSpace(req.Jurisdiction) || req.ExpiryDate <= DateTime.UtcNow)
+            throw new AppException(ErrorCodes.ValidationFailed, "Permit number, issuing authority, and a future expiry date are required.");
+        if (!string.IsNullOrEmpty(req.DocumentBase64))
+        {
+            byte[] image;
+            try { image = Convert.FromBase64String(req.DocumentBase64); }
+            catch (FormatException) { throw new AppException(ErrorCodes.ValidationFailed, "Invalid permit image."); }
+            if (image.Length == 0 || image.Length > 5 * 1024 * 1024)
+                throw new AppException(ErrorCodes.ValidationFailed, "Permit image must be smaller than 5 MB.");
+            var mime = image.Length >= 8 && image[0] == 137 && image[1] == 80 && image[2] == 78 && image[3] == 71 ? "image/png" :
+                image.Length >= 3 && image[0] == 255 && image[1] == 216 && image[2] == 255 ? "image/jpeg" : null;
+            if (mime == null) throw new AppException(ErrorCodes.ValidationFailed, "Upload a JPEG or PNG permit image.");
+            req.DocumentImageUrl = $"data:{mime};base64,{req.DocumentBase64}";
+        }
+        if (string.IsNullOrWhiteSpace(req.DocumentImageUrl))
+            throw new AppException(ErrorCodes.ValidationFailed, "Attach a permit image.");
+
         // Block duplicate pending/verified permit submissions
         var hasPending = await db.DisabilityPermits.AnyAsync(p =>
             p.UserId == userId &&
-            (p.Status == PermitStatus.Pending || p.Status == PermitStatus.Verified));
+            (p.Status == PermitStatus.Pending || (p.Status == PermitStatus.Verified && p.ExpiryDate > DateTime.UtcNow)));
 
         if (hasPending)
             throw new AppException(ErrorCodes.PermitAlreadySubmitted,

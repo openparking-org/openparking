@@ -13,7 +13,8 @@ class AccountScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.surface,
       appBar: AppBar(
-        title: Text('Account', style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
+        title: Text('Account',
+            style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
         backgroundColor: AppTheme.surfacePure,
         surfaceTintColor: Colors.transparent,
       ),
@@ -37,7 +38,8 @@ class AccountScreen extends ConsumerWidget {
                     color: AppTheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, size: 28, color: AppTheme.primary),
+                  child: const Icon(Icons.person,
+                      size: 28, color: AppTheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -45,13 +47,16 @@ class AccountScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Driver Account',
-                        style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
+                        ref.watch(authProvider).user?.fullName ??
+                            'Driver Account',
+                        style: AppTheme.titleMd
+                            .copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'driver@openparking.test',
-                        style: AppTheme.bodySm.copyWith(color: AppTheme.textSecondary),
+                        ref.watch(authProvider).user?.email ?? '',
+                        style: AppTheme.bodySm
+                            .copyWith(color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
@@ -59,36 +64,41 @@ class AccountScreen extends ConsumerWidget {
               ],
             ),
           ),
-          
+
           const SizedBox(height: AppTheme.spaceLg),
-          
-          Text('MANAGEMENT', style: AppTheme.labelSm.copyWith(color: AppTheme.textTertiary)),
+
+          Text('MANAGEMENT',
+              style: AppTheme.labelSm.copyWith(color: AppTheme.textTertiary)),
           const SizedBox(height: AppTheme.spaceSm),
-          
+
           _buildMenuTile(
             context,
             icon: Icons.shield_outlined,
             title: 'Penalties & Enforcement',
             subtitle: 'View and dispute parking fines',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PenaltiesScreen()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const PenaltiesScreen()));
             },
           ),
-          
+
           const SizedBox(height: AppTheme.spaceSm),
-          
+
           _buildMenuTile(
             context,
             icon: Icons.accessible,
             title: 'Disability Permit',
             subtitle: 'Upload permit for verification',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PermitUploadScreen()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const PermitUploadScreen()));
             },
           ),
-          
+
           const SizedBox(height: AppTheme.spaceLg),
-          
+
           // Logout Button
           SizedBox(
             width: double.infinity,
@@ -113,7 +123,11 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuTile(BuildContext context, {required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+  Widget _buildMenuTile(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required String subtitle,
+      required VoidCallback onTap}) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfacePure,
@@ -143,12 +157,17 @@ class AccountScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: AppTheme.labelLg.copyWith(fontWeight: FontWeight.w700)),
-                      Text(subtitle, style: AppTheme.bodySm.copyWith(color: AppTheme.textSecondary)),
+                      Text(title,
+                          style: AppTheme.labelLg
+                              .copyWith(fontWeight: FontWeight.w700)),
+                      Text(subtitle,
+                          style: AppTheme.bodySm
+                              .copyWith(color: AppTheme.textSecondary)),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppTheme.textTertiary, size: 20),
+                const Icon(Icons.chevron_right,
+                    color: AppTheme.textTertiary, size: 20),
               ],
             ),
           ),

@@ -29,6 +29,9 @@ services:
       - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-mock-account}
       - CF_AI_TOKEN=${CF_AI_TOKEN:-mock-token}
       - CF_AI_MODE=${CF_AI_MODE:-mock}
+      - CF_AI_GATEWAY=${CF_AI_GATEWAY:-}
+      - CF_AI_SEARCH_TOKEN=${CF_AI_SEARCH_TOKEN:-${CF_AI_TOKEN:-mock-token}}
+      - CF_AI_SEARCH_INSTANCE=${CF_AI_SEARCH_INSTANCE:-openparking-knowledge-base}
       - DATABASE_URL=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}
       - API_BASE_URL=http://api:8080
       - BACKEND_API_URL=http://api:8080

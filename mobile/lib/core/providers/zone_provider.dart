@@ -7,6 +7,7 @@ class ZoneListState {
   final bool isLoading;
   final bool isLoadingMore;
   final String searchQuery;
+  final String filter;
   final int page;
   final int pageSize;
   final bool hasNextPage;
@@ -18,6 +19,7 @@ class ZoneListState {
     this.isLoading = false,
     this.isLoadingMore = false,
     this.searchQuery = '',
+    this.filter = 'All',
     this.page = 1,
     this.pageSize = 10,
     this.hasNextPage = false,
@@ -30,6 +32,7 @@ class ZoneListState {
     bool? isLoading,
     bool? isLoadingMore,
     String? searchQuery,
+    String? filter,
     int? page,
     int? pageSize,
     bool? hasNextPage,
@@ -41,6 +44,7 @@ class ZoneListState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       searchQuery: searchQuery ?? this.searchQuery,
+      filter: filter ?? this.filter,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       hasNextPage: hasNextPage ?? this.hasNextPage,
@@ -52,21 +56,26 @@ class ZoneListState {
 
 class ZoneListNotifier extends StateNotifier<ZoneListState> {
   final ZoneService _service;
+  int _requestId = 0;
 
   ZoneListNotifier(this._service) : super(ZoneListState()) {
     fetchZones();
   }
 
-  Future<void> fetchZones({String? query, bool reset = true}) async {
+  Future<void> fetchZones(
+      {String? query, String? filter, bool reset = true}) async {
+    final requestId = reset ? ++_requestId : _requestId;
     if (reset) {
       state = state.copyWith(
         isLoading: true,
         page: 1,
         searchQuery: query ?? state.searchQuery,
+        filter: filter ?? state.filter,
+        isLoadingMore: false,
         error: null,
       );
     } else {
-      if (!state.hasNextPage || state.isLoadingMore) return;
+      if (!state.hasNextPage || state.isLoadingMore || state.isLoading) return;
       state = state.copyWith(isLoadingMore: true, error: null);
     }
 
@@ -75,9 +84,12 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
         page: reset ? 1 : state.page + 1,
         pageSize: state.pageSize,
         search: query ?? state.searchQuery,
+        filter: filter ?? state.filter,
       );
 
-      final newZones = reset ? response.items : [...state.zones, ...response.items];
+      if (!mounted || requestId != _requestId) return;
+      final newZones =
+          reset ? response.items : [...state.zones, ...response.items];
 
       state = state.copyWith(
         zones: newZones,
@@ -87,6 +99,7 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
         hasNextPage: response.hasNextPage,
       );
     } catch (e) {
+      if (!mounted || requestId != _requestId) return;
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,
@@ -96,13 +109,24 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
   }
 
   Future<void> loadZoneDetail(String zoneId) async {
+    state = ZoneListState(
+        zones: state.zones,
+        selectedZone: null,
+        isLoading: true,
+        searchQuery: state.searchQuery,
+        filter: state.filter,
+        page: state.page,
+        hasNextPage: state.hasNextPage);
     try {
       final detail = await _service.getZoneDetail(zoneId);
       if (detail != null) {
-        state = state.copyWith(selectedZone: detail);
+        if (mounted) {
+          state = state.copyWith(selectedZone: detail, isLoading: false);
+        }
       }
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      if (mounted)
+        state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -113,7 +137,8 @@ class ZoneListNotifier extends StateNotifier<ZoneListState> {
 
 final zoneServiceProvider = Provider<ZoneService>((ref) => ZoneService());
 
-final zoneListProvider = StateNotifierProvider<ZoneListNotifier, ZoneListState>((ref) {
+final zoneListProvider =
+    StateNotifierProvider<ZoneListNotifier, ZoneListState>((ref) {
   final service = ref.watch(zoneServiceProvider);
   return ZoneListNotifier(service);
 });

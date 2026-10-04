@@ -1,4 +1,5 @@
 class FloorPlanModel {
+  final double imageWidthPx, imageHeightPx;
   final String id;
   final String floorName;
   final int floorOrder;
@@ -9,6 +10,8 @@ class FloorPlanModel {
   final double? anchorSouthEastLng;
 
   FloorPlanModel({
+    this.imageWidthPx = 1000,
+    this.imageHeightPx = 600,
     required this.id,
     required this.floorName,
     required this.floorOrder,
@@ -21,6 +24,8 @@ class FloorPlanModel {
 
   factory FloorPlanModel.fromJson(Map<String, dynamic> json) {
     return FloorPlanModel(
+      imageWidthPx: (json['imageWidthPx'] as num?)?.toDouble() ?? 1000,
+      imageHeightPx: (json['imageHeightPx'] as num?)?.toDouble() ?? 600,
       id: json['id']?.toString() ?? '',
       floorName: json['floorName']?.toString() ?? '',
       floorOrder: json['floorOrder'] as int? ?? 1,

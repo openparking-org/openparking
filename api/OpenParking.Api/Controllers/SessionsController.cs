@@ -11,6 +11,7 @@ namespace OpenParking.Api.Controllers;
 [Authorize]
 public class SessionsController(IBookingService bookingService, ISettingsService settingsService) : ControllerBase
 {
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
     [HttpPost("check-in")]
     public async Task<ActionResult<ApiResponse<SessionDto>>> CheckIn([FromBody] CheckInRequest request)
     {
@@ -18,7 +19,7 @@ public class SessionsController(IBookingService bookingService, ISettingsService
         
         var callerId = RequireCurrentUserId();
         request.UserId = IsAdmin() ? request.UserId : callerId;
-        if (!request.BookingId.HasValue && string.IsNullOrWhiteSpace(request.BookingCode))
+        if (!request.BookingId.HasValue)
             request.UserId ??= callerId;
 
         var session = await bookingService.CheckInAsync(request, ip);
@@ -26,6 +27,7 @@ public class SessionsController(IBookingService bookingService, ISettingsService
         return Ok(ApiResponse<SessionDto>.Ok(SessionDto.FromEntity(session, session.Booking, session.Slot, currency), HttpContext.TraceIdentifier));
     }
 
+    [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
     [HttpPost("check-out")]
     public async Task<ActionResult<ApiResponse<SessionDto>>> CheckOut([FromBody] CheckOutRequest request)
     {
@@ -90,6 +92,7 @@ public class SessionsController(IBookingService bookingService, ISettingsService
 public class SessionDto
 {
     public Guid Id { get; set; }
+    public string VehiclePlate { get; set; } = string.Empty;
     public Guid BookingId { get; set; }
     public Guid UserId { get; set; }
     public Guid SlotId { get; set; }
@@ -111,6 +114,7 @@ public class SessionDto
         return new SessionDto
         {
             Id = s.Id,
+            VehiclePlate = b?.VehiclePlate ?? "",
             BookingId = s.BookingId,
             UserId = s.UserId,
             SlotId = s.SlotId,

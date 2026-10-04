@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConfig {
   static String? _customBaseUrl;
   static String? _authToken;
+  static void Function()? onUnauthorized;
 
   /// Returns the configured backend base URL from .env, resolving Android emulator localhost.
   static String get baseUrl {
@@ -13,7 +14,9 @@ class ApiConfig {
       return _customBaseUrl!;
     }
 
-    String envUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000';
+    String envUrl = dotenv.isInitialized
+        ? dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000'
+        : 'http://localhost:5000';
 
     // Auto-resolve localhost for Android emulator
     if (!kIsWeb && envUrl.contains('localhost')) {

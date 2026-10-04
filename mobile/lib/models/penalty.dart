@@ -1,4 +1,5 @@
 class PenaltyModel {
+  final String currency;
   final String id;
   final String userId;
   final String? sessionId;
@@ -10,6 +11,7 @@ class PenaltyModel {
   final String? disputeNotes;
 
   PenaltyModel({
+    this.currency = 'USD',
     required this.id,
     required this.userId,
     this.sessionId,
@@ -23,12 +25,12 @@ class PenaltyModel {
 
   bool get isDisputable {
     if (status.toLowerCase() != 'approved') return false;
-    final daysSinceIssued = DateTime.now().difference(issuedAt).inDays;
-    return daysSinceIssued <= 7;
+    return DateTime.now().difference(issuedAt) < const Duration(days: 7);
   }
 
   factory PenaltyModel.fromJson(Map<String, dynamic> json) {
     return PenaltyModel(
+      currency: json['currency']?.toString() ?? 'USD',
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       sessionId: json['sessionId']?.toString(),

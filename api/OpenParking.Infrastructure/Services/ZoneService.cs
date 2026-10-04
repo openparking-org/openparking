@@ -40,12 +40,20 @@ public class ZoneService(
 
     // ── Zones ──────────────────────────────────────────────────────────────
 
-    public async Task<PagedResult<Zone>> ListZonesAsync(PaginatedQuery query)
+    public async Task<PagedResult<Zone>> ListZonesAsync(PaginatedQuery query, string? filter = null)
     {
         var q = db.Zones
             .Include(z => z.Slots)
             .AsNoTracking()
             .AsQueryable();
+        q = filter switch
+        {
+            "Available" => q.Where(z => z.Slots.Any(s => s.Status == SlotStatus.Available)),
+            "Disability" => q.Where(z => z.Slots.Any(s => s.Type == SlotType.Accessible)),
+            "EV Charging" => q.Where(z => z.Slots.Any(s => s.Type == SlotType.EV)),
+            _ => q
+        };
+
 
         if (!string.IsNullOrWhiteSpace(query.Search))
             q = q.Where(z => z.Name.Contains(query.Search) || z.Code.Contains(query.Search));

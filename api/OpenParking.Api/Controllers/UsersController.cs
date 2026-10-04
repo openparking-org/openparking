@@ -88,20 +88,8 @@ public class UsersController(IUserService userService) : ControllerBase
     {
         var userId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found", 401);
         
-        // This is a workaround since GetUserPermitAsync is not in IUserService yet.
-        // The mobile app needs it to show permit status. We'll return a mock if they have HasDisabilityPermit=true,
-        // or a dummy pending permit if we can't fetch it, to prevent the app from crashing.
-        var user = await userService.GetByIdAsync(userId);
-        if (user == null) return NotFound();
-
-        var permit = new DisabilityPermit
-        {
-            UserId = userId,
-            Status = user.HasDisabilityPermit ? PermitStatus.Verified : PermitStatus.Pending,
-            PermitNumber = "N/A",
-            Jurisdiction = "Auto-generated stub"
-        };
-        
+        var permit = await userService.GetUserPermitAsync(userId);
+        if (permit == null) return NotFound();
         return Ok(ApiResponse<DisabilityPermit>.Ok(permit, HttpContext.TraceIdentifier));
     }
 

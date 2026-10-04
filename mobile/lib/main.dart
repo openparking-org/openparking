@@ -12,7 +12,7 @@ import 'modules/account/account_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env").catchError((_) {});
-  
+
   // Set system UI overlay style for monochrome theme
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -21,12 +21,13 @@ Future<void> main() async {
     systemNavigationBarColor: AppTheme.surfacePure,
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
-  
+
   runApp(const ProviderScope(child: OpenParkingApp()));
 }
 
 class OpenParkingApp extends ConsumerWidget {
-  const OpenParkingApp({super.key});
+  final ThemeData? theme;
+  const OpenParkingApp({super.key, this.theme});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +36,7 @@ class OpenParkingApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'OpenParking',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: theme ?? AppTheme.lightTheme,
       routerConfig: router,
     );
   }

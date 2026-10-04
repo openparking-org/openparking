@@ -21,7 +21,8 @@ async def test_cartographer_detect_slots_no_key():
         assert result.total_detected == 4
         assert len(result.detected_slots) == 4
         assert result.satellite_image_path is None
-        assert result.algorithm == "YOLOv8-Aerial-PKLot-Inference"
+        assert result.algorithm == "Geometric-grid-preview"
+        assert all(slot.confidence == 0.0 for slot in result.detected_slots)
         # Check that codes are formatted correctly
         codes = [s.slot_code for s in result.detected_slots]
         assert "TEST-001" in codes

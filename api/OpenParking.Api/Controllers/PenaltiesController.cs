@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using OpenParking.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenParking.Core.Entities;
@@ -10,27 +12,23 @@ namespace OpenParking.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PenaltiesController(IEnforcementService enforcementService) : ControllerBase
+public class PenaltiesController(IEnforcementService enforcementService, AppDbContext db, ISettingsService settings) : ControllerBase
 {
     [HttpGet("my")]
-    public async Task<ActionResult<ApiResponse<PagedResult<Penalty>>>> GetMyPenalties([FromQuery] PaginatedQuery query)
+    public async Task<ActionResult<ApiResponse<PagedResult<CustomerPenalty>>>> GetMyPenalties([FromQuery] PaginatedQuery query)
     {
         var userId = GetCurrentUserId() ?? throw new AppException(ErrorCodes.Unauthorized, "User context not found", 401);
-        // Note: The mobile app requests user's penalties. 
-        // We will fetch all penalties and filter by userId as a fallback, since the interface doesn't have a GetUserPenaltiesAsync method yet.
-        var allPenalties = await enforcementService.ListPenaltiesAsync(new PaginatedQuery { Page = 1, PageSize = 1000 });
-        
-        var userPenalties = allPenalties.Items.Where(p => p.UserId == userId).ToList();
-        
-        var result = new PagedResult<Penalty>
+        var source = db.Penalties.AsNoTracking().Where(p => p.UserId == userId);
+        var currency = await settings.GetStringAsync("pricing.default_currency", "USD");
+        var rows = await source.OrderByDescending(p => p.IssuedAt).Skip(Math.Max(0, query.Skip)).Take(query.Take).ToListAsync();
+        var result = new PagedResult<CustomerPenalty>
         {
-            Items = userPenalties.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList(),
-            TotalCount = userPenalties.Count,
-            Page = query.Page,
-            PageSize = query.PageSize
+            Items = rows.Select(p => new CustomerPenalty(p.Id, p.UserId, p.SessionId, p.Amount, p.Reason,
+                p.Status.ToString(), p.DisputeNotes, p.IssuedAt, currency)).ToList(),
+            TotalCount = await source.CountAsync(), Page = query.Page, PageSize = query.PageSize
         };
-        
-        return Ok(ApiResponse<PagedResult<Penalty>>.Ok(result, HttpContext.TraceIdentifier));
+
+        return Ok(ApiResponse<PagedResult<CustomerPenalty>>.Ok(result, HttpContext.TraceIdentifier));
     }
 
     [HttpPost("{id:guid}/dispute")]
@@ -53,3 +51,6 @@ public class DisputeRequest
 {
     public string? Notes { get; set; }
 }
+
+public record CustomerPenalty(Guid Id, Guid UserId, Guid SessionId, decimal Amount, string Reason,
+    string Status, string? DisputeNotes, DateTime IssuedAt, string Currency);
