@@ -147,3 +147,29 @@ async def test_each_proposal_reports_only_its_own_tool_calls():
     assert tools.count("ordinances.search") == 1
     assert all(t in ACTION_AGENT_TOOLS for t in tools)
 
+
+@pytest.mark.asyncio
+async def test_planner_gate_escalates_a_proposal_the_guard_rails_corrected():
+    # A 50.00 penalty is under the 100.00 auto-approval threshold, but the agent
+    # flagged it, so it must still go to a human.
+    from agents.planner import ExecutionPlan, PlannerAgent, PlanStep
+
+    gate = PlanStep(step_id="gate", agent="PLANNER", action="check_approval_gate", description="gate")
+    plan = ExecutionPlan(workflow_id="wf-1", workflow_type="OVERSTAY_ENFORCEMENT", objective="test", steps=[gate])
+    state: Any = {
+        "validation": {"valid": True},
+        "action_proposal": {
+            "proposed_amount": 50.0,
+            "requires_human_review": True,
+            "guardrail_status": "REDUCED_TO_POLICY",
+            "guardrail_notes": ["Model proposed 999.00, above the policy amount 50.00"],
+        },
+    }
+
+    flagged = await PlannerAgent()._dispatch_step(gate, state, plan)
+    assert flagged["requires_human_approval"] is True
+    assert "REDUCED_TO_POLICY" in flagged["reason"]
+
+    state["action_proposal"]["requires_human_review"] = False
+    clean = await PlannerAgent()._dispatch_step(gate, state, plan)
+    assert clean["requires_human_approval"] is False
