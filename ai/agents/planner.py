@@ -491,6 +491,15 @@ class PlannerAgent:
                             "requires_human_approval": True,
                             "reason": f"Requires manual review: {validation.get('reason')}"
                         }
+                    elif proposal.get("requires_human_review"):
+                        # The Action Agent's guard rails overrode or could not
+                        # trust the model (or policy was unreadable). Exactly the
+                        # case a person should see before anything is charged.
+                        return {
+                            "requires_human_approval": True,
+                            "reason": f"Action Agent guard rail: {proposal.get('guardrail_status')} — "
+                                      + "; ".join(proposal.get("guardrail_notes") or [])
+                        }
                     elif float(proposal.get("proposed_amount", 0.0)) > 100.0:
                         return {
                             "requires_human_approval": True,

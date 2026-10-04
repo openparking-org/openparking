@@ -12,6 +12,7 @@ async def get_config(key: str, default: str | None = None) -> str:
         defaults = {
             "overstay.max_penalty_cap": "150.00",
             "overstay.grace_period_mins": "15",
+            "overstay.penalty_per_hour": "25.00",
             "pricing.base_hourly_rate": "5.00",
             "pricing.max_surge_multiplier": "2.5"
         }
