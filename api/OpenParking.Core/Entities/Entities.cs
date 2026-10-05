@@ -77,7 +77,8 @@ public enum WorkflowStatus
     AwaitingApproval,
     Approved,
     Rejected,
-    Failed
+    Failed,
+    Completed // Evaluation completed without applying a monetary change.
 }
 
 public class Slot

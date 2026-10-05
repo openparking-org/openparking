@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 from tools.config_tools import get_config
+from tools.pricing import PricingPolicy, calculate_dynamic_rate
 
 
 class ValidatorAgent:
@@ -10,6 +11,49 @@ class ValidatorAgent:
     Student 1 Ownership: User & Access slice.
     Checks regulatory schemas, validates permit documents, and enforces config caps.
     """
+    def validate_pricing_proposal(self, proposal: dict[str, Any], policy: PricingPolicy,
+                                   history: dict[str, Any], confidence: float) -> dict[str, Any]:
+        """Authoritative guard: models/admins cannot override invalid math or policy."""
+        issues = []
+        try:
+            current = Decimal(str(proposal['current_rate']))
+            rate = Decimal(str(proposal['proposed_rate']))
+            multiplier = Decimal(str(proposal['multiplier']))
+            expected = current if proposal.get('action') in ('KEEP_PRICE', 'REQUEST_MANUAL_REVIEW') and multiplier == 1 else calculate_dynamic_rate(current, multiplier)
+            if not rate.is_finite() or rate < 0 or rate != expected:
+                issues.append('Invalid rate or pricing arithmetic')
+            if multiplier > policy.max_surge_multiplier:
+                issues.append('Multiplier exceeds pricing.max_surge_multiplier')
+            if rate < policy.min_hourly_rate or rate > policy.max_hourly_rate:
+                issues.append('Rate outside configured hourly limits')
+            changed = current != rate
+            action = proposal['action']
+            if action not in ('KEEP_PRICE', 'INCREASE_PRICE', 'DECREASE_PRICE', 'REQUEST_MANUAL_REVIEW'):
+                issues.append('Unsupported action')
+            if ((action == 'INCREASE_PRICE' and rate <= current) or
+                (action == 'DECREASE_PRICE' and rate >= current) or
+                (action in ('KEEP_PRICE', 'REQUEST_MANUAL_REVIEW') and changed)):
+                issues.append('Action does not match proposed rate')
+            if changed and not policy.is_enabled:
+                issues.append('Pricing is disabled')
+            if changed:
+                if 'last_price_change_at' not in history:
+                    issues.append('Price history is unavailable')
+                elif history['last_price_change_at']:
+                    timestamp = datetime.fromisoformat(history['last_price_change_at'].replace('Z', '+00:00'))
+                    age = (datetime.now(timezone.utc) - timestamp).total_seconds() / 60
+                    if age < policy.price_change_cooldown_minutes:
+                        issues.append('Pricing cooldown is active')
+            if not 0 <= confidence <= 1:
+                issues.append('Invalid analysis confidence')
+        except (ValueError, KeyError, TypeError, ArithmeticError):
+            changed = False
+            issues.append('Missing or invalid pricing data')
+        approval = changed or proposal.get('action') == 'REQUEST_MANUAL_REVIEW' or confidence < policy.auto_approve_confidence
+        return {'valid': not issues, 'issues': issues, 'reason': '; '.join(issues) if issues else
+                ('Administrator approval required for rate changes or uncertain evidence' if approval else 'Current rate maintained'),
+                'requires_human_approval': approval}
+
     async def validate_permit(self, permit_data: dict[str, Any]) -> dict[str, Any]:
         permit_number = permit_data.get("permit_number", "")
         expiry_date_str = permit_data.get("expiry_date", "")

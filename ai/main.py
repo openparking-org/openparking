@@ -2,8 +2,11 @@ import os
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
+
+load_dotenv()
 
 from agents.planner import ExecutionPlan, PlannerAgent, WorkflowState
 from routing.astar import astar
@@ -166,26 +169,35 @@ from agents.action import ActionAgent
 action_agent = ActionAgent()
 
 class SurgePricingRequest(BaseModel):
-    base_rate: float
+    base_rate: float = Field(ge=0, le=1000, allow_inf_nan=False)
     congestion_level: str
-    velocity_score: float
-    critical_mult: float = 2.0
-    high_mult: float = 1.5
-    mod_mult: float = 1.2
+    velocity_score: float = Field(ge=0, le=1, allow_inf_nan=False)
+    critical_mult: float = Field(default=2.0, ge=1, le=100, allow_inf_nan=False)
+    high_mult: float = Field(default=1.5, ge=1, le=100, allow_inf_nan=False)
+    mod_mult: float = Field(default=1.2, ge=1, le=100, allow_inf_nan=False)
+    max_surge_multiplier: float = Field(default=2.5, ge=1, le=100, allow_inf_nan=False)
 
 @app.post("/ai/pricing/surge")
 async def calculate_surge_pricing(req: SurgePricingRequest) -> dict:
     """
     Calculates dynamic surge multipliers based on current lot capacity.
     """
-    return await action_agent.propose_dynamic_pricing(
-        base_rate=Decimal(str(req.base_rate)),
-        congestion_level=req.congestion_level,
-        velocity_score=req.velocity_score,
-        critical_mult=req.critical_mult,
-        high_mult=req.high_mult,
-        mod_mult=req.mod_mult
-    )
+    try:
+        result = await action_agent.propose_dynamic_pricing(
+            base_rate=Decimal(str(req.base_rate)),
+            congestion_level=req.congestion_level,
+            velocity_score=req.velocity_score,
+            critical_mult=req.critical_mult,
+            high_mult=req.high_mult,
+            mod_mult=req.mod_mult
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    # Legacy booking calculator: cap deterministically; backend also enforces its own configured cap.
+    from tools.pricing import calculate_dynamic_rate
+    result['multiplier'] = min(result['multiplier'], req.max_surge_multiplier)
+    result['calculated_rate'] = float(calculate_dynamic_rate(Decimal(str(req.base_rate)), Decimal(str(result['multiplier']))))
+    return result
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -234,15 +246,21 @@ async def create_workflow_plan(req: PlanRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/workflows/execute")
-async def execute_workflow(req: WorkflowRequest) -> dict[str, Any]:
+async def execute_workflow(req: WorkflowRequest, request: Request) -> dict[str, Any]:
     """
     Executes a multi-agent workflow run. Decomposes into a structured ExecutionPlan,
     executes steps, validates outputs, and pauses if human approval is required.
     (design.md §8.1, §8.3)
     """
     try:
+        import secrets
+        expected = os.getenv('INTERNAL_API_TOKEN', '')
+        req.input_data['backend_managed'] = bool(expected and secrets.compare_digest(
+            request.headers.get('X-Internal-Token', ''), expected))
         if req.plan:
             plan = ExecutionPlan(**req.plan)
+            if plan.workflow_id != req.workflow_id or plan.workflow_type != req.workflow_type:
+                raise ValueError('Plan identity must match the workflow request')
         else:
             plan = planner.create_plan(
                 workflow_id=req.workflow_id,

@@ -1,58 +1,98 @@
-from typing import Any
+from typing import Any, Literal
 
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 
-from tools.llm import get_llm
+from tools.pricing import ZoneObservation
 
 
 class OccupancyAnalysis(BaseModel):
-    occupancy_rate: float = Field(description="The calculated occupancy rate as a float between 0 and 1")
-    velocity_score: float = Field(description="A score between 0 and 1 indicating how fast parking spots are filling up based on recent arrivals")
-    congestion_level: str = Field(description="One of: LOW, MODERATE, HIGH, CRITICAL")
-    requires_surge_pricing: bool = Field(description="True if congestion is HIGH or CRITICAL, False otherwise")
+    occupancy_rate: float = Field(ge=0, le=1)
+    velocity_score: float = Field(ge=0, le=1)
+    congestion_level: Literal["LOW", "MODERATE", "HIGH", "CRITICAL"]
+    demand_level: Literal["LOW", "MODERATE", "HIGH", "CRITICAL"]
+    trend: Literal["INCREASING", "DECREASING", "STABLE", "UNKNOWN"]
+    requires_surge_pricing: bool
+    confidence: float = Field(ge=0, le=1)
+    factors: list[str]
+    unavailable_data: list[str]
+
 
 class AnalyzerAgent:
-    """
-    Student 2 Ownership: Space & Availability slice.
-    Analyzes occupancy rates, arrival velocity, and detects bottlenecks or anomalies.
-    (Powered by Cloudflare Workers AI via LangChain)
-    """
-    def __init__(self):
-        # Initialize the Cloudflare Workers AI LLM connection
-        self.llm = get_llm()
-        self.parser = JsonOutputParser(pydantic_object=OccupancyAnalysis)
+    """Calculate measurements from observations; never ask a model to invent them."""
 
-    async def analyze_zone_occupancy(self, total_slots: int, occupied_slots: int, recent_arrivals: int) -> dict[str, Any]:
-        # Handle edge case where there are no slots to avoid division by zero in LLM logic
-        if total_slots <= 0:
-            return {
-                "occupancy_rate": 0.0,
-                "velocity_score": 0.0,
-                "congestion_level": "LOW",
-                "requires_surge_pricing": False
-            }
-
-        prompt = PromptTemplate(
-            template="You are an AI parking lot analyst.\n"
-                     "Given the following data, analyze the current parking lot congestion and output the result in JSON format.\n"
-                     "Velocity score should be higher if there are many recent arrivals relative to total slots.\n\n"
-                     "Total Slots: {total_slots}\n"
-                     "Occupied Slots: {occupied_slots}\n"
-                     "Recent Arrivals (last 15 mins): {recent_arrivals}\n\n"
-                     "{format_instructions}\n",
-            input_variables=["total_slots", "occupied_slots", "recent_arrivals"],
-            partial_variables={"format_instructions": self.parser.get_format_instructions()},
+    async def analyze_zone_occupancy(
+        self,
+        total_slots: int,
+        occupied_slots: int,
+        recent_arrivals: int | None,
+        recent_departures: int | None = None,
+        reservation_demand: int | None = None,
+    ) -> dict[str, Any]:
+        data = ZoneObservation(
+            total_slots=total_slots,
+            occupied_slots=occupied_slots,
+            base_hourly_rate=0,
+            recent_arrivals=recent_arrivals,
+            recent_departures=recent_departures,
+            reservation_demand=reservation_demand,
         )
-
-        chain = prompt | self.llm | self.parser
-        
-        # Invoke the chain asynchronously
-        result = await chain.ainvoke({
-            "total_slots": total_slots,
-            "occupied_slots": occupied_slots,
-            "recent_arrivals": recent_arrivals
-        })
-        
-        return result
+        occupancy = data.occupied_slots / data.total_slots
+        # Arrival pressure: 20% of capacity entering in the measured 15-minute window = 1.
+        velocity = (
+            min(1.0, data.recent_arrivals / (data.total_slots * 0.2))
+            if data.recent_arrivals is not None
+            else 0.0
+        )
+        level = (
+            "CRITICAL"
+            if occupancy >= 0.9
+            else "HIGH"
+            if occupancy >= 0.7
+            else "MODERATE"
+            if occupancy >= 0.5
+            else "LOW"
+        )
+        trend = "UNKNOWN"
+        factors = [f"{occupancy:.0%} occupancy"]
+        if recent_arrivals is not None and recent_departures is not None:
+            delta = recent_arrivals - recent_departures
+            trend = (
+                "INCREASING" if delta > 0 else "DECREASING" if delta < 0 else "STABLE"
+            )
+            factors.append(
+                f"{recent_arrivals} arrivals / {recent_departures} departures in 15 minutes"
+            )
+        if velocity > 0.7:
+            factors.append("High measured arrival pressure")
+        if reservation_demand is not None:
+            factors.append(
+                f"{reservation_demand} confirmed upcoming reservations in one hour"
+            )
+        unavailable = [
+            name
+            for name, value in [
+                ("recent_arrivals", recent_arrivals),
+                ("recent_departures", recent_departures),
+                ("reservation_demand", reservation_demand),
+            ]
+            if value is None
+        ]
+        unavailable.append("historical_occupancy")
+        # Evidence completeness heuristic, not a calibrated probability.
+        confidence = 0.95 - 0.03 * (len(unavailable) - 1)
+        demand = level
+        if level == "MODERATE" and (
+            velocity > 0.7 or (reservation_demand or 0) / total_slots >= 0.3
+        ):
+            demand = "HIGH"
+        return OccupancyAnalysis(
+            occupancy_rate=occupancy,
+            velocity_score=velocity,
+            congestion_level=level,
+            demand_level=demand,
+            trend=trend,
+            requires_surge_pricing=demand in ("HIGH", "CRITICAL"),
+            confidence=confidence,
+            factors=factors,
+            unavailable_data=unavailable,
+        ).model_dump()

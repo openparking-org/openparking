@@ -119,6 +119,8 @@ public class BookingService(
             decimal criticalMult = criticalSetting != null && decimal.TryParse(criticalSetting.Value, out var c) ? c : 2.0m;
             decimal highMult = highSetting != null && decimal.TryParse(highSetting.Value, out var h) ? h : 1.5m;
             decimal modMult = modSetting != null && decimal.TryParse(modSetting.Value, out var m) ? m : 1.2m;
+            var capSetting = await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "pricing.max_surge_multiplier");
+            decimal maxSurge = capSetting != null && decimal.TryParse(capSetting.Value, out var cap) && cap >= 1 ? cap : 1m;
 
             // Calculate dynamic surge multiplier
             decimal multiplier = 1.0m;
@@ -141,14 +143,15 @@ public class BookingService(
                     velocity_score = 0.5,
                     critical_mult = criticalMult,
                     high_mult = highMult,
-                    mod_mult = modMult
+                    mod_mult = modMult,
+                    max_surge_multiplier = maxSurge
                 };
 
                 var response = await client.PostAsJsonAsync($"{aiUrl}/ai/pricing/surge", payload);
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<SurgePricingResult>();
-                    if (result != null) multiplier = result.Multiplier;
+                    if (result != null && result.Multiplier >= 1) multiplier = Math.Min(result.Multiplier, maxSurge);
                 }
             }
             catch (Exception ex)

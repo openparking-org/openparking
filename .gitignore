@@ -57,6 +57,9 @@ ai/.ruff_cache/
 ai/test-results/
 ai/*.egg-info/
 ai/dist/
+.tmp/ai-venv/
+.tmp/check_gemini.py
+.tmp/configure_internal_token.py
 
 # -----------------------------------------------------------------------
 # Flutter / Dart

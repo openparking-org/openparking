@@ -13,6 +13,7 @@ services:
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-pk.demo}
       - RESEND_API_KEY=${RESEND_API_KEY:-re_demo}
       - AI_SERVICE_URL=http://ai:8000
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
       - REDIS_URL=${REDIS_URL:-redis:6379,abortConnect=false}
       - SIMULATION_API_KEY=${SIMULATION_API_KEY:-}
     depends_on:
@@ -30,6 +31,10 @@ services:
       - CF_AI_TOKEN=${CF_AI_TOKEN:-mock-token}
       - CF_AI_MODE=${CF_AI_MODE:-mock}
       - CF_AI_GATEWAY=${CF_AI_GATEWAY:-}
+      - AI_REASONING_PROVIDER=${AI_REASONING_PROVIDER:-cloudflare}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
       - CF_AI_SEARCH_TOKEN=${CF_AI_SEARCH_TOKEN:-${CF_AI_TOKEN:-mock-token}}
       - CF_AI_SEARCH_INSTANCE=${CF_AI_SEARCH_INSTANCE:-openparking-knowledge-base}
       - DATABASE_URL=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}

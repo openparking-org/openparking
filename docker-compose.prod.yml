@@ -12,6 +12,7 @@ services:
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - AI_SERVICE_URL=http://ai:8000
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
       - REDIS_URL=redis:6379,abortConnect=false
     depends_on:
       redis:
@@ -31,6 +32,13 @@ services:
       - CF_ACCOUNT_ID=${CF_ACCOUNT_ID}
       - CF_AI_TOKEN=${CF_AI_TOKEN}
       - CF_AI_MODE=${CF_AI_MODE:-live}
+      - CF_AI_GATEWAY=${CF_AI_GATEWAY:-}
+      - AI_REASONING_PROVIDER=${AI_REASONING_PROVIDER:-cloudflare}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
+      - API_BASE_URL=http://api:8080
+      - BACKEND_API_URL=http://api:8080
       - DATABASE_URL=${NEON_DATABASE_URL}
       - API_KEY=${AI_API_KEY}
     healthcheck:

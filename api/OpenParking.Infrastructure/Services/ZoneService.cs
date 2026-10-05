@@ -105,6 +105,9 @@ public class ZoneService(
         var zone = await db.Zones.FindAsync(zoneId)
             ?? throw new AppException(ErrorCodes.NotFound, "Zone not found.", 404);
 
+        if (req.BaseHourlyRate.HasValue && req.BaseHourlyRate.Value != zone.BaseHourlyRate)
+            db.AuditLogs.Add(new AuditLog { EntityType = "Zone", EntityId = zoneId, Action = "PriceChanged",
+                ActorUserId = actorId, PayloadJson = JsonSerializer.Serialize(new { previous_rate = zone.BaseHourlyRate, rate = req.BaseHourlyRate.Value }) });
         if (req.Name is not null)        zone.Name = req.Name.Trim();
         if (req.BaseHourlyRate.HasValue) zone.BaseHourlyRate = req.BaseHourlyRate.Value;
         zone.UpdatedAt = DateTime.UtcNow;

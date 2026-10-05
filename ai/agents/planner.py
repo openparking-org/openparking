@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from agents.action import ActionAgent
 from agents.analyzer import AnalyzerAgent
+from agents.pricing_workflow import PricingWorkflow
 from agents.validator import ValidatorAgent
 from tools.workflow_persistence import (
     fetch_workflow,
@@ -43,6 +44,7 @@ class ExecutionPlan(BaseModel):
     workflow_type: str                         # OVERSTAY_ENFORCEMENT | DYNAMIC_PRICING | PERMIT_VALIDATION
     objective: str
     steps: list[PlanStep]
+    input_data: dict[str, Any] = Field(default_factory=dict)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class WorkflowState(TypedDict):
@@ -73,6 +75,7 @@ class PlannerAgent:
         self.validator = ValidatorAgent()
         self.analyzer = AnalyzerAgent()
         self.action = ActionAgent()
+        self.pricing = PricingWorkflow(self.analyzer, self.action, self.validator)
         self.graph = self._build_graph()
 
     def _build_graph(self):
@@ -224,43 +227,18 @@ class PlannerAgent:
             ))
 
         elif workflow_type == "DYNAMIC_PRICING":
-            total = input_data.get("total_slots", 100)
-            occupied = input_data.get("occupied_slots", 80)
-            arrivals = input_data.get("recent_arrivals", 15)
-            base_rate = input_data.get("base_hourly_rate", "5.00")
-
-            steps.append(PlanStep(
-                step_id="step_1_analyze_occupancy",
-                agent="ANALYZER",
-                action="analyze_zone_occupancy",
-                description="Analyze zone occupancy percentage and traffic velocity score",
-                input_parameters={"total_slots": total, "occupied_slots": occupied, "recent_arrivals": arrivals}
-            ))
-
-            steps.append(PlanStep(
-                step_id="step_2_propose_pricing",
-                agent="ACTION",
-                action="propose_dynamic_pricing",
-                description="Propose dynamic surge pricing multiplier based on congestion level",
-                input_parameters={"base_rate": base_rate}
-            ))
-
-            steps.append(PlanStep(
-                step_id="step_3_approval_checkpoint",
-                agent="PLANNER",
-                action="check_approval_gate",
-                description="Verify if surge multiplier requires administrator authorization",
-                input_parameters={}
-            ))
-
-            steps.append(PlanStep(
-                step_id="step_4_apply_pricing",
-                agent="ACTION",
-                action="apply_pricing_rule",
-                description="Persist active zone pricing surge multiplier in database",
-                requires_approval=True,
-                input_parameters={}
-            ))
+            # A reviewable outline; the bounded pricing graph chooses actual data calls at runtime.
+            steps = [
+                PlanStep(step_id='gather', agent='PLANNER', action='gather_evidence',
+                         description='Select required and optional backend tools toward the zone goal'),
+                PlanStep(step_id='analyze', agent='ANALYZER', action='analyze_zone_occupancy',
+                         description='Assess measured occupancy, arrival pressure and reservation demand'),
+                PlanStep(step_id='propose', agent='ACTION', action='propose_dynamic_pricing',
+                         description='Select an action and calculate its price deterministically'),
+                PlanStep(step_id='validate', agent='VALIDATOR', action='validate_pricing_proposal',
+                         description='Enforce policy and pause changes for backend administrator approval',
+                         requires_validation=True, requires_approval=True),
+            ]
 
         elif workflow_type == "PERMIT_VALIDATION":
             steps.append(PlanStep(
@@ -295,7 +273,8 @@ class PlannerAgent:
             workflow_id=workflow_id,
             workflow_type=workflow_type,
             objective=objective,
-            steps=steps
+            steps=steps,
+            input_data=input_data
         )
 
     async def execute_plan(
@@ -307,6 +286,8 @@ class PlannerAgent:
         Orchestrates execution using LangGraph StateGraph engine.
         (PART 3 — AGENT ORCHESTRATION & PART 5 — HUMAN APPROVAL)
         """
+        if plan.workflow_type == 'DYNAMIC_PRICING':
+            return await self.pricing.execute(plan, state)
         if state is None:
             state = {
                 "workflow_id": plan.workflow_id,
@@ -365,6 +346,9 @@ class PlannerAgent:
         workflow_record = await fetch_workflow(workflow_id)
         if not workflow_record:
             raise ValueError(f"Workflow '{workflow_id}' not found for resumption.")
+
+        if workflow_record.get('workflow_type') == 'DYNAMIC_PRICING' or workflow_record.get('workflowType') in ('SURGE_PRICING', 'DYNAMIC_PRICING'):
+            return await self.pricing.resume(workflow_id, decision)
 
         if plan is None:
             raw_plan = workflow_record.get("plan")

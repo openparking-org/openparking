@@ -18,6 +18,14 @@ namespace OpenParking.Api.Controllers;
 [Authorize(Roles = "ParkingAdmin,SystemAdmin")]
 public class WorkflowsController(IEnforcementService enforcementService, ILogger<WorkflowsController> logger) : ControllerBase
 {
+    [HttpPost("pricing/{zoneId:guid}")]
+    public async Task<IActionResult> EvaluatePricing(Guid zoneId)
+    {
+        var run = await enforcementService.TriggerWorkflowAsync("SURGE_PRICING",
+            "Evaluate zone demand and determine whether pricing needs administrator review.", null, zoneId);
+        return Ok(ApiResponse<WorkflowDetailDto>.Ok(WorkflowDetailDto.From(run)));
+    }
+
     [HttpPost("scan")]
     public async Task<IActionResult> ScanOverstays()
     {

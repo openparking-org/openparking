@@ -44,6 +44,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Zone>(e =>
         {
             e.HasKey(x => x.Id);
+            e.Property(x => x.BaseHourlyRate).IsConcurrencyToken();
             e.HasIndex(x => x.Code).IsUnique();
             e.Property(x => x.Code).HasMaxLength(16);
         });

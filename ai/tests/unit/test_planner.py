@@ -41,7 +41,7 @@ async def test_planner_creates_structured_plan_for_pricing():
 
     assert len(plan.steps) == 4
     step_agents = [s.agent for s in plan.steps]
-    assert step_agents == ["ANALYZER", "ACTION", "PLANNER", "ACTION"]
+    assert step_agents == ["PLANNER", "ANALYZER", "ACTION", "VALIDATOR"]
     assert plan.steps[3].requires_approval is True
 
 @pytest.mark.asyncio

@@ -116,6 +116,14 @@ async def fetch_workflow(workflow_id: str) -> dict[str, Any] | None:
     """
     Fetches the latest workflow state from ASP.NET Core or in-memory fallback.
     """
+    if os.getenv('ENVIRONMENT') != 'testing':
+        from tools.pricing import PricingTools
+        try:
+            pricing = await PricingTools().fetch(workflow_id)
+            if pricing:
+                return pricing
+        except Exception:
+            logger.debug('Pricing workflow record unavailable')
     if os.getenv("CF_AI_MODE") != "mock" and os.getenv("ENVIRONMENT") != "testing":
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:

@@ -6,6 +6,7 @@ from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 
 from tools.llm import get_llm
+from tools.pricing import calculate_dynamic_rate
 from tools.rag import get_retriever
 
 
@@ -20,7 +21,7 @@ class ActionAgent:
     Calculates dynamic surge multipliers and proposes structured overstay penalty proposals.
     """
     def __init__(self):
-        self.llm = get_llm()
+        self.llm = None  # Load lazily; pricing must survive a model outage.
         self.retriever = get_retriever()
         self.penalty_parser = JsonOutputParser(pydantic_object=PenaltyProposal)
 
@@ -35,10 +36,12 @@ class ActionAgent:
         elif congestion_level == "MODERATE":
             multiplier = Decimal(str(mod_mult))
 
-        if velocity_score > 0.7:
+        if congestion_level not in ('LOW', 'MODERATE', 'HIGH', 'CRITICAL') or not 0 <= velocity_score <= 1:
+            raise ValueError('Invalid congestion or velocity')
+        if velocity_score > 0.7 and congestion_level in ('HIGH', 'CRITICAL'):
             multiplier += Decimal("0.2")
 
-        calculated_rate = round(base_rate * multiplier, 2)
+        calculated_rate = calculate_dynamic_rate(base_rate, multiplier)
         return {
             "multiplier": float(multiplier),
             "calculated_rate": float(calculated_rate),
@@ -74,7 +77,7 @@ class ActionAgent:
             partial_variables={"format_instructions": self.penalty_parser.get_format_instructions()},
         )
 
-        chain = prompt | self.llm | self.penalty_parser
+        chain = prompt | (self.llm or get_llm()) | self.penalty_parser
         
         result = await chain.ainvoke({
             "rag_context": rag_context,

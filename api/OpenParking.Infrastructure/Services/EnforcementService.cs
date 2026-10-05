@@ -135,6 +135,7 @@ public class EnforcementService(
                 zone_id    = zoneId?.ToString(),
                 input_data = new
                 {
+                    backend_managed = true,
                     overstay_minutes = session?.OverstayMinutes ?? 0,
                     base_penalty_per_hour = await settings.GetDecimalAsync("overstay.penalty_per_hour", 25m),
                     total_slots = zone?.Slots.Count ?? 0,
@@ -144,7 +145,10 @@ public class EnforcementService(
                 }
             };
 
-            using var response = await http.PostAsJsonAsync($"{AiServiceUrl}/workflows/execute", payload);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{AiServiceUrl}/workflows/execute") { Content = JsonContent.Create(payload) };
+            if (!string.IsNullOrEmpty(config["INTERNAL_API_TOKEN"]))
+                request.Headers.Add("X-Internal-Token", config["INTERNAL_API_TOKEN"]);
+            using var response = await http.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -157,12 +161,17 @@ public class EnforcementService(
             {
                 var result = await response.Content.ReadFromJsonAsync<JsonElement>();
                 if (result.TryGetProperty("plan", out var plan)) run.PlanJson = plan.GetRawText();
+                if (workflowType == WorkflowTypeSurgePricing) run.PlanJson = result.GetRawText();
                 if (result.TryGetProperty("action_proposal", out var proposal) && proposal.ValueKind == JsonValueKind.Object)
                     run.StepResultsJson = proposal.GetRawText();
                 else if (result.TryGetProperty("step_results", out var steps)) run.StepResultsJson = steps.GetRawText();
                 if (result.TryGetProperty("reason", out var reason) && reason.ValueKind == JsonValueKind.String)
                     run.DecisionReason = reason.GetString() ?? "";
-                if (result.TryGetProperty("status", out var state) && state.GetString() == "FAILED")
+                if (result.TryGetProperty("status", out var state) && state.GetString() == "REJECTED")
+                    run.Status = WorkflowStatus.Rejected;
+                else if (workflowType == WorkflowTypeSurgePricing && state.ValueKind == JsonValueKind.String && state.GetString() == "AUTO_APPROVED")
+                    run.Status = WorkflowStatus.Completed;
+                else if (state.ValueKind == JsonValueKind.String && state.GetString() == "FAILED")
                 {
                     run.Status = WorkflowStatus.Failed;
                     run.ErrorLog = "AI workflow failed. Inspect its plan and retry.";
@@ -231,8 +240,45 @@ public class EnforcementService(
             var zone = await db.Zones.FirstOrDefaultAsync(z => z.Id == run.ZoneId)
                 ?? throw new AppException(ErrorCodes.NotFound, "Pricing zone not found.", 404);
             var limit = await settings.GetDecimalAsync("pricing.max_surge_multiplier", 2.5m);
-            if (rate > zone.BaseHourlyRate * limit)
+            var proposal = pricing.RootElement;
+            var currentElement = proposal.TryGetProperty("current_rate", out var current) ? current :
+                proposal.TryGetProperty("base_rate", out var baseRate) ? baseRate : default;
+            if (currentElement.ValueKind != JsonValueKind.Number || !currentElement.TryGetDecimal(out var original) ||
+                original < 0 || original != zone.BaseHourlyRate ||
+                !proposal.TryGetProperty("multiplier", out var mult) || !mult.TryGetDecimal(out var multiplier) || multiplier <= 0 ||
+                multiplier > limit || ((original != rate || multiplier != 1) && Math.Round(original * multiplier, 2, MidpointRounding.ToEven) != rate))
+                throw new AppException(ErrorCodes.ValidationFailed, "Pricing proposal is invalid or stale; evaluate the zone again.");
+            if (proposal.TryGetProperty("action", out var action))
+            {
+                var name = action.GetString();
+                if (name is not ("KEEP_PRICE" or "INCREASE_PRICE" or "DECREASE_PRICE" or "REQUEST_MANUAL_REVIEW") ||
+                    (name == "INCREASE_PRICE" && rate <= original) || (name == "DECREASE_PRICE" && rate >= original) ||
+                    ((name == "KEEP_PRICE" || name == "REQUEST_MANUAL_REVIEW") && rate != original))
+                    throw new AppException(ErrorCodes.ValidationFailed, "Pricing action does not match the proposed rate.");
+            }
+            using var savedState = JsonDocument.Parse(run.PlanJson);
+            if (savedState.RootElement.TryGetProperty("validation", out var validation) &&
+                (!validation.TryGetProperty("valid", out var valid) || valid.ValueKind != JsonValueKind.True))
+                throw new AppException(ErrorCodes.ValidationFailed, "Deterministic pricing validation failed.");
+            var minRate = await settings.GetDecimalAsync("pricing.min_hourly_rate", 0m);
+            var maxRate = await settings.GetDecimalAsync("pricing.max_hourly_rate", 1000m);
+            if (limit < 1 || minRate < 0 || maxRate > 1000 || maxRate < minRate || rate < minRate || rate > maxRate || rate > zone.BaseHourlyRate * limit)
                 throw new AppException(ErrorCodes.ValidationFailed, "Proposed rate exceeds the configured surge limit.");
+            var changed = rate != zone.BaseHourlyRate;
+            if (changed)
+            {
+                if (!await settings.GetBoolAsync("pricing.is_enabled", true))
+                    throw new AppException(ErrorCodes.ValidationFailed, "Pricing is disabled.");
+                var cooldown = await settings.GetIntAsync("pricing.price_change_cooldown_minutes", 30);
+                if (cooldown < 0 || cooldown > 10080)
+                    throw new AppException(ErrorCodes.ValidationFailed, "Pricing cooldown configuration is invalid.");
+                var cutoff = DateTime.UtcNow.AddMinutes(-cooldown);
+                if (await db.AgentWorkflowRuns.AnyAsync(w => w.Id != run.Id && w.ZoneId == zone.Id &&
+                    w.WorkflowType == WorkflowTypeSurgePricing && w.Status == WorkflowStatus.Approved && w.ApprovedAt > cutoff &&
+                    (!w.StepResultsJson.Contains("\"action\"") || w.StepResultsJson.Contains("\"INCREASE_PRICE\"") || w.StepResultsJson.Contains("\"DECREASE_PRICE\""))) ||
+                    await db.AuditLogs.AnyAsync(a => a.EntityType == "Zone" && a.EntityId == zone.Id && a.Action == "PriceChanged" && a.CreatedAt > cutoff))
+                    throw new AppException(ErrorCodes.ValidationFailed, "Pricing cooldown is active; evaluate the zone later.");
+            }
             zone.BaseHourlyRate = rate;
             zone.UpdatedAt = DateTime.UtcNow;
             run.Status = WorkflowStatus.Approved; run.ApprovedBy = approvedByUserId; run.ApprovedAt = DateTime.UtcNow; run.UpdatedAt = DateTime.UtcNow;

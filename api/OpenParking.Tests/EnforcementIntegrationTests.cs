@@ -15,6 +15,28 @@ namespace OpenParking.Tests;
 
 public class EnforcementIntegrationTests
 {
+    [Theory]
+    [InlineData("AUTO_APPROVED", WorkflowStatus.Completed)]
+    [InlineData("PENDING_APPROVAL", WorkflowStatus.AwaitingApproval)]
+    [InlineData("REJECTED", WorkflowStatus.Rejected)]
+    public async Task PricingTriggerPreservesDecisionAndFullState(string decision, WorkflowStatus expected)
+    {
+        var (db, handler, service) = CreateService();
+        var zone = new Zone(); db.Add(zone); await db.SaveChangesAsync();
+        handler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(new {
+                status = decision, workflow_type = "DYNAMIC_PRICING", observations = new { occupancy_rate = .8 },
+                plan = new { steps = Array.Empty<object>() }, action_proposal = new { calculated_rate = 7.5, multiplier = 1.5 },
+                validation = new { valid = decision != "REJECTED" }
+            })) });
+        var run = await service.TriggerWorkflowAsync("SURGE_PRICING", "Evaluate zone", null, zone.Id);
+        Assert.Equal(expected, run.Status);
+        Assert.Contains("observations", run.PlanJson);
+        Assert.Contains("validation", run.PlanJson);
+        Assert.Equal(5m, zone.BaseHourlyRate);
+        Assert.Null(run.ApprovedBy);
+    }
+
     private static (AppDbContext db, Mock<HttpMessageHandler> httpMock, EnforcementService service) CreateService()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
