@@ -39,6 +39,10 @@ public class UpdateZoneRequest
 {
     public string? Name { get; set; }
     public decimal? BaseHourlyRate { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(-90, 90)]
+    public double? Latitude { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(-180, 180)]
+    public double? Longitude { get; set; }
 }
 
 public class CreateSlotRequest

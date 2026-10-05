@@ -1,9 +1,10 @@
 import os
+import secrets
 from typing import Any
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 load_dotenv()
@@ -19,6 +20,17 @@ app = FastAPI(
 )
 
 planner = PlannerAgent()
+
+from agents.parking_finder import ParkingFinderAgent, ParkingRequest
+
+parking_finder = ParkingFinderAgent()
+
+@app.post('/ai/parking/recommend')
+async def recommend_parking(req: ParkingRequest, x_internal_token: str | None = Header(default=None)):
+    expected = os.getenv('INTERNAL_API_TOKEN', '')
+    if not expected or not secrets.compare_digest(x_internal_token or '', expected):
+        raise HTTPException(status_code=401, detail='Internal service authentication required')
+    return await parking_finder.recommend(req)
 
 # ---------------------------------------------------------
 # Request & Response Models
@@ -154,12 +166,15 @@ class PermitValidationRequest(BaseModel):
     document_image_url: str | None = None
 
 @app.post("/ai/permits/validate")
-async def validate_permit(req: PermitValidationRequest) -> dict:
+async def validate_permit(req: PermitValidationRequest, x_internal_token: str | None = Header(default=None)) -> dict:
     """
     Validates a disability permit against regulatory schema.
     Returns a confidence score for the admin's permit review workflow.
     """
-    return await validator.validate_permit(req.model_dump())
+    token = os.getenv("INTERNAL_API_TOKEN", "")
+    if not token or not secrets.compare_digest(x_internal_token or "", token):
+        raise HTTPException(status_code=401, detail="Internal service authentication required")
+    return await validator.validate_permit_document(req.model_dump())
 
 # --- Action Agent (Booking & Payment) ---
 from decimal import Decimal
@@ -268,6 +283,9 @@ async def execute_workflow(req: WorkflowRequest, request: Request) -> dict[str, 
                 objective=req.objective or f"Execute {req.workflow_type} workflow",
                 input_data=req.input_data
             )
+
+        if any(step.action == "validate_permit" for step in plan.steps) and not req.input_data['backend_managed']:
+            raise HTTPException(status_code=401, detail="Internal service authentication required for permit document reading")
 
         state: WorkflowState = {
             "workflow_id": req.workflow_id,

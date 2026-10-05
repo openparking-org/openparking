@@ -24,6 +24,7 @@ public interface IUserService : IParkingModule
     // ── Disability permit verification (Validator Agent hook) ─────────────
     Task<DisabilityPermit?> GetUserPermitAsync(Guid userId);
     Task<DisabilityPermit> SubmitPermitAsync(Guid userId, SubmitPermitRequest req);
+    Task<System.Text.Json.JsonElement> ValidatePermitDocumentAsync(Guid permitId, CancellationToken cancellationToken = default);
     Task<DisabilityPermit> ReviewPermitAsync(Guid permitId, PermitStatus decision, string? notes, Guid reviewerId);
     Task<List<DisabilityPermit>> GetPendingPermitsAsync();
 }

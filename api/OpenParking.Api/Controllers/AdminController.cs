@@ -188,8 +188,21 @@ public class AdminController(AppDbContext db, IBookingService bookings, ISetting
             .Select(p => new { p.Id, p.UserId, FullName = p.User == null ? "Unknown user" : p.User.FullName,
                 p.PermitNumber, p.Jurisdiction, p.ExpiryDate, p.DocumentImageUrl, Status = p.Status.ToString(), p.ReviewNotes,
                 p.RejectionReason, p.CreatedAt, p.ReviewedAt }).ToListAsync();
-        return Ok(ApiResponse<object>.Ok(new { items = rows, totalCount = total, page = query.Page, pageSize = query.PageSize }));
+        var ids = rows.Select(p => p.Id).ToList();
+        var readings = await db.AuditLogs.AsNoTracking().Where(a => a.EntityType == "DisabilityPermit" &&
+            a.Action == "PERMIT_DOCUMENT_VALIDATION" && a.EntityId.HasValue && ids.Contains(a.EntityId.Value))
+            .OrderByDescending(a => a.CreatedAt).Select(a => new { a.EntityId, a.PayloadJson }).ToListAsync();
+        var results = readings.GroupBy(a => a.EntityId!.Value).ToDictionary(g => g.Key,
+            g => JsonSerializer.Deserialize<JsonElement>(g.First().PayloadJson!));
+        return Ok(ApiResponse<object>.Ok(new { items = rows.Select(p => new { p.Id, p.UserId, p.FullName, p.PermitNumber,
+            p.Jurisdiction, p.ExpiryDate, p.DocumentImageUrl, p.Status, p.ReviewNotes, p.RejectionReason, p.CreatedAt, p.ReviewedAt,
+            aiValidation = results.TryGetValue(p.Id, out var reading) ? (JsonElement?)reading : null }),
+            totalCount = total, page = query.Page, pageSize = query.PageSize }));
     }
+
+    [HttpPost("permits/{id:guid}/validation")]
+    public async Task<IActionResult> ValidatePermit(Guid id, [FromServices] IUserService users, CancellationToken cancellationToken)
+        => Ok(ApiResponse<JsonElement>.Ok(await users.ValidatePermitDocumentAsync(id, cancellationToken)));
 
     [HttpGet("workflows")]
     public async Task<IActionResult> Workflows([FromQuery] PaginatedQuery query, [FromQuery] WorkflowStatus? status)
@@ -238,6 +251,13 @@ public class AdminController(AppDbContext db, IBookingService bookings, ISetting
         var aiUrl = configuration["AI_SERVICE_URL"] ?? configuration["AiService:BaseUrl"] ?? "http://localhost:8000";
         var client = clients.CreateClient("AdminAi");
         client.Timeout = TimeSpan.FromSeconds(30);
+        if (capability == "permit-validation")
+        {
+            var token = configuration["INTERNAL_API_TOKEN"];
+            if (string.IsNullOrWhiteSpace(token))
+                throw new AppException("AI_UNAVAILABLE", "Document reading authentication is not configured. Use manual review.", 503);
+            client.DefaultRequestHeaders.Add("X-Internal-Token", token);
+        }
         try
         {
             using var response = await client.PostAsJsonAsync(aiUrl.TrimEnd('/') + path, payload, cancellationToken);

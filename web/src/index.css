@@ -165,5 +165,7 @@ input, select, textarea { max-width: 100%; padding: 10px 12px; border: 1px solid
 .workflow-row.selected { border-color: #2563eb; background: #eff6ff; }
 .proposal-json { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 400px; overflow: auto; padding: 14px; background: #f1f5f9; color: #334155; border-radius: 8px; font-size: .8rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.zone-entrance-picker { margin: 16px 0 24px; padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; }
+.zone-entrance-picker p { margin: 12px 0; line-height: 1.5; }
 @media (max-width: 900px) { .operations-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .reservation-grid, .report-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .operations-grid, .admin-form-grid { grid-template-columns: 1fr; } .setting-row { grid-template-columns: 1fr; } .admin-panel { padding: 16px; } }

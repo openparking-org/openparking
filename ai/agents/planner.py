@@ -451,7 +451,7 @@ class PlannerAgent:
                 return res
 
             elif step.action == "validate_permit":
-                res = await self.validator.validate_permit(step.input_parameters)
+                res = await self.validator.validate_permit_document(step.input_parameters)
                 state["validation"] = res
                 return res
 
@@ -501,18 +501,10 @@ class PlannerAgent:
                         }
 
                 elif plan.workflow_type == "PERMIT_VALIDATION":
-                    validation = state.get("validation") or {}
-                    confidence = float(validation.get("confidence", 0.0))
-                    if confidence < 0.90 or not validation.get("valid", False):
-                        return {
-                            "requires_human_approval": True,
-                            "reason": f"Permit confidence {confidence:.2f} below threshold (0.90)"
-                        }
-                    else:
-                        return {
-                            "requires_human_approval": False,
-                            "reason": "Permit verified with high AI confidence"
-                        }
+                    return {
+                        "requires_human_approval": True,
+                        "reason": "Permit document reading is advisory. Administrator review is required."
+                    }
 
         return {"status": "executed", "step_id": step.step_id}
 

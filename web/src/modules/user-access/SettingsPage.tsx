@@ -16,7 +16,7 @@ export function SettingsPage() {
     setLoading(true); setError('');
     try {
       const data = await getData<Record<string, Setting[]>>('/api/settings');
-      const aliases = ['overstay.grace_period_minutes', 'overstay.penalty_per_extra_hour'];
+      const aliases = ['overstay.grace_period_minutes', 'overstay.penalty_per_extra_hour', 'permits.auto_approve_confidence'];
       const visible = Object.fromEntries(Object.entries(data).map(([category, items]) => [category, items.filter(item => !aliases.includes(item.key))]));
       setSettings(visible); setDraft(Object.fromEntries(Object.values(visible).flat().map(item => [item.key, item.value])));
     } catch (err) { setError(messageOf(err)); } finally { setLoading(false); }

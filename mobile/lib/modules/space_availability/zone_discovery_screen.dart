@@ -4,10 +4,12 @@ import '../../core/providers/zone_provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../models/zone.dart';
+import '../../services/parking_recommendation_service.dart';
 import 'indoor_map_screen.dart';
 
 class ZoneDiscoveryScreen extends ConsumerStatefulWidget {
-  const ZoneDiscoveryScreen({super.key});
+  final bool autoRecommend;
+  const ZoneDiscoveryScreen({super.key, this.autoRecommend = false});
 
   @override
   ConsumerState<ZoneDiscoveryScreen> createState() =>
@@ -17,17 +19,176 @@ class ZoneDiscoveryScreen extends ConsumerStatefulWidget {
 class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _finding = false;
+  String? _recommendationError;
+  ParkingRecommendations? _recommendations;
+  ParkingLocation? _location;
+  String _preference = 'nearest';
+  double _radius = 25;
+  String _slotType = 'Standard';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (widget.autoRecommend) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _findParking();
+      });
+    }
+  }
+
+  Future<void> _findParking() async {
+    if (_finding) return;
+    setState(() {
+      _finding = true;
+      _recommendationError = null;
+      _recommendations = null;
+    });
+    try {
+      final location = await ref.read(parkingLocationProvider).current();
+      if (!mounted) return;
+      final results = await ref.read(parkingRecommendationProvider).find(
+          location,
+          preference: _preference,
+          radiusKm: _radius,
+          slotType: _slotType);
+      if (!mounted) return;
+      setState(() {
+        _location = location;
+        _recommendations = results;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _recommendationError =
+              error.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _finding = false);
+    }
+  }
+
+  Widget _recommendationPanel() {
+    return Padding(
+      padding: pagePadding(context),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Recommended parking', style: AppTheme.titleMd),
+        const SizedBox(height: 8),
+        const Text('Use your location to find available spaces nearby.'),
+        const SizedBox(height: 8),
+        Wrap(spacing: 12, runSpacing: 8, children: [
+          DropdownButton<String>(
+              value: _preference,
+              items: const [
+                DropdownMenuItem(value: 'nearest', child: Text('Nearest')),
+                DropdownMenuItem(value: 'cheapest', child: Text('Cheapest')),
+                DropdownMenuItem(value: 'balanced', child: Text('Balanced'))
+              ],
+              onChanged: _finding
+                  ? null
+                  : (v) => setState(() {
+                        _preference = v!;
+                        _recommendations = null;
+                      })),
+          DropdownButton<double>(
+              value: _radius,
+              items: const [
+                DropdownMenuItem(value: 5, child: Text('Within 5 km')),
+                DropdownMenuItem(value: 25, child: Text('Within 25 km')),
+                DropdownMenuItem(value: 100, child: Text('Within 100 km'))
+              ],
+              onChanged: _finding
+                  ? null
+                  : (v) => setState(() {
+                        _radius = v!;
+                        _recommendations = null;
+                      })),
+          DropdownButton<String>(
+              value: _slotType,
+              items: const [
+                DropdownMenuItem(value: 'Standard', child: Text('Standard')),
+                DropdownMenuItem(value: 'EV', child: Text('EV charging')),
+                DropdownMenuItem(value: 'Accessible', child: Text('Accessible'))
+              ],
+              onChanged: _finding
+                  ? null
+                  : (v) => setState(() {
+                        _slotType = v!;
+                        _recommendations = null;
+                      })),
+        ]),
+        FilledButton.icon(
+            onPressed: _finding ? null : _findParking,
+            icon: const Icon(Icons.my_location),
+            label: Text(
+                _finding ? 'Finding nearby parking…' : 'Find parking near me')),
+        if (_finding)
+          const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: LinearProgressIndicator()),
+        if (_recommendationError != null)
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(_recommendationError!,
+                  style: const TextStyle(color: AppTheme.accentCritical))),
+        if (_recommendations != null) ...[
+          const SizedBox(height: 12),
+          Text(
+              'Parking agent completed • location accuracy ±${_location!.accuracy.round()} m',
+              style: AppTheme.bodySm),
+          const Text(
+              'Distances are straight-line estimates, not driving distances.',
+              style: AppTheme.bodySm),
+          Text(_recommendations!.message, style: AppTheme.bodySm),
+          for (final item in _recommendations!.items)
+            Card(
+              child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.name, style: AppTheme.titleMd),
+                        Text(
+                            '${(item.distanceMeters / 1000).toStringAsFixed(2)} km • ${item.currency} ${item.hourlyRate.toStringAsFixed(2)}/hr'),
+                        Text(item.reason),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                            onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                    builder: (_) => IndoorMapScreen(
+                                        zoneId: item.zoneId,
+                                        recommendedSlotType: _slotType,
+                                        zoneName: item.name))),
+                            icon: const Icon(Icons.local_parking),
+                            label: const Text('Choose a space')),
+                      ])),
+            ),
+        ],
+        const SizedBox(height: 16),
+        const Text('Browse all parking zones', style: AppTheme.titleMd),
+      ]),
+    );
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(zoneListProvider.notifier).fetchZones(reset: false);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ZoneDiscoveryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.autoRecommend &&
+        !oldWidget.autoRecommend &&
+        _recommendations == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _findParking();
+      });
     }
   }
 
@@ -64,10 +225,12 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
                 color: AppTheme.primary,
                 onPressed: () {
                   ref.read(zoneListProvider.notifier).fetchZones(reset: true);
+                  _findParking();
                 },
               ),
             ],
           ),
+          SliverToBoxAdapter(child: _recommendationPanel()),
           SliverToBoxAdapter(
             child: Container(
               color: AppTheme.surfacePure,

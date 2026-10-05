@@ -227,46 +227,70 @@ public class UserService(
 
         try
         {
-            var aiClient = httpClientFactory.CreateClient();
-            var aiUrl = config["AI_SERVICE_URL"] ?? "http://localhost:8000";
-            var reqBody = new
-            {
-                permit_number = req.PermitNumber,
-                expiry_date = req.ExpiryDate.ToString("O"),
-                jurisdiction = req.Jurisdiction,
-                document_image_url = req.DocumentImageUrl
-            };
-            
-            var res = await aiClient.PostAsJsonAsync($"{aiUrl}/ai/permits/validate", reqBody);
-            if (res.IsSuccessStatusCode)
-            {
-                var aiResult = await res.Content.ReadFromJsonAsync<JsonElement>();
-                if (aiResult.TryGetProperty("confidence", out var confidenceProp))
-                {
-                    var confidence = confidenceProp.GetDecimal();
-                    var thresholdStr = (await db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Key == "permits.auto_approve_confidence"))?.Value ?? "0.90";
-                    if (decimal.TryParse(thresholdStr, out var threshold) && confidence >= threshold)
-                    {
-                        permit.Status = PermitStatus.Verified;
-                        permit.UpdatedAt = DateTime.UtcNow;
-                        
-                        user.HasDisabilityPermit = true;
-                        user.UpdatedAt = DateTime.UtcNow;
-
-                        await db.SaveChangesAsync();
-                        
-                        logger.LogInformation("Permit {PermitId} AUTO-APPROVED by AI (Confidence: {Confidence})", permit.Id, confidence);
-                        await emailService.SendPermitOutcomeAsync(user.Email, user.FullName, permit);
-                    }
-                }
-            }
+            await ValidatePermitDocumentAsync(permit.Id);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to call AI validation service for permit {PermitId}. Falling back to manual review.", permit.Id);
+            logger.LogWarning("AI document reading unavailable for permit {PermitId} ({FailureType}). Manual review required.", permit.Id, ex.GetType().Name);
         }
 
         return permit;
+    }
+
+    public async Task<JsonElement> ValidatePermitDocumentAsync(Guid permitId, CancellationToken cancellationToken = default)
+    {
+        var permit = await db.DisabilityPermits.FirstOrDefaultAsync(p => p.Id == permitId, cancellationToken)
+            ?? throw new AppException(ErrorCodes.NotFound, "Permit not found.", 404);
+        // A completed reading (including mismatches) is durable and reused on later reviews.
+        var cached = await db.AuditLogs.AsNoTracking()
+            .Where(a => a.EntityType == "DisabilityPermit" && a.EntityId == permitId && a.Action == "PERMIT_DOCUMENT_VALIDATION")
+            .OrderByDescending(a => a.CreatedAt).Select(a => a.PayloadJson).FirstOrDefaultAsync(cancellationToken);
+        if (cached != null) return JsonSerializer.Deserialize<JsonElement>(cached);
+        if (permit.Status != PermitStatus.Pending)
+            throw new AppException(ErrorCodes.ValidationFailed, "Only pending permits can request a new document reading.");
+
+        JsonElement result;
+        var token = config["INTERNAL_API_TOKEN"];
+        if (string.IsNullOrWhiteSpace(token))
+            result = JsonSerializer.SerializeToElement(new { valid = false, confidence = 0, document_status = "unavailable",
+                requires_human_approval = true, authenticity_verified = false,
+                reason = "Document reading service authentication is not configured. Administrator review is required." });
+        else
+        {
+            var client = httpClientFactory.CreateClient("PermitVision");
+            client.Timeout = TimeSpan.FromSeconds(25);
+            client.DefaultRequestHeaders.Add("X-Internal-Token", token);
+            var aiUrl = config["AI_SERVICE_URL"] ?? "http://localhost:8000";
+            try
+            {
+                using var response = await client.PostAsJsonAsync(aiUrl.TrimEnd('/') + "/ai/permits/validate", new {
+                    permit_number = permit.PermitNumber, expiry_date = permit.ExpiryDate.ToString("O"),
+                    jurisdiction = permit.Jurisdiction, document_image_url = permit.DocumentImageUrl
+                }, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                result = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
+                if (result.ValueKind != JsonValueKind.Object || !result.TryGetProperty("document_status", out _))
+                    throw new JsonException("Invalid document reading response");
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                logger.LogWarning("AI document reading unavailable for permit {PermitId} ({FailureType})", permitId, ex.GetType().Name);
+                result = JsonSerializer.SerializeToElement(new { valid = false, confidence = 0, document_status = "unavailable",
+                    requires_human_approval = true, authenticity_verified = false,
+                    reason = "Document reading could not complete. Retry later or review the document manually." });
+            }
+        }
+        // Do not cache infrastructure failures: a later admin request can retry after configuration is fixed.
+        if (result.GetProperty("document_status").GetString() == "read")
+        {
+            db.AuditLogs.Add(new AuditLog { EntityType = "DisabilityPermit", EntityId = permitId,
+                Action = "PERMIT_DOCUMENT_VALIDATION", PayloadJson = result.GetRawText(), ActorEmail = "ValidatorAgent" });
+            permit.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        // Model output is advisory; permit status and accessible privileges require the existing admin review.
+        return result;
     }
 
     public async Task<DisabilityPermit> ReviewPermitAsync(

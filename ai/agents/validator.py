@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
 from tools.config_tools import get_config
+from tools.permit_vision import PermitVisionUnavailable, extract_permit
 from tools.pricing import PricingPolicy, calculate_dynamic_rate
 
 
@@ -77,6 +78,8 @@ class ValidatorAgent:
             else:
                 expiry = datetime.strptime(expiry_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                 
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=timezone.utc)
             if expiry < datetime.now(timezone.utc):
                 issues.append(f"Permit expired on {expiry_date_str}")
                 confidence -= 0.8
@@ -103,6 +106,53 @@ class ValidatorAgent:
                 "jurisdiction": jurisdiction
             }
         }
+
+    async def validate_permit_document(self, permit_data: dict[str, Any]) -> dict[str, Any]:
+        metadata = await self.validate_permit(permit_data)
+        issues = list(metadata.get("issues", []))
+        result = {
+            "valid": False, "confidence": 0.0, "requires_human_approval": True,
+            "authenticity_verified": False, "metadata_valid": metadata["valid"],
+            "document_status": "unavailable", "extracted_fields": {},
+            "issues": issues,
+        }
+        try:
+            reading = await extract_permit(permit_data.get("document_image_url") or "")
+        except (ValueError, PermitVisionUnavailable) as exc:
+            issues.append(str(exc))
+            result["reason"] = "; ".join(issues)
+            return result
+        fields = reading["fields"]
+        result.update({
+            "document_status": "read", "extracted_fields": fields,
+            "model": reading["model"], "usage": reading["usage"],
+        })
+        if fields["readability"] != "readable":
+            issues.append("The document is not fully readable. Administrator review is required.")
+        def normalize(value):
+            return " ".join(str(value or "").casefold().split())
+        for name in ("permit_number", "jurisdiction"):
+            if not fields[name]:
+                issues.append(f"Document field {name} is missing or unreadable.")
+            elif normalize(fields[name]) != normalize(permit_data.get(name)):
+                issues.append(f"Document field {name} does not match the submitted information.")
+        try:
+            # The model must produce an unambiguous ISO calendar date.
+            extracted_date = date.fromisoformat(fields["expiry_date"] or "")
+            submitted_date = datetime.fromisoformat(str(permit_data["expiry_date"]).replace("Z", "+00:00")).date()
+            if extracted_date != submitted_date:
+                issues.append("Document expiry_date does not match the submitted information.")
+            if extracted_date <= datetime.now(timezone.utc).date():
+                issues.append("The document expiry date has passed or is today.")
+        except (ValueError, TypeError, KeyError):
+            issues.append("Document expiry_date is missing, ambiguous, or invalid.")
+        result["valid"] = not issues
+        # Evidence completeness score, not a probability of authenticity.
+        result["confidence"] = 1.0 if not issues else 0.0
+        result["reason"] = "; ".join(issues) if issues else (
+            "Readable document fields match the submission. Administrator approval is required; authenticity is unverified."
+        )
+        return result
 
     async def validate_penalty_cap(self, proposed_penalty: Decimal) -> dict[str, Any]:
         cap_str = await get_config("overstay.max_penalty_cap", default="150.00")

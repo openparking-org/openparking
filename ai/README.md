@@ -1,4 +1,35 @@
-# OpenParking AI pricing workflow
+# OpenParking AI workflows
+
+## Permit image validation
+
+Permit submissions use Gemini image extraction followed by deterministic field checks
+and administrator review. `POST /ai/permits/validate` requires `X-Internal-Token`
+matching `INTERNAL_API_TOKEN`. Permit workflows using `/workflows/execute` require
+that credential too.
+
+Set `GEMINI_API_KEY` on the AI server. `GEMINI_PERMIT_MODEL` defaults to
+`gemini-3.5-flash-lite` independently of the pricing provider/model. Uploaded PNG/JPEG
+data URLs up to 5 MB are supported; arbitrary remote URLs are not fetched. The model
+extracts permit number, ISO expiry date and issuing authority, with unclear values
+represented as null. The Validator checks fields against the submission and checks
+expiry/readability. Every permit stays Pending until an administrator reviews it.
+Matching fields do not prove authenticity, and the old auto-approval threshold is
+no longer used by this flow.
+
+Completed readings, including mismatches, are stored in existing AuditLogs under
+`PERMIT_DOCUMENT_VALIDATION` and returned in the admin list as `aiValidation`.
+`POST /api/admin/permits/{id}/validation` reuses saved readings or retries unavailable
+readings. No schema migration is required. Missing credentials, timeouts and invalid
+model responses leave manual review available.
+
+See [the full change report](../docs/permit-vision-change-report.md).
+Live smoke test (synthetic image; incurs an API charge):
+
+```powershell
+python tools/verify-permit-vision.py tools/fixtures/synthetic-permit.png
+```
+
+## Pricing workflow
 
 FastAPI and PlannerAgent remain the entry points. Dynamic pricing uses a dedicated,
 bounded LangGraph. Existing overstay, permit, mapping and routing endpoints remain.

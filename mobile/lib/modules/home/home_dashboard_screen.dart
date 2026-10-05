@@ -89,7 +89,8 @@ class HomeDashboardScreen extends ConsumerWidget {
                                   ? 'Find Parking'
                                   : 'View My Bookings'),
                               onPressed: () => open(active == null
-                                  ? const ZoneDiscoveryScreen()
+                                  ? const ZoneDiscoveryScreen(
+                                      autoRecommend: true)
                                   : const BookingScreen()),
                             )),
                       ]),
@@ -102,7 +103,11 @@ class HomeDashboardScreen extends ConsumerWidget {
                     (constraints.maxWidth - (columns - 1) * 12) / columns;
                 return Wrap(spacing: 12, runSpacing: 12, children: [
                   for (final action in <(IconData, String, Widget)>[
-                    (Icons.search, 'Find Parking', const ZoneDiscoveryScreen()),
+                    (
+                      Icons.search,
+                      'Find Parking',
+                      const ZoneDiscoveryScreen(autoRecommend: true)
+                    ),
                     (
                       Icons.calendar_today_outlined,
                       'My Bookings',

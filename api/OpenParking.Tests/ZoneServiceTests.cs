@@ -12,6 +12,52 @@ namespace OpenParking.Tests;
 
 public class ZoneServiceTests
 {
+    [Fact]
+    public async Task UpdateZoneAsync_PersistsEntrance_AndPreservesItOnRateOnlyEdit()
+    {
+        var (db, service) = CreateService();
+        using (db)
+        {
+            var zone = await service.CreateZoneAsync(new Zone { Name = "Entrance test", Code = "ENT", TotalCapacity = 1,
+                Latitude = 6.9, Longitude = 79.8 }, Guid.NewGuid());
+            await service.UpdateZoneAsync(zone.Id, new UpdateZoneRequest { Latitude = 7.123456, Longitude = 80.654321 }, Guid.NewGuid());
+            db.ChangeTracker.Clear();
+            var saved = await db.Zones.FindAsync(zone.Id);
+            Assert.Equal(7.123456, saved!.Latitude); Assert.Equal(80.654321, saved.Longitude);
+            await service.UpdateZoneAsync(zone.Id, new UpdateZoneRequest { BaseHourlyRate = 12 }, Guid.NewGuid());
+            Assert.Equal(7.123456, saved.Latitude); Assert.Equal(80.654321, saved.Longitude);
+        }
+    }
+
+    [Theory]
+    [InlineData(91, 80)]
+    [InlineData(7, -181)]
+    [InlineData(double.NaN, 80)]
+    [InlineData(7, double.PositiveInfinity)]
+    public async Task ZoneCoordinates_RejectInvalidValuesOnCreateAndUpdate(double latitude, double longitude)
+    {
+        var (db, service) = CreateService();
+        using (db)
+        {
+            await Assert.ThrowsAsync<AppException>(() => service.CreateZoneAsync(new Zone { Code = "BAD", Latitude = latitude, Longitude = longitude }, Guid.NewGuid()));
+            var zone = await service.CreateZoneAsync(new Zone { Code = "VALID", Latitude = 7, Longitude = 80 }, Guid.NewGuid());
+            await Assert.ThrowsAsync<AppException>(() => service.UpdateZoneAsync(zone.Id, new UpdateZoneRequest { Latitude = latitude, Longitude = longitude }, Guid.NewGuid()));
+            Assert.Equal(7, zone.Latitude); Assert.Equal(80, zone.Longitude);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateZoneAsync_RejectsIncompleteCoordinatePair()
+    {
+        var (db, service) = CreateService();
+        using (db)
+        {
+            var zone = await service.CreateZoneAsync(new Zone { Code = "PAIR", Latitude = 7, Longitude = 80 }, Guid.NewGuid());
+            await Assert.ThrowsAsync<AppException>(() => service.UpdateZoneAsync(zone.Id, new UpdateZoneRequest { Latitude = 8 }, Guid.NewGuid()));
+            Assert.Equal(7, zone.Latitude); Assert.Equal(80, zone.Longitude);
+        }
+    }
+
     private static (AppDbContext db, ZoneService service) CreateService()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

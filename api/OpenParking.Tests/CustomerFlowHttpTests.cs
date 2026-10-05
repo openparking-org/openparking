@@ -13,6 +13,25 @@ namespace OpenParking.Tests;
 public class CustomerFlowHttpTests
 {
     [Fact]
+    public async Task ZoneEntrance_UpdatesAcrossHttp_AndInvalidCoordinatesAreRejected()
+    {
+        await using var app = await CustomerFlowTestHost.StartAsync();
+        using var client = new HttpClient { BaseAddress = new Uri(CustomerFlowTestHost.Address(app)) };
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "verification-admin");
+        var response = await client.PutAsJsonAsync($"/api/zones/{CustomerFlowTestHost.ZoneId}", new { latitude = 7.123456, longitude = 80.654321 });
+        response.EnsureSuccessStatusCode();
+        var saved = (await client.GetFromJsonAsync<JsonElement>($"/api/zones/{CustomerFlowTestHost.ZoneId}")).GetProperty("data");
+        Assert.Equal(7.123456, saved.GetProperty("latitude").GetDouble());
+        Assert.Equal(80.654321, saved.GetProperty("longitude").GetDouble());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/api/zones/{CustomerFlowTestHost.ZoneId}", new { latitude = 91, longitude = 80 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/api/zones/{CustomerFlowTestHost.ZoneId}", new { latitude = 8 })).StatusCode);
+        var unchanged = (await client.GetFromJsonAsync<JsonElement>($"/api/zones/{CustomerFlowTestHost.ZoneId}")).GetProperty("data");
+        Assert.Equal(7.123456, unchanged.GetProperty("latitude").GetDouble());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "verification-driver");
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PutAsJsonAsync($"/api/zones/{CustomerFlowTestHost.ZoneId}", new { latitude = 8, longitude = 81 })).StatusCode);
+    }
+
+    [Fact]
     public async Task Reservation_GateEntry_Exit_Payment_CustomerReceipt_WorksAcrossHttp()
     {
         await using var app = await CustomerFlowTestHost.StartAsync();

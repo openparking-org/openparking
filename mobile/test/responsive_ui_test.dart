@@ -16,6 +16,7 @@ import 'package:mobile/modules/user_access/login_screen.dart';
 import 'package:mobile/services/booking_service.dart';
 import 'package:mobile/services/permit_service.dart';
 import 'package:mobile/services/session_service.dart';
+import 'package:mobile/services/parking_recommendation_service.dart';
 import 'package:mobile/services/zone_service.dart';
 
 const zone = {
@@ -41,6 +42,12 @@ class PreviewBookings extends BookingNotifier {
   PreviewBookings(super.service) {
     fetchUserBookings();
   }
+}
+
+class PreviewLocation extends ParkingLocationService {
+  @override
+  Future<ParkingLocation> current() async => throw Exception(
+      'Location permission is needed for nearby recommendations.');
 }
 
 void main() {
@@ -113,6 +120,7 @@ void main() {
           return http.Response(jsonEncode({'data': data}), 200);
         });
         final container = ProviderContainer(overrides: [
+          parkingLocationProvider.overrideWithValue(PreviewLocation()),
           zoneServiceProvider.overrideWithValue(ZoneService(client: client)),
           bookingProvider.overrideWith(
               (ref) => PreviewBookings(BookingService(client: client))),

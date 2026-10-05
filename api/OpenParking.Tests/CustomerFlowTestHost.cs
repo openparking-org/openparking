@@ -31,7 +31,7 @@ public static class CustomerFlowTestHost
     public static readonly Guid ZoneId = Guid.Parse("20000000-0000-0000-0000-000000000001");
     public static readonly Guid SlotId = Guid.Parse("30000000-0000-0000-0000-000000000001");
 
-    public static async Task<WebApplication> StartAsync(int port = 0)
+    public static async Task<WebApplication> StartAsync(int port = 0, Action<WebApplicationBuilder>? configure = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Verification" });
         builder.Logging.ClearProviders();
@@ -56,6 +56,7 @@ public static class CustomerFlowTestHost
             services.GetRequiredService<IEmailService>(), services.GetRequiredService<IRealtimeNotifier>(), services.GetRequiredService<ISettingsService>(),
             builder.Configuration, services.GetRequiredService<ILogger<EnforcementService>>()));
         builder.Services.AddScoped<GateService>(); builder.Services.AddScoped<NavigationService>();
+        configure?.Invoke(builder);
         var app = builder.Build(); app.UseCors(); app.UseMiddleware<GlobalExceptionMiddleware>(); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers();
         using (var scope = app.Services.CreateScope())
         {

@@ -80,6 +80,7 @@ public class ZoneService(
 
     public async Task<Zone> CreateZoneAsync(Zone zone, Guid actorId)
     {
+        ValidateCoordinates(zone.Latitude, zone.Longitude);
         var duplicate = await db.Zones.AnyAsync(z => z.Code == zone.Code.ToUpperInvariant());
         if (duplicate)
             throw new AppException(ErrorCodes.DuplicateZoneCode,
@@ -100,6 +101,9 @@ public class ZoneService(
 
     public async Task<Zone> UpdateZoneAsync(Guid zoneId, UpdateZoneRequest req, Guid actorId)
     {
+        if (req.Latitude.HasValue != req.Longitude.HasValue)
+            throw new AppException(ErrorCodes.ValidationFailed, "Provide both latitude and longitude for the vehicle entrance.");
+        if (req.Latitude.HasValue) ValidateCoordinates(req.Latitude.Value, req.Longitude!.Value);
         if ((req.Name != null && (string.IsNullOrWhiteSpace(req.Name) || req.Name.Length > 128)) || req.BaseHourlyRate is < 0 or > 1000)
             throw new AppException(ErrorCodes.ValidationFailed, "Enter a valid zone name and hourly rate.");
         var zone = await db.Zones.FindAsync(zoneId)
@@ -110,11 +114,22 @@ public class ZoneService(
                 ActorUserId = actorId, PayloadJson = JsonSerializer.Serialize(new { previous_rate = zone.BaseHourlyRate, rate = req.BaseHourlyRate.Value }) });
         if (req.Name is not null)        zone.Name = req.Name.Trim();
         if (req.BaseHourlyRate.HasValue) zone.BaseHourlyRate = req.BaseHourlyRate.Value;
+        if (req.Latitude.HasValue)
+        {
+            zone.Latitude = req.Latitude.Value;
+            zone.Longitude = req.Longitude!.Value;
+        }
         zone.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
         logger.LogInformation("Zone updated: {ZoneId} by {ActorId}", zoneId, actorId);
         return zone;
+    }
+
+    private static void ValidateCoordinates(double latitude, double longitude)
+    {
+        if (!double.IsFinite(latitude) || !double.IsFinite(longitude) || latitude is < -90 or > 90 || longitude is < -180 or > 180)
+            throw new AppException(ErrorCodes.ValidationFailed, "Enter a latitude from -90 to 90 and longitude from -180 to 180.");
     }
 
     public async Task DeleteZoneAsync(Guid zoneId, Guid actorId)

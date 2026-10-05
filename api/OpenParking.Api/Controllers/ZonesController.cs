@@ -292,7 +292,9 @@ public class CreateZoneRequest
     [System.ComponentModel.DataAnnotations.StringLength(16, MinimumLength = 1)]
     public string Code { get; set; } = string.Empty;
 
+    [System.ComponentModel.DataAnnotations.Range(-90, 90)]
     public double Latitude { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(-180, 180)]
     public double Longitude { get; set; }
 
     [System.ComponentModel.DataAnnotations.Range(0, 1000)]

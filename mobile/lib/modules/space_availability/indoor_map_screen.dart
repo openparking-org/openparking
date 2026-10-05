@@ -12,12 +12,13 @@ import '../../core/widgets/app_widgets.dart';
 
 class IndoorMapScreen extends StatefulWidget {
   final String zoneId;
-  final String? zoneName, targetSlotId, bookingId;
+  final String? zoneName, targetSlotId, bookingId, recommendedSlotType;
   const IndoorMapScreen(
       {super.key,
       required this.zoneId,
       this.zoneName,
       this.targetSlotId,
+      this.recommendedSlotType,
       this.bookingId});
   @override
   State<IndoorMapScreen> createState() => _IndoorMapScreenState();
@@ -83,7 +84,11 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   @override
   Widget build(BuildContext context) {
     final plan = selected;
-    final slots = zone?.slots ?? <SlotModel>[];
+    final slots = (zone?.slots ?? <SlotModel>[])
+        .where((s) =>
+            widget.recommendedSlotType == null ||
+            s.type == widget.recommendedSlotType)
+        .toList();
     final mapped = slots
         .where((slot) =>
             slot.floorPlanId == plan?.id &&
@@ -221,7 +226,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                           : null,
                     )),
                   if (slots.isEmpty)
-                    const Text('No spaces are configured in this zone.'),
+                    const Text(
+                        'No matching spaces are configured in this zone.'),
                 ]),
     );
   }
