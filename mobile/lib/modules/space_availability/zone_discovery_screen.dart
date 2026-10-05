@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../models/zone.dart';
 import '../../services/parking_recommendation_service.dart';
+import 'zone_map_view.dart';
 import 'indoor_map_screen.dart';
 
 class ZoneDiscoveryScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,7 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   String _preference = 'nearest';
   double _radius = 25;
   String _slotType = 'Standard';
+  bool _showMap = false;
 
   @override
   void initState() {
@@ -174,7 +176,7 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
+    if (!_showMap && _scrollController.hasClients && _scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(zoneListProvider.notifier).fetchZones(reset: false);
     }
@@ -205,7 +207,23 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
-      body: CustomScrollView(
+      body: _showMap
+          ? Column(
+              children: [
+                AppBar(
+                  backgroundColor: AppTheme.surfacePure,
+                  title: Text('Find Parking', style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.list, color: AppTheme.primary),
+                      onPressed: () => setState(() => _showMap = false),
+                    )
+                  ],
+                ),
+                const Expanded(child: ZoneMapView()),
+              ],
+            )
+          : CustomScrollView(
         controller: _scrollController,
         slivers: [
           // ── APP BAR ──
@@ -220,6 +238,10 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
               style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.map, size: 20, color: AppTheme.primary),
+                onPressed: () => setState(() => _showMap = true),
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
                 color: AppTheme.primary,

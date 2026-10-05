@@ -9,6 +9,7 @@ import '../../core/theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../space_availability/indoor_map_screen.dart';
 import '../space_availability/zone_discovery_screen.dart';
+import 'gate_scanner_screen.dart';
 
 class BookingScreen extends ConsumerWidget {
   const BookingScreen({super.key});
@@ -209,7 +210,21 @@ class _BookingCard extends ConsumerWidget {
                           MaterialPageRoute<void>(
                               builder: (_) =>
                                   ReceiptScreen(booking: booking)))),
-                if (['Pending', 'Confirmed'].contains(booking.status))
+                if (['Pending', 'Confirmed'].contains(booking.status)) ...[
+                  FilledButton.icon(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Scan Gate QR'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: AppTheme.onPrimary,
+                    ),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GateScannerScreen(bookingId: booking.id),
+                      ),
+                    ),
+                  ),
                   TextButton(
                       onPressed: () async {
                         final confirmed = await showDialog<bool>(

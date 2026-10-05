@@ -114,6 +114,27 @@ class SessionService {
     }
   }
 
+  /// POST /api/sessions/start
+  Future<ParkingSessionModel> startSession({
+    required String bookingId,
+    required String gateId,
+  }) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/sessions/start');
+    try {
+      final response = await _client.post(
+        url,
+        headers: ApiConfig.headers,
+        body: jsonEncode({
+          'bookingId': bookingId,
+          'gateId': gateId,
+        }),
+      );
+      return _handleResponse(response);
+    } on SocketException {
+      throw SessionApiException(0, "Unable to connect. Please try again.");
+    }
+  }
+
   ParkingSessionModel _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final json = jsonDecode(response.body);
