@@ -1,0 +1,9 @@
+# Keep host build output out of the image build context. Without this,
+# `COPY . .` copies each project's bin/ and obj/ from the developer's machine
+# over the freshly restored ones, including project.assets.json written with
+# host paths, which can break `dotnet publish` inside the container.
+**/bin/
+**/obj/
+.dotnet_home/
+.vs/
+**/*.user
