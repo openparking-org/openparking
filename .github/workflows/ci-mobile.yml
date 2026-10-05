@@ -36,6 +36,12 @@ jobs:
           channel: "stable"
           cache: true
 
+      # pubspec.yaml bundles .env as an asset, but .env is gitignored, so it
+      # never exists on the runner and `flutter analyze` fails with
+      # asset_does_not_exist. The example holds only non-secret local defaults.
+      - name: Create .env from example
+        run: cp .env.example .env
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -76,6 +82,17 @@ jobs:
           flutter-version: "3.x"
           channel: "stable"
           cache: true
+
+      # The app reads API_BASE_URL from the bundled .env at runtime (flutter_dotenv),
+      # not from the build environment, so write the repository variable into it.
+      - name: Create .env for release
+        run: |
+          cp .env.example .env
+          if [ -n "$API_BASE_URL" ]; then
+            sed -i "s|^API_BASE_URL=.*|API_BASE_URL=$API_BASE_URL|" .env
+          fi
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
 
       - name: Install dependencies
         run: flutter pub get
