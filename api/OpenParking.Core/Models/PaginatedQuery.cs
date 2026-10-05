@@ -15,5 +15,20 @@ public class PaginatedQuery
 
     public string? Search { get; set; }
     public string? SortBy { get; set; }
-    public bool SortDescending { get; set; } = false;
+
+    /// <summary>Sort direction: "asc" or "desc". Defaults to "desc".</summary>
+    public string SortDir { get; set; } = "desc";
+
+    // Legacy compat — keep SortDescending as a two-way alias
+    public bool SortDescending
+    {
+        get => SortDir == "desc";
+        set => SortDir = value ? "desc" : "asc";
+    }
+
+    /// <summary>Number of records to skip (for EF .Skip()).</summary>
+    public int Skip => (Page - 1) * PageSize;
+
+    /// <summary>Number of records to take (for EF .Take()). Alias for PageSize.</summary>
+    public int Take => PageSize;
 }

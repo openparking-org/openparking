@@ -1,10 +1,12 @@
 import pytest
+
 from agents.planner import PlannerAgent, WorkflowState
+
 
 @pytest.mark.asyncio
 async def test_overstay_workflow_auto_approval():
     planner = PlannerAgent()
-    state: WorkflowState = {
+    state: WorkflowState = { # type: ignore[typeddict-item]
         "workflow_id": "wf-test-01",
         "workflow_type": "OVERSTAY_ENFORCEMENT",
         "zone_id": "zone-1",
@@ -26,7 +28,7 @@ async def test_overstay_workflow_auto_approval():
 @pytest.mark.asyncio
 async def test_overstay_workflow_high_penalty_pending():
     planner = PlannerAgent()
-    state: WorkflowState = {
+    state: WorkflowState = { # type: ignore[typeddict-item]
         "workflow_id": "wf-test-02",
         "workflow_type": "OVERSTAY_ENFORCEMENT",
         "zone_id": "zone-1",

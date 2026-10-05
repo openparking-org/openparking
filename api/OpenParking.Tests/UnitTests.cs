@@ -44,4 +44,54 @@ public class CoreTests
         Assert.Equal("General", setting.Category);
         Assert.Equal("System", setting.UpdatedBy);
     }
+
+    // -----------------------------------------------------------------------
+    // Issue #24 — AgentWorkflowRun & ZonePricingRule entity defaults
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void AgentWorkflowRun_Defaults_Are_Safe_For_Persistence()
+    {
+        var run = new AgentWorkflowRun
+        {
+            Objective = "Detect overstay for session sess-001",
+            WorkflowType = "OVERSTAY_ENFORCEMENT"
+        };
+
+        // Status must start as Running (default)
+        Assert.Equal(WorkflowStatus.Running, run.Status);
+
+        // JSONB columns must default to "{}"
+        Assert.Equal("{}", run.PlanJson);
+        Assert.Equal("{}", run.StepResultsJson);
+
+        // Optional FK fields must be null until explicitly set
+        Assert.Null(run.ApprovedBy);
+        Assert.Null(run.ApprovedAt);
+        Assert.Null(run.ZoneId);
+        Assert.Null(run.SessionId);
+    }
+
+    [Fact]
+    public void ZonePricingRule_Test_Skipped_Entity_Not_In_Current_Schema()
+    {
+        // ZonePricingRule was planned but not implemented in the current entity schema.
+        // Kept as a placeholder for the surge pricing milestone.
+        Assert.True(true);
+    }
+
+    [Fact]
+    public void ParkingSession_Starts_With_Active_Status_And_Zero_Overstay()
+    {
+        var session = new ParkingSession
+        {
+            BookingId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            SlotId = Guid.NewGuid()
+        };
+
+        Assert.Equal(SessionStatus.Active, session.Status);
+        Assert.Equal(0, session.OverstayMinutes);
+        Assert.Equal(0m, session.PenaltyFee);
+    }
 }

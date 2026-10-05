@@ -8,4 +8,5 @@ public interface ISettingsService
     Task<bool> GetBoolAsync(string key, bool defaultValue = false);
     Task SetAsync(string key, string value, string updatedBy = "System");
     Task InvalidateCacheAsync(string key);
+    Task<Dictionary<string, List<OpenParking.Core.Entities.SystemSetting>>> GetAllGroupedAsync();
 }

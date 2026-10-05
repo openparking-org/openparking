@@ -1,45 +1,66 @@
 import { useEffect, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
+import { config } from '../config';
+import { useAuthStore } from '../store/authStore';
 
 export interface SlotStatusUpdate {
   slotId: string;
   status: 'Available' | 'Reserved' | 'Occupied' | 'Maintenance';
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export function useSlotUpdates(zoneId: string) {
   const [updates, setUpdates] = useState<Record<string, SlotStatusUpdate>>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionRevision, setConnectionRevision] = useState(0);
 
   useEffect(() => {
     if (!zoneId) return;
+    setUpdates({});
+    setIsConnected(false);
+    let disposed = false;
 
-    const hubUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/hubs/slots`;
+    const hubUrl = `${config.apiUrl}/hubs/slots`;
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl)
+      .withUrl(hubUrl, { accessTokenFactory: () => useAuthStore.getState().token || '' })
       .withAutomaticReconnect()
       .build();
 
-    connection.start()
-      .then(() => {
+    connection.onreconnecting(() => setIsConnected(false));
+    connection.onclose(() => setIsConnected(false));
+    connection.onreconnected(async () => {
+      if (disposed) return;
+      try {
+        await connection.invoke('JoinZoneGroup', zoneId);
         setIsConnected(true);
-        connection.invoke('JoinZoneGroup', zoneId);
+        setConnectionRevision(value => value + 1);
+      } catch (err) {
+        console.warn('SignalR zone subscription failed:', err);
+      }
+    });
+
+    connection.start()
+      .then(async () => {
+        if (disposed) {
+          await connection.stop();
+          return;
+        }
+        await connection.invoke('JoinZoneGroup', zoneId);
+        setIsConnected(true);
       })
       .catch((err: any) => {
-        console.warn('SignalR connection failed (running in fallback mock mode):', err?.message);
+        console.warn('SignalR connection failed:', err?.message);
       });
 
-    connection.on('SlotStatusChanged', (update: SlotStatusUpdate) => {
+    connection.on('SlotUpdated', (update: SlotStatusUpdate) => {
       setUpdates((prev: Record<string, SlotStatusUpdate>) => ({ ...prev, [update.slotId]: update }));
     });
 
     return () => {
-      if (connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke('LeaveZoneGroup', zoneId);
-        connection.stop();
-      }
+      disposed = true;
+      void connection.stop().catch((err) => console.warn('SignalR cleanup failed:', err));
     };
   }, [zoneId]);
 
-  return { updates, isConnected };
+  return { updates, isConnected, connectionRevision };
 }

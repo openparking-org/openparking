@@ -32,7 +32,7 @@ The project is architected following an **OpenMRS-inspired modular service patte
 |---|---|---|---|
 | **Yowun** | **User & Access** | Identity, JWT auth, RBAC (Driver, ParkingAdmin, SystemAdmin), System Settings UI, Permit uploads | **Validator Agent** — Regulatory schema checks & dynamic penalty cap enforcement |
 | **Supun** | **Space & Availability** | Zone & slot layout management, SignalR real-time slot occupancy, Blueprint Editor (React), Mobile indoor map view | **Analyzer Agent** — Real-time lot congestion analysis & arrival velocity scoring |
-| **Dev** | **Booking & Payment** | Reservation lifecycle, check-in/out session timing, digital QR pass generation, fee calculation & receipts | **Action Agent** — Dynamic surge pricing multipliers & structured penalty proposals |
+| **Dev** | **Booking & Payment** | Reservation lifecycle, check-in/out session timing, attendant vehicle-number entry and exit, fee calculation & receipts | **Action Agent** — Dynamic surge pricing multipliers & structured penalty proposals |
 | **Karuna** | **Enforcement & AI Orchestration** | Overstay detection, LangGraph state machine workflow, React AI approval dashboard, audit logging | **Planner Agent** — Goal decomposition, agent delegation, and human-in-the-loop checkpoint gating |
 
 ---
@@ -41,10 +41,10 @@ The project is architected following an **OpenMRS-inspired modular service patte
 
 | Layer | Technology | Role |
 |---|---|---|
-| **Backend API** | ASP.NET Core Web API (.NET 8) | Business logic, JWT auth, SignalR hubs, EF Core 8 |
+| **Backend API** | ASP.NET Core Web API (.NET 10) | Business logic, JWT auth, SignalR hubs, EF Core 8 (Npgsql) |
 | **Database** | PostgreSQL 16 (Neon / Local) | Relational schema, transactional sessions, settings store |
 | **Web Dashboard** | React 18, TypeScript, Zustand, Vite | Administrative console, blueprint editor, AI approval queue |
-| **Mobile App** | Flutter 3, Dart, Riverpod 2 | Driver application, digital QR ticket, indoor floor map |
+| **Mobile App** | Flutter 3, Dart, Riverpod 2 | Driver application, reservation and live session tracking, indoor floor map |
 | **AI Subsystem** | Python 3.11, FastAPI, LangGraph | Multi-agent state machine, A* pathfinder, Cloudflare Workers AI |
 | **Edge Gateway** | Cloudflare Workers & Cloudflare Tunnel | Global edge routing, CORS, rate limiting, secure VM tunnel |
 | **CI / CD** | GitHub Actions & ghcr.io | Path-filtered automated linting, test suites, and Docker image builds |
@@ -75,7 +75,7 @@ openparking-org/openparking/
 │
 ├── mobile/                           # Driver Mobile Application (Flutter 3 + Riverpod 2)
 │   ├── lib/
-│   │   ├── modules/booking/            # Digital QR parking pass
+│   │   ├── modules/booking/            # Customer reservations, live sessions, and receipts
 │   │   ├── modules/space_availability/ # Indoor blueprint navigation screen
 │   │   ├── modules/user_access/        # Disability permit upload screen
 │   │   ├── modules/enforcement/        # Overstay alert & penalty notice
@@ -104,10 +104,14 @@ openparking-org/openparking/
 
 ## 5. Quick Start (Local Development)
 
+> **Branch:** day-to-day integration happens on **`develop`**; `main` lags behind.
+> After cloning, run `git switch develop` to get the current project.
+
 ### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) *(or any Docker engine with Compose v2, e.g. Colima)*
 - [Node.js 20+](https://nodejs.org/)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) *(optional if using Docker)*
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) *(optional if using Docker)*
+- [Python 3.11](https://www.python.org/) *(optional if using Docker)*
 - [Flutter 3+](https://flutter.dev/) *(for mobile development)*
 
 ### 1. Start Backend & AI Services (One Command)
@@ -129,6 +133,7 @@ make dev
 ### 2. Start the React Admin Dashboard
 ```bash
 cd web
+cp .env.example .env   # VITE_API_BASE_URL / VITE_AI_BASE_URL
 npm install
 npm run dev
 ```
@@ -137,9 +142,36 @@ Access the dashboard at `http://localhost:3000`.
 ### 3. Run the Flutter Mobile App
 ```bash
 cd mobile
+cp .env.example .env   # required: pubspec.yaml bundles .env as an asset
 flutter pub get
 flutter run
 ```
+
+### Running the API and AI service without Docker
+Useful for faster iteration. Postgres must be running locally.
+
+```bash
+# API (http://localhost:5000). Applies migrations and seeds data on startup.
+# DATABASE_URL in the root .env must use Npgsql keyword syntax, e.g.
+#   DATABASE_URL=Host=localhost;Port=5432;Database=openparking;Username=dev;Password=dev
+cd api/OpenParking.Api
+dotnet run
+
+# AI service (http://localhost:8000)
+cd ai
+python3.11 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+CF_AI_MODE=mock ./.venv/bin/python -m uvicorn main:app --port 8000
+```
+
+### Seeded accounts (local development only)
+The API seeds these on first start. All use the password `Password123!`.
+
+| Email | Role |
+|---|---|
+| `admin@openparking.local` | SystemAdmin |
+| `manager@openparking.local` | ParkingAdmin |
+| `driver@openparking.local` | Driver |
+| `permit@openparking.local` | Driver (disability permit) |
 
 ---
 

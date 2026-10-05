@@ -1,26 +1,61 @@
 using Microsoft.AspNetCore.Mvc;
+using OpenParking.Core.Interfaces;
+using OpenParking.Core.Models;
 
 namespace OpenParking.Api.Controllers;
 
+/// <summary>
+/// /health — used by Docker health checks, Cloudflare Tunnel, and the admin dashboard.
+/// Returns database connectivity status so infra issues are immediately visible.
+/// </summary>
 [ApiController]
 [Route("[controller]")]
-public class HealthController : ControllerBase
+public class HealthController(IEnumerable<IParkingModule> modules, ILogger<HealthController> logger) : ControllerBase
 {
     [HttpGet]
-    public IActionResult Get()
+    public async Task<ActionResult<ApiResponse<HealthDto>>> Get()
     {
-        return Ok(new
+        var moduleHealths = new List<ModuleHealth>();
+        bool overallOk = true;
+
+        foreach (var module in modules)
         {
-            status = "Healthy",
-            timestamp = DateTime.UtcNow,
-            version = "1.0.0",
-            modules = new[]
+            var status = HealthStatus.Unhealthy;
+            try
             {
-                new { name = "User & Access (Student 1)", status = "Healthy" },
-                new { name = "Space & Availability (Student 2)", status = "Healthy" },
-                new { name = "Booking & Payment (Student 3)", status = "Healthy" },
-                new { name = "Enforcement & AI Orchestration (Student 4)", status = "Healthy" }
+                status = await module.HealthCheckAsync();
             }
-        });
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Health check failed for module {Module}", module.ModuleName);
+            }
+            
+            if (status != HealthStatus.Healthy) overallOk = false;
+            moduleHealths.Add(new ModuleHealth(module.ModuleName, status.ToString()));
+        }
+
+        var result = new HealthDto
+        {
+            Status    = overallOk ? "Healthy" : "Degraded",
+            Timestamp = DateTime.UtcNow,
+            Version   = "1.0.0",
+            Database  = overallOk ? "Connected" : "Unreachable",
+            Modules   = moduleHealths
+        };
+
+        // Return 503 if degraded — allows load balancers to stop routing here
+        var statusCode = overallOk ? 200 : 503;
+        return StatusCode(statusCode, ApiResponse<HealthDto>.Ok(result, HttpContext.TraceIdentifier));
     }
 }
+
+public class HealthDto
+{
+    public string Status { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public string Version { get; set; } = string.Empty;
+    public string Database { get; set; } = string.Empty;
+    public List<ModuleHealth> Modules { get; set; } = [];
+}
+
+public record ModuleHealth(string Name, string Status);

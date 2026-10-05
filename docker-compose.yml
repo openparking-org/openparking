@@ -6,14 +6,18 @@ services:
     ports:
       - "5000:8080"
     environment:
-      - ConnectionStrings__Default=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DATABASE_URL=${DATABASE_URL:-${CONNECTION_STRING:-Host=db;Port=5432;Database=openparking;Username=dev;Password=dev}}
       - JWT__Secret=${JWT_SECRET:-dev-super-secret-key-that-is-at-least-32-chars-long}
       - JWT__ExpiryHours=${JWT_EXPIRY_HOURS:-24}
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-pk.demo}
       - RESEND_API_KEY=${RESEND_API_KEY:-re_demo}
       - AI_SERVICE_URL=http://ai:8000
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
+      - REDIS_URL=${REDIS_URL:-redis:6379,abortConnect=false}
+      - SIMULATION_API_KEY=${SIMULATION_API_KEY:-}
     depends_on:
-      db:
+      redis:
         condition: service_healthy
 
   ai:
@@ -26,26 +30,51 @@ services:
       - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-mock-account}
       - CF_AI_TOKEN=${CF_AI_TOKEN:-mock-token}
       - CF_AI_MODE=${CF_AI_MODE:-mock}
+      - CF_AI_GATEWAY=${CF_AI_GATEWAY:-}
+      - AI_REASONING_PROVIDER=${AI_REASONING_PROVIDER:-cloudflare}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - GEMINI_PERMIT_MODEL=${GEMINI_PERMIT_MODEL:-gemini-3.5-flash-lite}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
+      - CF_AI_SEARCH_TOKEN=${CF_AI_SEARCH_TOKEN:-${CF_AI_TOKEN:-mock-token}}
+      - CF_AI_SEARCH_INSTANCE=${CF_AI_SEARCH_INSTANCE:-openparking-knowledge-base}
       - DATABASE_URL=${DATABASE_URL:-postgresql://dev:dev@db:5432/openparking}
-    depends_on:
-      db:
-        condition: service_healthy
+      - API_BASE_URL=http://api:8080
+      - BACKEND_API_URL=http://api:8080
+      - SIMULATION_API_KEY=${SIMULATION_API_KEY:-}
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: openparking
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev
+      - POSTGRES_DB=openparking
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dev -d openparking"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-volumes:
-  pgdata:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=${API_BASE_URL:-http://localhost:5000}
+      - VITE_AI_BASE_URL=${AI_SERVICE_URL:-http://localhost:8000}
+      - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY:-}
+

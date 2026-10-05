@@ -5,3 +5,15 @@ compatibility_date = "2024-09-01"
 [vars]
 API_ORIGIN = "http://localhost:5000"
 ENVIRONMENT = "production"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "openparking"
+database_id = "e60911cd-40c3-43ae-a3b8-640a60b52bf7"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "openparking-assets"

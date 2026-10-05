@@ -1,32 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'modules/space_availability/indoor_map_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/router.dart';
+import 'core/theme.dart';
+import 'modules/home/home_dashboard_screen.dart';
+import 'modules/space_availability/zone_discovery_screen.dart';
 import 'modules/booking/booking_screen.dart';
-import 'modules/user_access/permit_upload_screen.dart';
-import 'modules/enforcement/penalties_screen.dart';
+import 'modules/account/account_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env").catchError((_) {});
+
+  // Set system UI overlay style for monochrome theme
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: AppTheme.surfacePure,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+
   runApp(const ProviderScope(child: OpenParkingApp()));
 }
 
-class OpenParkingApp extends StatelessWidget {
-  const OpenParkingApp({super.key});
+class OpenParkingApp extends ConsumerWidget {
+  final ThemeData? theme;
+  const OpenParkingApp({super.key, this.theme});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'OpenParking',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B0F19),
-        primaryColor: const Color(0xFF6366F1),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6366F1),
-          secondary: Color(0xFF10B981),
-        ),
-        useMaterial3: true,
-      ),
-      home: const MainNavigationScreen(),
+      debugShowCheckedModeBanner: false,
+      theme: theme ?? AppTheme.lightTheme,
+      routerConfig: router,
     );
   }
 }
@@ -41,42 +52,43 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    BookingScreen(),
-    IndoorMapScreen(zoneId: 'zone-a'),
-    PermitUploadScreen(),
-    PenaltiesScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: const Color(0xFF111827),
-        indicatorColor: const Color(0x4D6366F1),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_2),
-            label: 'Pass',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Blueprint',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.accessible),
-            label: 'Permit',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
-            selectedIcon: Icon(Icons.shield),
-            label: 'Enforcement',
-          ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          const HomeDashboardScreen(),
+          ZoneDiscoveryScreen(autoRecommend: _currentIndex == 1),
+          const BookingScreen(),
+          const AccountScreen(),
         ],
+      ),
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (index) =>
+              setState(() => _currentIndex = index),
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.local_parking_outlined),
+                selectedIcon: Icon(Icons.local_parking),
+                label: 'Home'),
+            NavigationDestination(
+                icon: Icon(Icons.search), label: 'Find Parking'),
+            NavigationDestination(
+                icon: Icon(Icons.calendar_today_outlined),
+                selectedIcon: Icon(Icons.calendar_today),
+                label: 'My Bookings'),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Account'),
+          ],
+        ),
       ),
     );
   }

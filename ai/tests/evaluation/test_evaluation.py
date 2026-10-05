@@ -1,5 +1,7 @@
 import pytest
+
 from agents.planner import PlannerAgent, WorkflowState
+
 
 @pytest.mark.asyncio
 async def test_golden_evaluation_flow():
@@ -8,7 +10,7 @@ async def test_golden_evaluation_flow():
     Tests dynamic pricing proposal under peak load and verifies human approval gating.
     """
     planner = PlannerAgent()
-    state: WorkflowState = {
+    state: WorkflowState = { # type: ignore[typeddict-item]
         "workflow_id": "eval-wf-001",
         "workflow_type": "DYNAMIC_PRICING",
         "zone_id": "zone-cbd-central",

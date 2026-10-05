@@ -5,12 +5,18 @@ services:
     ports:
       - "5000:8080"
     environment:
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__Default=${NEON_DATABASE_URL}
       - JWT__Secret=${JWT_SECRET}
       - JWT__ExpiryHours=24
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - AI_SERVICE_URL=http://ai:8000
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
+      - REDIS_URL=redis:6379,abortConnect=false
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -25,9 +31,36 @@ services:
     environment:
       - CF_ACCOUNT_ID=${CF_ACCOUNT_ID}
       - CF_AI_TOKEN=${CF_AI_TOKEN}
+      - CF_AI_MODE=${CF_AI_MODE:-live}
+      - CF_AI_GATEWAY=${CF_AI_GATEWAY:-}
+      - AI_REASONING_PROVIDER=${AI_REASONING_PROVIDER:-cloudflare}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - GEMINI_PERMIT_MODEL=${GEMINI_PERMIT_MODEL:-gemini-3.5-flash-lite}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
+      - API_BASE_URL=http://api:8080
+      - BACKEND_API_URL=http://api:8080
       - DATABASE_URL=${NEON_DATABASE_URL}
+      - API_KEY=${AI_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+volumes:
+  redis_data:

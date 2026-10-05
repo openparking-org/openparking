@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test (.NET 8)
+    name: Build & Test (.NET 10)
     runs-on: ubuntu-latest
 
     services:
@@ -46,10 +46,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 8
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.x"
+          dotnet-version: "10.x"
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -65,7 +65,9 @@ jobs:
         run: dotnet build ./api/OpenParking.sln --no-restore --configuration Release
 
       - name: Run EF Core migrations (test DB)
-        run: dotnet ef database update --project ./api/OpenParking.Infrastructure --startup-project ./api/OpenParking.Api
+        run: |
+          dotnet tool install -g dotnet-ef
+          $HOME/.dotnet/tools/dotnet-ef database update --project ./api/OpenParking.Infrastructure --startup-project ./api/OpenParking.Api
         env:
           ConnectionStrings__Default: "Host=localhost;Port=5432;Database=openparking_test;Username=testuser;Password=testpassword"
 

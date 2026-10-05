@@ -1,0 +1,803 @@
+/* ═══════════════════════════════════════════════════════════
+   Driver Booking Layout — Movie-Theater-Style Parking Picker
+   ═══════════════════════════════════════════════════════════ */
+
+.dbl-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: calc(100vh - 80px);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #e2e8f0;
+}
+
+/* ── Header Section ───────────────────────────────────────── */
+.dbl-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dbl-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dbl-header-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.dbl-header h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(90deg, #c7d2fe, #e0e7ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dbl-header p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+/* ── Controls Bar ─────────────────────────────────────────── */
+.dbl-controls {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dbl-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dbl-control-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+.dbl-select {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.dbl-select:hover {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.dbl-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.dbl-occupancy-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  background: rgba(30, 41, 59, 0.6);
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+}
+
+.dbl-occupancy-track {
+  width: 120px;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dbl-occupancy-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dbl-occupancy-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.dbl-occupancy-text strong {
+  color: #e2e8f0;
+}
+
+/* ── Main Content ─────────────────────────────────────────── */
+.dbl-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Floor Plan Canvas ────────────────────────────────────── */
+.dbl-canvas-area {
+  flex: 1;
+  background: #080c14;
+  background-image:
+    radial-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  padding: 28px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Screen indicator (like a movie theater) */
+.dbl-screen-indicator {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.dbl-screen-bar {
+  width: 60%;
+  max-width: 500px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, #6366f1, #8b5cf6, #6366f1, transparent);
+  border-radius: 3px;
+  margin: 0 auto 6px;
+  box-shadow: 0 2px 20px rgba(99, 102, 241, 0.3);
+}
+
+.dbl-screen-text {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #475569;
+}
+
+/* Slot Grid Rows */
+.dbl-slot-section {
+  margin-bottom: 28px;
+}
+
+.dbl-row-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dbl-row-letter {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+  width: 28px;
+  text-align: center;
+}
+
+.dbl-row-divider {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(71, 85, 105, 0.4), transparent);
+}
+
+.dbl-slot-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-left: 28px;
+}
+
+/* ── Individual Slot ──────────────────────────────────────── */
+.dbl-slot {
+  width: 62px;
+  height: 72px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.dbl-slot .dbl-slot-icon {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.dbl-slot .dbl-slot-number {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.dbl-slot .dbl-slot-type-badge {
+  font-size: 0.55rem;
+  font-weight: 500;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Available */
+.dbl-slot--available {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.dbl-slot--available:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
+}
+
+.dbl-slot--available:hover .dbl-slot-icon {
+  transform: scale(1.15);
+}
+
+/* Occupied */
+.dbl-slot--occupied {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Reserved */
+.dbl-slot--reserved {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.25);
+  color: #fde68a;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Maintenance */
+.dbl-slot--maintenance {
+  background: rgba(107, 114, 128, 0.08);
+  border-color: rgba(107, 114, 128, 0.25);
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Selected */
+.dbl-slot--selected {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: #6366f1 !important;
+  color: #c7d2fe !important;
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 8px 24px rgba(99, 102, 241, 0.3) !important;
+  opacity: 1 !important;
+}
+
+.dbl-slot--selected::after {
+  content: '✓';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  animation: dbl-pop 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes dbl-pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+/* Driving Aisle */
+.dbl-aisle {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 4px 0;
+}
+
+.dbl-aisle::before {
+  content: '';
+  position: absolute;
+  width: 60%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(71, 85, 105, 0.3) 0px,
+    rgba(71, 85, 105, 0.3) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+.dbl-aisle-text {
+  font-size: 0.6rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: #080c14;
+  padding: 0 10px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Legend ────────────────────────────────────────────────── */
+.dbl-legend {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid rgba(51, 65, 85, 0.3);
+  flex-wrap: wrap;
+}
+
+.dbl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.dbl-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* ── Booking Sidebar ──────────────────────────────────────── */
+.dbl-sidebar {
+  width: 360px;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  border-left: 1px solid rgba(51, 65, 85, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.dbl-sidebar-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.dbl-sidebar-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dbl-sidebar-body {
+  flex: 1;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Empty State */
+.dbl-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.dbl-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px dashed rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  animation: dbl-pulse 2s ease-in-out infinite;
+}
+
+@keyframes dbl-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.dbl-empty-state h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.dbl-empty-state p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Slot Detail Card */
+.dbl-slot-detail {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dbl-slot-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbl-slot-detail-id {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #c7d2fe;
+}
+
+.dbl-slot-detail-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dbl-slot-detail-badge--standard {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.dbl-slot-detail-badge--ev {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dbl-slot-detail-badge--accessible {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.dbl-slot-detail-badge--compact {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde68a;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.dbl-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.dbl-detail-label {
+  color: #64748b;
+}
+
+.dbl-detail-value {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+/* Booking Form */
+.dbl-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dbl-form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dbl-input {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+}
+
+.dbl-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.dbl-fee-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.dbl-fee-amount {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dbl-fee-note {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Confirm Button */
+.dbl-confirm-btn {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.dbl-confirm-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.5s ease;
+}
+
+.dbl-confirm-btn:hover::before {
+  left: 100%;
+}
+
+.dbl-confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.dbl-confirm-btn:active {
+  transform: translateY(0);
+}
+
+.dbl-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.dbl-confirm-btn:disabled::before {
+  display: none;
+}
+
+/* Success Banner */
+.dbl-success-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: dbl-slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dbl-slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dbl-success-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.dbl-success-banner h3 {
+  margin: 0;
+  color: #6ee7b7;
+  font-size: 1.05rem;
+}
+
+.dbl-success-banner p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.dbl-new-booking-btn {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #6ee7b7;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.dbl-new-booking-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* ── Loading Spinner ──────────────────────────────────────── */
+.dbl-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #080c14;
+}
+
+.dbl-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(99, 102, 241, 0.15);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: dbl-spin 0.8s linear infinite;
+}
+
+@keyframes dbl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.dbl-loading p {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+/* ── Error State ──────────────────────────────────────────── */
+.dbl-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 28px;
+}
+
+/* ── Floor Tabs ───────────────────────────────────────────── */
+.dbl-floor-tabs {
+  display: flex;
+  gap: 4px;
+  background: #1e293b;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.dbl-floor-tab {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+  background: transparent;
+}
+
+.dbl-floor-tab:hover {
+  color: #e2e8f0;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.dbl-floor-tab--active {
+  background: #6366f1;
+  color: white;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* ── Slot Type Icons ──────────────────────────────────────── */
+.dbl-type-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .dbl-main {
+    flex-direction: column;
+  }
+  .dbl-sidebar {
+    width: 100%;
+    max-height: 320px;
+    border-left: none;
+    border-top: 1px solid rgba(51, 65, 85, 0.5);
+  }
+}
