@@ -1,0 +1,9 @@
+# Keep the host virtualenv and caches out of the image build context. A local
+# .venv holds host-platform binaries and hundreds of MB that `COPY . .` would
+# otherwise ship into the image; dependencies are installed from requirements.txt.
+.venv/
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
