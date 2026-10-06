@@ -22,17 +22,15 @@ class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
   @override
   Widget build(BuildContext context) {
     final zoneState = ref.watch(zoneListProvider);
+    if (_token.isNotEmpty) {
+      MapboxOptions.setAccessToken(_token);
+    }
 
     return Scaffold(
       body: _token.isEmpty
           ? const Center(child: Text('Mapbox Token is missing in .env'))
           : MapWidget(
               key: const ValueKey("mapWidget"),
-              resourceOptions: ResourceOptions(accessToken: _token),
-              cameraOptions: CameraOptions(
-                center: Point(coordinates: Position(103.851959, 1.290270)), // Default center (Singapore)
-                zoom: 12.0,
-              ),
               onMapCreated: _onMapCreated,
             ),
     );
@@ -40,16 +38,21 @@ class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    await mapboxMap.setCamera(CameraOptions(
+      center: Point(coordinates: Position(103.851959, 1.290270)),
+      zoom: 12.0,
+    ));
+    _pointAnnotationManager =
+        await mapboxMap.annotations.createPointAnnotationManager();
     _updateAnnotations();
   }
 
   void _updateAnnotations() {
     if (_pointAnnotationManager == null) return;
-    
+
     final zones = ref.read(zoneListProvider).zones;
     _pointAnnotationManager?.deleteAll();
-    
+
     final List<PointAnnotationOptions> options = [];
     for (final zone in zones) {
       if (zone.latitude != 0.0 && zone.longitude != 0.0) {
@@ -61,7 +64,7 @@ class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
         ));
       }
     }
-    
+
     if (options.isNotEmpty) {
       _pointAnnotationManager?.createMulti(options);
     }

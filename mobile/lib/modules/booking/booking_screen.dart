@@ -221,7 +221,8 @@ class _BookingCard extends ConsumerWidget {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => GateScannerScreen(bookingId: booking.id),
+                        builder: (_) =>
+                            GateScannerScreen(bookingId: booking.id),
                       ),
                     ),
                   ),
@@ -259,6 +260,7 @@ class _BookingCard extends ConsumerWidget {
                         }
                       },
                       child: const Text('Cancel reservation')),
+                ],
               ]),
             ])));
   }

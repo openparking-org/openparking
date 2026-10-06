@@ -176,8 +176,10 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
   }
 
   void _onScroll() {
-    if (!_showMap && _scrollController.hasClients && _scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (!_showMap &&
+        _scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       ref.read(zoneListProvider.notifier).fetchZones(reset: false);
     }
   }
@@ -212,7 +214,9 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
               children: [
                 AppBar(
                   backgroundColor: AppTheme.surfacePure,
-                  title: Text('Find Parking', style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
+                  title: Text('Find Parking',
+                      style: AppTheme.titleMd
+                          .copyWith(fontWeight: FontWeight.w700)),
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.list, color: AppTheme.primary),
@@ -224,153 +228,164 @@ class _ZoneDiscoveryScreenState extends ConsumerState<ZoneDiscoveryScreen> {
               ],
             )
           : CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // ── APP BAR ──
-          SliverAppBar(
-            floating: true,
-            snap: true,
-            backgroundColor: AppTheme.surfacePure,
-            surfaceTintColor: Colors.transparent,
-            toolbarHeight: 56,
-            title: Text(
-              'Find Parking',
-              style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.map, size: 20, color: AppTheme.primary),
-                onPressed: () => setState(() => _showMap = true),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, size: 20),
-                color: AppTheme.primary,
-                onPressed: () {
-                  ref.read(zoneListProvider.notifier).fetchZones(reset: true);
-                  _findParking();
-                },
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(child: _recommendationPanel()),
-          SliverToBoxAdapter(
-            child: Container(
-              color: AppTheme.surfacePure,
-              padding: pagePadding(context, vertical: 16),
-              child: Column(
-                children: [
-                  // Search Field
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      ref
-                          .read(zoneListProvider.notifier)
-                          .fetchZones(query: value, reset: true);
-                    },
-                    style: AppTheme.bodyMd,
-                    decoration: InputDecoration(
-                      hintText: 'Search zone name or code...',
-                      hintStyle: AppTheme.bodyMd
-                          .copyWith(color: AppTheme.textTertiary),
-                      prefixIcon: const Icon(Icons.search,
-                          color: AppTheme.primary, size: 20),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear,
-                                  color: AppTheme.textSecondary, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref
-                                    .read(zoneListProvider.notifier)
-                                    .fetchZones(query: '', reset: true);
-                              },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: AppTheme.surfaceSubtle,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+              controller: _scrollController,
+              slivers: [
+                // ── APP BAR ──
+                SliverAppBar(
+                  floating: true,
+                  snap: true,
+                  backgroundColor: AppTheme.surfacePure,
+                  surfaceTintColor: Colors.transparent,
+                  toolbarHeight: 56,
+                  title: Text(
+                    'Find Parking',
+                    style:
+                        AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 12),
-                  // Filter Chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.map,
+                          size: 20, color: AppTheme.primary),
+                      onPressed: () => setState(() => _showMap = true),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 20),
+                      color: AppTheme.primary,
+                      onPressed: () {
+                        ref
+                            .read(zoneListProvider.notifier)
+                            .fetchZones(reset: true);
+                        _findParking();
+                      },
+                    ),
+                  ],
+                ),
+                SliverToBoxAdapter(child: _recommendationPanel()),
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: AppTheme.surfacePure,
+                    padding: pagePadding(context, vertical: 16),
+                    child: Column(
                       children: [
-                        _buildFilterChip('All', Icons.grid_view),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                            'Available', Icons.check_circle_outline),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Disability', Icons.accessible),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('EV Charging', Icons.ev_station),
+                        // Search Field
+                        TextField(
+                          controller: _searchController,
+                          onChanged: (value) {
+                            ref
+                                .read(zoneListProvider.notifier)
+                                .fetchZones(query: value, reset: true);
+                          },
+                          style: AppTheme.bodyMd,
+                          decoration: InputDecoration(
+                            hintText: 'Search zone name or code...',
+                            hintStyle: AppTheme.bodyMd
+                                .copyWith(color: AppTheme.textTertiary),
+                            prefixIcon: const Icon(Icons.search,
+                                color: AppTheme.primary, size: 20),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear,
+                                        color: AppTheme.textSecondary,
+                                        size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      ref
+                                          .read(zoneListProvider.notifier)
+                                          .fetchZones(query: '', reset: true);
+                                    },
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: AppTheme.surfaceSubtle,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusXl),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Filter Chips
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip('All', Icons.grid_view),
+                              const SizedBox(width: 8),
+                              _buildFilterChip(
+                                  'Available', Icons.check_circle_outline),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('Disability', Icons.accessible),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('EV Charging', Icons.ev_station),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
 
-          // ── ZONE LIST ──
-          if (zoneState.isLoading)
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primary,
-                  strokeWidth: 2,
-                ),
-              ),
-            )
-          else if (zoneState.error != null)
-            SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(zoneState.error!),
-                  TextButton(
-                      onPressed: () =>
-                          ref.read(zoneListProvider.notifier).fetchZones(),
-                      child: const Text('Retry')),
-                ])))
-          else if (zoneState.zones.isEmpty)
-            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
-          else
-            SliverPadding(
-              padding: pagePadding(context),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == zoneState.zones.length) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primary,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      );
-                    }
-                    final zone = zoneState.zones[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
-                      child: _buildZoneCard(context, zone),
-                    );
-                  },
-                  childCount: zoneState.zones.length +
-                      (zoneState.isLoadingMore ? 1 : 0),
-                ),
-              ),
+                // ── ZONE LIST ──
+                if (zoneState.isLoading)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                else if (zoneState.error != null)
+                  SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                        Text(zoneState.error!),
+                        TextButton(
+                            onPressed: () => ref
+                                .read(zoneListProvider.notifier)
+                                .fetchZones(),
+                            child: const Text('Retry')),
+                      ])))
+                else if (zoneState.zones.isEmpty)
+                  SliverFillRemaining(
+                      hasScrollBody: false, child: _buildEmptyState())
+                else
+                  SliverPadding(
+                    padding: pagePadding(context),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index == zoneState.zones.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          }
+                          final zone = zoneState.zones[index];
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppTheme.spaceSm),
+                            child: _buildZoneCard(context, zone),
+                          );
+                        },
+                        childCount: zoneState.zones.length +
+                            (zoneState.isLoadingMore ? 1 : 0),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
   }
 

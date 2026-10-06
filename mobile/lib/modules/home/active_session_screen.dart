@@ -118,8 +118,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.primary),
-            onPressed: () =>
-                ref.read(activeSessionProvider.notifier).refresh(),
+            onPressed: () => ref.read(activeSessionProvider.notifier).refresh(),
             tooltip: 'Refresh',
           )
         ],
@@ -152,7 +151,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         ),
         data: (session) {
           if (session == null) {
-            return _NoActiveSession(onFindParking: () => Navigator.pop(context));
+            return _NoActiveSession(
+                onFindParking: () => Navigator.pop(context));
           }
           // Start the live ticker based on check-in time.
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -205,9 +205,7 @@ class _SessionContent extends StatelessWidget {
               pulseAnimation: pulseAnimation),
           const SizedBox(height: 16),
           _FeeCard(
-              session: session,
-              estimatedFee: estimatedFee,
-              elapsed: elapsed),
+              session: session, estimatedFee: estimatedFee, elapsed: elapsed),
           const SizedBox(height: 16),
           _SessionDetailsCard(session: session),
           const SizedBox(height: 16),
@@ -273,8 +271,7 @@ class _LiveTimerCard extends StatelessWidget {
           Text(
             isOverstay ? 'OVERSTAY' : 'LIVE',
             style: AppTheme.labelMd.copyWith(
-                color: Colors.white.withValues(alpha: 0.85),
-                letterSpacing: 2),
+                color: Colors.white.withValues(alpha: 0.85), letterSpacing: 2),
           ),
         ]),
         const SizedBox(height: 20),
@@ -291,7 +288,8 @@ class _LiveTimerCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           isOverstay ? 'Overstay in progress — exit now' : 'Time parked',
-          style: AppTheme.bodyMd.copyWith(color: Colors.white.withValues(alpha: 0.8)),
+          style: AppTheme.bodyMd
+              .copyWith(color: Colors.white.withValues(alpha: 0.8)),
         ),
       ]),
     );
@@ -339,8 +337,7 @@ class _FeeCard extends StatelessWidget {
           const Divider(height: 16),
           _FeeRow(
             label: 'Estimated Total',
-            value:
-                '${session.currency} ${estimatedFee.toStringAsFixed(2)}',
+            value: '${session.currency} ${estimatedFee.toStringAsFixed(2)}',
             bold: true,
           ),
           const SizedBox(height: 8),
@@ -401,8 +398,14 @@ class _SessionDetailsCard extends StatelessWidget {
             Text('Session Details', style: AppTheme.labelLg),
           ]),
           const Divider(height: 24),
-          _DetailRow(icon: Icons.location_city_outlined, label: 'Zone', value: session.zoneName),
-          _DetailRow(icon: Icons.grid_3x3_outlined, label: 'Slot', value: session.slotNumber),
+          _DetailRow(
+              icon: Icons.location_city_outlined,
+              label: 'Zone',
+              value: session.zoneName),
+          _DetailRow(
+              icon: Icons.grid_3x3_outlined,
+              label: 'Slot',
+              value: session.slotNumber),
           _DetailRow(
               icon: Icons.directions_car_outlined,
               label: 'Vehicle',
@@ -478,7 +481,8 @@ class _OverstayWarningCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.accentCritical.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.accentCritical.withValues(alpha: 0.3)),
+        border:
+            Border.all(color: AppTheme.accentCritical.withValues(alpha: 0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -486,8 +490,7 @@ class _OverstayWarningCard extends StatelessWidget {
               color: AppTheme.accentCritical, size: 22),
           const SizedBox(width: 8),
           Text('Overstay Detected',
-              style: AppTheme.labelLg
-                  .copyWith(color: AppTheme.accentCritical)),
+              style: AppTheme.labelLg.copyWith(color: AppTheme.accentCritical)),
         ]),
         const SizedBox(height: 12),
         Text(
@@ -527,7 +530,9 @@ class _SignalRStatusCard extends ConsumerWidget {
         ),
         const SizedBox(width: 10),
         Text(
-          isConnected ? 'Real-time updates connected' : 'Connecting to real-time updates…',
+          isConnected
+              ? 'Real-time updates connected'
+              : 'Connecting to real-time updates…',
           style: AppTheme.bodySm.copyWith(color: AppTheme.textSecondary),
         ),
       ]),
@@ -548,12 +553,10 @@ class _NoActiveSession extends StatelessWidget {
         padding: const EdgeInsets.all(40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.local_parking_outlined,
-              size: 72,
-              color: AppTheme.textTertiary.withValues(alpha: 0.4)),
+              size: 72, color: AppTheme.textTertiary.withValues(alpha: 0.4)),
           const SizedBox(height: 24),
           Text('No Active Session',
-              style:
-                  AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
+              style: AppTheme.titleMd.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Text(
             'You don\'t have an active parking session right now.',

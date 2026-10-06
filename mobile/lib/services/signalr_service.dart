@@ -33,13 +33,13 @@ class SignalRService {
       final token = ApiConfig.authToken;
       _connection = HubConnectionBuilder()
           .withUrl(
-            _hubUrl,
-            options: HttpConnectionOptions(
-              accessTokenFactory: token != null ? () async => token : null,
-            ),
-          )
-          .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 30000])
-          .build();
+        _hubUrl,
+        options: HttpConnectionOptions(
+          accessTokenFactory: token != null ? () async => token : null,
+        ),
+      )
+          .withAutomaticReconnect(
+              retryDelays: [2000, 5000, 10000, 30000]).build();
 
       // ── Hub event listeners ──────────────────────────────────────────────
       _connection!.on('SlotStateChanged', (args) {
