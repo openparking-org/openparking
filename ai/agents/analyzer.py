@@ -32,7 +32,7 @@ class AnalyzerAgent:
         data = ZoneObservation(
             total_slots=total_slots,
             occupied_slots=occupied_slots,
-            base_hourly_rate=Decimal("0"),
+            base_hourly_rate=Decimal(0),
             recent_arrivals=recent_arrivals,
             recent_departures=recent_departures,
             reservation_demand=reservation_demand,
