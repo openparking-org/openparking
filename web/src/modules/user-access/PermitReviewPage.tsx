@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { apiClient } from '../../lib/apiClient';
 import { useAdminPage } from '../../hooks/useAdminPage';
 import { postData, messageOf } from '../../services/adminService';
-import { Notice, PageHeading, Pagination } from '../../components/PageTools';
+import { EmptyState, Loading, Notice, PageHeading, Pagination, StatusBadge } from '../../components/PageTools';
+import { Check, ExternalLink, FileCheck, FileX, RefreshCw, ScanText, X } from 'lucide-react';
 
 interface Validation {
   valid: boolean;
@@ -53,65 +54,67 @@ export function PermitReviewPage() {
     finally { setBusy(''); }
   };
 
+  const date = (value: string) => new Date(value).toLocaleDateString([], { dateStyle: 'medium' });
   return <>
-    <PageHeading title="Disability Permit Review" description="Compare the uploaded document with its extracted fields, then record your decision.">
-      <select aria-label="Permit status" value={filter} onChange={e => { setFilter(e.target.value); list.setPage(1); }}>
-        <option value="">All statuses</option>
-        {['Pending', 'Verified', 'Rejected', 'Expired'].map(s => <option key={s}>{s}</option>)}
-      </select>
-      <button className="btn btn-secondary" onClick={list.reload}>Refresh</button>
+    <PageHeading title="Disability Permit Review" description="Compare the uploaded document with its details, then record your decision.">
+      <button className="btn btn-secondary" onClick={list.reload}><RefreshCw size={16} aria-hidden="true" />Refresh</button>
     </PageHeading>
+    <div className="segmented" role="group" aria-label="Filter by status" style={{ marginBottom: 16 }}>{['Pending', 'Verified', 'Rejected', 'Expired', ''].map(s => <button key={s || 'all'} type="button" aria-pressed={filter === s} onClick={() => { setFilter(s); list.setPage(1); }}>{s || 'All'}</button>)}</div>
     <Notice error={error || list.error} message={message} />
-    {list.loading ? <p role="status">Loading permits…</p> : !list.error && <>
+    {list.loading ? <Loading label="Loading permits…" /> : !list.error && <>
       {list.data?.items.map(permit => {
         const validation = results[permit.id] || permit.aiValidation;
         const fields = validation?.extracted_fields;
         const url = documentUrl(permit.documentImageUrl);
-        return <article className="glass-panel admin-panel" key={permit.id}>
-          <div className="admin-toolbar"><h2>{permit.fullName}</h2><span className="status-chip">{permit.status}</span></div>
-          <div className="admin-form-grid">
-            <div>
-              <p>Permit: <strong>{permit.permitNumber}</strong></p>
-              <p>Jurisdiction: {permit.jurisdiction}</p>
-              <p>Expiry: {new Date(permit.expiryDate).toLocaleDateString()}</p>
-              <p>Submitted: {new Date(permit.createdAt).toLocaleString()}</p>
-              {permit.reviewedAt && <p>Reviewed: {new Date(permit.reviewedAt).toLocaleString()}</p>}
-              {permit.reviewNotes && <p>Notes: {permit.reviewNotes}</p>}
-              {permit.rejectionReason && <p>Rejection: {permit.rejectionReason}</p>}
-            </div>
-            <div>
-              {isUploadedImage(permit.documentImageUrl)
-                ? <img src={permit.documentImageUrl} alt={`Uploaded permit for ${permit.fullName}`} style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain' }} />
-                : url ? <a className="btn btn-secondary" href={url} target="_blank" rel="noopener noreferrer">Open permit document</a>
-                  : <p>Document is unavailable or has an unsupported format.</p>}
-              {validation && <div className="admin-notice" aria-live="polite">
-                <strong>{validation.document_status === 'unavailable' ? 'Document reading unavailable'
-                  : validation.valid ? 'Document fields match' : 'Document needs attention'}</strong>
-                {fields && <>
-                  <p>Read permit number: {fields.permit_number || 'Unreadable / missing'}</p>
-                  <p>Read issuing authority: {fields.jurisdiction || 'Unreadable / missing'}</p>
-                  <p>Read expiry date: {fields.expiry_date || 'Unreadable / missing'}</p>
-                  <p>Readability: {fields.readability || 'Unknown'}</p>
-                </>}
-                <p>{validation.reason}</p>
-                <p>Document reading does not verify authenticity. Administrator approval is required.</p>
+        const expired = new Date(permit.expiryDate).getTime() <= Date.now();
+        const readingTone = validation?.document_status === 'unavailable' ? 'warn' : validation?.valid ? 'good' : 'crit';
+        return <article className="card" key={permit.id}>
+          <div className="card-header"><div><h2>{permit.fullName}</h2><p>Submitted {new Date(permit.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p></div><StatusBadge status={permit.status} label={permit.status === 'Pending' ? 'Pending review' : undefined} /></div>
+          <div className="card-body grid-2">
+            <div className="stack">
+              <dl className="kv">
+                <dt>Permit number</dt><dd className="mono">{permit.permitNumber}</dd>
+                <dt>Jurisdiction</dt><dd>{permit.jurisdiction}</dd>
+                <dt>Expiry</dt><dd>{date(permit.expiryDate)} {expired && <span className="badge tone-crit" style={{ marginLeft: 6 }}>Expired</span>}</dd>
+                {permit.reviewedAt && <><dt>Reviewed</dt><dd>{new Date(permit.reviewedAt).toLocaleString()}</dd></>}
+                {permit.reviewNotes && <><dt>Notes</dt><dd>{permit.reviewNotes}</dd></>}
+                {permit.rejectionReason && <><dt>Rejection</dt><dd>{permit.rejectionReason}</dd></>}
+              </dl>
+              {validation && <div className="reading" aria-live="polite">
+                <div className="row-between"><strong className="row" style={{ gap: 8 }}><ScanText size={16} aria-hidden="true" />AI document reading</strong><span className={`badge tone-${readingTone}`}>{validation.document_status === 'unavailable' ? 'Unavailable' : validation.valid ? 'Fields match' : 'Needs attention'}</span></div>
+                {fields && <dl className="kv">
+                  <dt>Permit number</dt><dd>{fields.permit_number || 'Unreadable / missing'}</dd>
+                  <dt>Authority</dt><dd>{fields.jurisdiction || 'Unreadable / missing'}</dd>
+                  <dt>Expiry date</dt><dd>{fields.expiry_date || 'Unreadable / missing'}</dd>
+                  <dt>Readability</dt><dd>{fields.readability || 'Unknown'}</dd>
+                </dl>}
+                {validation.reason && <p className="muted">{validation.reason}</p>}
+                <p className="subtle" style={{ marginTop: 8 }}>Reading the document does not prove authenticity. An administrator must approve.</p>
               </div>}
+            </div>
+            <div className="permit-doc">
+              {isUploadedImage(permit.documentImageUrl)
+                ? <img src={permit.documentImageUrl} alt={`Uploaded permit for ${permit.fullName}`} />
+                : url ? <a className="btn btn-secondary" href={url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} aria-hidden="true" />Open permit document</a>
+                  : <EmptyState icon={FileX} title="Document unavailable">The file is missing or in an unsupported format.</EmptyState>}
             </div>
           </div>
           {permit.status === 'Pending' && <>
-            <label>Review notes / rejection reason<textarea maxLength={1000} value={notes[permit.id] || ''} onChange={e => setNotes(current => ({ ...current, [permit.id]: e.target.value }))} /></label>
-            <div className="admin-actions">
-              <button className="btn btn-secondary" disabled={!!busy || validation?.document_status === 'read'} onClick={() => void validate(permit)}>
-                {validation?.document_status === 'read' ? 'Document reading saved' : busy === permit.id ? 'Processing…' : 'Read permit document'}
+            <div style={{ padding: '0 20px 18px' }}><label className="field"><span className="field-label">Review notes</span><textarea maxLength={1000} placeholder="Optional for approval. Required to reject." value={notes[permit.id] || ''} onChange={e => setNotes(current => ({ ...current, [permit.id]: e.target.value }))} /></label></div>
+            <div className="card-footer">
+              <button className="btn btn-secondary" disabled={!!busy || validation?.document_status === 'read'} onClick={() => void validate(permit)}><ScanText size={16} aria-hidden="true" />
+                {validation?.document_status === 'read' ? 'Document read' : busy === permit.id ? 'Reading…' : 'Read document with AI'}
               </button>
-              <button className="btn btn-primary" disabled={!!busy} onClick={() => void review(permit, 'Verified')}>Verify permit</button>
-              <button className="btn btn-secondary" disabled={!!busy || !notes[permit.id]?.trim()} onClick={() => void review(permit, 'Rejected')}>Reject</button>
+              <div className="row" style={{ marginLeft: 'auto' }}>
+                <button className="btn btn-danger" disabled={!!busy || !notes[permit.id]?.trim()} onClick={() => void review(permit, 'Rejected')}><X size={16} aria-hidden="true" />Reject</button>
+                <button className="btn btn-primary" disabled={!!busy || expired} title={expired ? 'Expired permits cannot be verified' : undefined} onClick={() => void review(permit, 'Verified')}><Check size={16} aria-hidden="true" />Verify permit</button>
+              </div>
             </div>
           </>}
         </article>;
       })}
-      {list.data?.items.length === 0 && <div className="glass-panel admin-panel">No permits match this status.</div>}
+      {list.data?.items.length === 0 && <div className="card"><EmptyState icon={FileCheck} title={filter === 'Pending' ? 'All caught up' : 'No permits found'}>{filter === 'Pending' ? 'There are no permits waiting for review.' : 'No permits match this status.'}</EmptyState></div>}
     </>}
-    <Pagination page={list.page} total={list.data?.totalCount || 0} onPage={list.setPage} />
+    {(list.data?.totalCount || 0) > 20 && <div className="card" style={{ marginTop: 20 }}><Pagination page={list.page} total={list.data?.totalCount || 0} onPage={list.setPage} /></div>}
   </>;
 }
