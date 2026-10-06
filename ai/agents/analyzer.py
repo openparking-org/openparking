@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -31,7 +32,7 @@ class AnalyzerAgent:
         data = ZoneObservation(
             total_slots=total_slots,
             occupied_slots=occupied_slots,
-            base_hourly_rate=0,
+            base_hourly_rate=Decimal("0"),
             recent_arrivals=recent_arrivals,
             recent_departures=recent_departures,
             reservation_demand=reservation_demand,
@@ -43,7 +44,7 @@ class AnalyzerAgent:
             if data.recent_arrivals is not None
             else 0.0
         )
-        level = (
+        level: Literal["LOW", "MODERATE", "HIGH", "CRITICAL"] = (
             "CRITICAL"
             if occupancy >= 0.9
             else "HIGH"
@@ -52,7 +53,7 @@ class AnalyzerAgent:
             if occupancy >= 0.5
             else "LOW"
         )
-        trend = "UNKNOWN"
+        trend: Literal["INCREASING", "DECREASING", "STABLE", "UNKNOWN"] = "UNKNOWN"
         factors = [f"{occupancy:.0%} occupancy"]
         if recent_arrivals is not None and recent_departures is not None:
             delta = recent_arrivals - recent_departures
@@ -80,7 +81,7 @@ class AnalyzerAgent:
         unavailable.append("historical_occupancy")
         # Evidence completeness heuristic, not a calibrated probability.
         confidence = 0.95 - 0.03 * (len(unavailable) - 1)
-        demand = level
+        demand: Literal["LOW", "MODERATE", "HIGH", "CRITICAL"] = level
         if level == "MODERATE" and (
             velocity > 0.7 or (reservation_demand or 0) / total_slots >= 0.3
         ):

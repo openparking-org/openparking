@@ -133,7 +133,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               const Icon(Icons.wifi_off_rounded,
                   size: 64, color: AppTheme.textTertiary),
               const SizedBox(height: 16),
-              Text('Could not load session', style: AppTheme.titleMd),
+              const Text('Could not load session', style: AppTheme.titleMd),
               const SizedBox(height: 8),
               Text('$e',
                   style:
@@ -211,7 +211,7 @@ class _SessionContent extends StatelessWidget {
           const SizedBox(height: 16),
           if (isOverstay) _OverstayWarningCard(session: session),
           if (isOverstay) const SizedBox(height: 16),
-          _SignalRStatusCard(),
+          const _SignalRStatusCard(),
           const SizedBox(height: 32),
         ],
       ),
@@ -277,7 +277,7 @@ class _LiveTimerCard extends StatelessWidget {
         const SizedBox(height: 20),
         Text(
           elapsed,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'monospace',
             fontSize: 52,
             fontWeight: FontWeight.w800,
@@ -315,10 +315,10 @@ class _FeeCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Icon(Icons.receipt_long_outlined,
+          const Row(children: [
+            Icon(Icons.receipt_long_outlined,
                 color: AppTheme.primary, size: 20),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text('Live Fee Estimate', style: AppTheme.labelLg),
           ]),
           const Divider(height: 24),
@@ -391,10 +391,10 @@ class _SessionDetailsCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Icon(Icons.local_parking_outlined,
+          const Row(children: [
+            Icon(Icons.local_parking_outlined,
                 color: AppTheme.primary, size: 20),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text('Session Details', style: AppTheme.labelLg),
           ]),
           const Divider(height: 24),

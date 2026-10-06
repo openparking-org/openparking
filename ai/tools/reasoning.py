@@ -62,7 +62,7 @@ async def choose(context: dict) -> ReasoningChoice | None:
         from tools.llm import get_llm
 
         message = await asyncio.wait_for(get_llm().ainvoke(prompt), timeout=10)
-        content = message.content
+        content = str(message.content)
     else:
         raise ValueError("Unknown reasoning provider")
     return ReasoningChoice.model_validate_json(content)

@@ -4,8 +4,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../core/providers/zone_provider.dart';
 import '../../core/theme.dart';
-import '../../models/zone.dart';
-import 'indoor_map_screen.dart';
 
 class ZoneMapView extends ConsumerStatefulWidget {
   const ZoneMapView({super.key});
@@ -59,7 +57,7 @@ class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
         options.add(PointAnnotationOptions(
           geometry: Point(coordinates: Position(zone.longitude, zone.latitude)),
           textField: zone.name,
-          textColor: AppTheme.primary.value,
+          textColor: AppTheme.primary.toARGB32(),
           textOffset: [0, 1.5],
         ));
       }
