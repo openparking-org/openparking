@@ -1,6 +1,8 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { EmptyState } from './PageTools';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,10 +21,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles 
   if (!user || (roles && !roles.includes(user.role))) {
     // Role not authorized
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Unauthorized Access</h2>
-        <p>You do not have permission to view this page.</p>
-        <button className="btn btn-secondary" onClick={logout}>Sign out</button>
+      <div className="card" style={{ maxWidth: 520, margin: '48px auto' }}>
+        <EmptyState icon={Lock} title="You don’t have access to this page" action={<button className="btn btn-secondary" onClick={logout}>Sign out</button>}>
+          This area is limited to {roles?.includes('ParkingAdmin') ? 'parking administrators' : 'system administrators'}. Ask a system administrator if you need access.
+        </EmptyState>
       </div>
     );
   }

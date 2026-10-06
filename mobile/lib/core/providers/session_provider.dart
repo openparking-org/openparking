@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/session_service.dart';
+import '../../services/signalr_service.dart';
 import '../auth_provider.dart';
 
 final sessionServiceProvider = Provider<SessionService>((ref) {
@@ -11,9 +12,21 @@ class SessionStateNotifier
     extends StateNotifier<AsyncValue<ParkingSessionModel?>> {
   final SessionService _sessionService;
   Timer? _pollingTimer;
+  StreamSubscription<HubEvent>? _hubSub;
 
-  SessionStateNotifier(this._sessionService)
-      : super(const AsyncValue.loading());
+  SessionStateNotifier(this._sessionService, {Stream<HubEvent>? hubEvents})
+      : super(const AsyncValue.loading()) {
+    // Immediately refresh on SignalR session/overstay events.
+    if (hubEvents != null) {
+      _hubSub = hubEvents.listen((event) {
+        if (event.type == 'SessionUpdated' ||
+            event.type == 'OverstayAlert' ||
+            event.type == 'PenaltyIssued') {
+          _fetchSession();
+        }
+      });
+    }
+  }
 
   void startPolling() {
     _fetchSession();
@@ -52,6 +65,7 @@ class SessionStateNotifier
   @override
   void dispose() {
     stopPolling();
+    _hubSub?.cancel();
     super.dispose();
   }
 }
@@ -59,7 +73,11 @@ class SessionStateNotifier
 final activeSessionProvider = StateNotifierProvider<SessionStateNotifier,
     AsyncValue<ParkingSessionModel?>>((ref) {
   final service = ref.watch(sessionServiceProvider);
-  final notifier = SessionStateNotifier(service);
+  final hubEvents = ref.watch(hubEventProvider).asData?.value != null
+      ? ref.watch(signalRServiceProvider).events
+      : null;
+
+  final notifier = SessionStateNotifier(service, hubEvents: hubEvents);
 
   // Auto-start polling if user is authenticated
   final authState = ref.watch(authProvider);

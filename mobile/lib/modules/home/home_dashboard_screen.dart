@@ -5,16 +5,31 @@ import '../../core/providers/session_provider.dart';
 import '../../core/providers/zone_provider.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../services/signalr_service.dart';
 import '../booking/booking_screen.dart';
 import '../enforcement/penalties_screen.dart';
 import '../space_availability/zone_discovery_screen.dart';
 import '../space_availability/indoor_map_screen.dart';
 import '../user_access/permit_upload_screen.dart';
+import 'active_session_screen.dart';
 
-class HomeDashboardScreen extends ConsumerWidget {
+class HomeDashboardScreen extends ConsumerStatefulWidget {
   const HomeDashboardScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeDashboardScreen> createState() => _HomeDashboardState();
+}
+
+class _HomeDashboardState extends ConsumerState<HomeDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(signalRServiceProvider).connect();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final session = ref.watch(activeSessionProvider);
     final zones = ref.watch(zoneListProvider);
@@ -91,7 +106,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                               onPressed: () => open(active == null
                                   ? const ZoneDiscoveryScreen(
                                       autoRecommend: true)
-                                  : const BookingScreen()),
+                                  : const ActiveSessionScreen()),
                             )),
                       ]),
                 ),

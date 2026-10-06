@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAdminPage } from '../../hooks/useAdminPage';
 import { useSlotUpdates } from '../../hooks/useSlotUpdates';
 import { allZones, getData, postData, messageOf, type Driver, type Slot, type Zone } from '../../services/adminService';
-import { Notice, PageHeading } from '../../components/PageTools';
+import { EmptyState, Loading, Notice, PageHeading } from '../../components/PageTools';
+import { CalendarDays, CheckCircle2, Layers, RefreshCw } from 'lucide-react';
 
 function localTimeAfter(minutes: number) {
   const date = new Date(Date.now() + minutes * 60000);
@@ -65,10 +66,52 @@ export function CreateReservationPage() {
       setResult(booking); setSlotId(''); await loadSlots();
     } catch (err) { setError(messageOf(err)); } finally { setBusy(false); }
   };
-  return <><PageHeading title="Create Reservation" description="Reserve an available bay on behalf of a driver."><Link className="btn btn-secondary" to="/bookings">Reservations</Link></PageHeading><Notice error={error || drivers.error} />
-    {result && <div className="glass-panel admin-panel" role="status"><h2>Reservation confirmed</h2><p>Reference: <strong>{result.id}</strong></p><p>Server estimate: {zone?.currency} {result.estimatedFee.toFixed(2)}</p><Link className="btn btn-primary" to="/bookings">Manage reservation</Link><button className="btn btn-secondary" onClick={() => setResult(null)}>Create another</button></div>}
-    {!result && <form onSubmit={submit} className="reservation-grid"><section className="glass-panel admin-panel"><h2>Choose a bay</h2><div className="admin-toolbar"><label>Zone<select required value={zoneId} onChange={e => { setZoneId(e.target.value); setFloor(0); setSlotId(''); }}>{zones.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Floor<select value={floor} onChange={e => { setFloor(Number(e.target.value)); setSlotId(''); }}>{(floors.length ? floors : [0]).map(f => <option key={f} value={f}>Floor {f}</option>)}</select></label><button type="button" className="btn btn-secondary" onClick={() => void loadSlots()}>Refresh bays</button></div><p className="muted">{isConnected ? 'Live availability connected' : 'Live updates disconnected. Refresh to check availability.'}</p>{loading ? <p role="status">Loading bays…</p> : <div className="bay-grid">{slots.filter(slot => slot.floor === floor).map(slot => <button type="button" key={slot.id} aria-pressed={slot.id === slotId} className={`bay-button ${slot.status.toLowerCase()} ${slot.id === slotId ? 'selected' : ''}`} disabled={slot.status !== 'Available' || (slot.type === 'Accessible' && !driver?.hasDisabilityPermit)} onClick={() => setSlotId(slot.id)}><strong>{slot.slotNumber}</strong><span>{slot.type}</span><small>{slot.status}</small></button>)}</div>}{!loading && slots.length === 0 && <p>No mapped bays. <Link to={`/slot-mapping?zone=${zoneId}`}>Add bays in Slot Mapping.</Link></p>}{!loading && !zones.length && <Link to="/zones">Create a parking zone first.</Link>}</section>
-      <section className="glass-panel admin-panel"><h2>Driver and time window</h2><label>Find driver<input placeholder="Search name or email" value={drivers.search} onChange={e => drivers.setSearch(e.target.value)} /></label><label>Driver<select required value={driver?.id || ''} onChange={e => { setDriver(drivers.data?.items.find(item => item.id === e.target.value) || null); setSlotId(''); }}><option value="">Select an existing driver</option>{driver && !drivers.data?.items.some(item => item.id === driver.id) && <option value={driver.id}>{driver.fullName}</option>}{drivers.data?.items.map(item => <option key={item.id} value={item.id}>{item.fullName} · {item.email}</option>)}</select></label>{drivers.loading && <p>Loading drivers…</p>}<label>Vehicle plate<input required maxLength={32} value={plate} onChange={e => setPlate(e.target.value)} /></label><label>Start time<input type="datetime-local" required value={start} onChange={e => setStart(e.target.value)} /></label><label>End time<input type="datetime-local" required value={end} onChange={e => setEnd(e.target.value)} /></label><p>Selected bay: <strong>{slots.find(slot => slot.id === slotId)?.slotNumber || 'Choose a bay'}</strong></p><p>Base estimate: {zone?.currency} {estimate.toFixed(2)}<small className="muted block">Final reservation estimate includes server pricing and eligible discounts.</small></p><button className="btn btn-primary" disabled={busy || !slotId || !driver}>{busy ? 'Creating…' : 'Confirm reservation'}</button></section>
+  const selectedSlot = slots.find(slot => slot.id === slotId);
+  const floorSlots = slots.filter(slot => slot.floor === floor);
+  const available = floorSlots.filter(slot => slot.status === 'Available').length;
+  return <>
+    <PageHeading title="New Reservation" description="Reserve an available bay on behalf of a driver."><Link className="btn btn-secondary" to="/bookings"><CalendarDays size={16} aria-hidden="true" />All reservations</Link></PageHeading>
+    <Notice error={error || drivers.error} />
+    {result && <div className="card" role="status" style={{ maxWidth: 560 }}>
+      <div className="card-header"><div className="result-head"><span className="result-icon tone-good"><CheckCircle2 size={20} aria-hidden="true" /></span><div><h2>Reservation confirmed</h2><p>The bay is now held for the driver.</p></div></div></div>
+      <div className="card-body"><dl className="kv"><dt>Reference</dt><dd className="mono">{result.id}</dd><dt>Server estimate</dt><dd>{zone?.currency} {result.estimatedFee.toFixed(2)}</dd></dl></div>
+      <div className="card-footer"><Link className="btn btn-primary" to="/bookings">Manage reservation</Link><button className="btn btn-secondary" onClick={() => setResult(null)}>Create another</button></div>
+    </div>}
+    {!result && <form onSubmit={submit} className="grid-split">
+      <section className="card">
+        <div className="card-header"><div><h2>1. Choose a bay</h2><p>{loading ? 'Loading…' : `${available} of ${floorSlots.length} bays available on this floor`}</p></div><span className={`live ${isConnected ? 'on' : ''}`}>{isConnected ? 'Live' : 'Offline'}</span></div>
+        <div className="card-body stack">
+          <div className="row" style={{ alignItems: 'flex-end' }}>
+            <label className="field" style={{ flex: '1 1 220px' }}><span className="field-label">Zone</span><select required value={zoneId} onChange={e => { setZoneId(e.target.value); setFloor(0); setSlotId(''); }}>{zones.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="field" style={{ width: 140 }}><span className="field-label">Floor</span><select value={floor} onChange={e => { setFloor(Number(e.target.value)); setSlotId(''); }}>{(floors.length ? floors : [0]).map(f => <option key={f} value={f}>Floor {f}</option>)}</select></label>
+            <button type="button" className="btn btn-secondary" onClick={() => void loadSlots()}><RefreshCw size={16} aria-hidden="true" />Refresh</button>
+          </div>
+          {!isConnected && <p className="subtle">Live updates are disconnected. Refresh to check availability.</p>}
+          <div className="legend"><span><i className="dot good" />Available</span><span><i className="dot warn" />Reserved</span><span><i className="dot crit" />Occupied</span><span><i className="dot neutral" />Maintenance</span></div>
+          {loading ? <Loading label="Loading bays…" /> : <div className="bay-grid">{floorSlots.map(slot => <button type="button" key={slot.id} aria-pressed={slot.id === slotId} className={`bay ${slot.status.toLowerCase()}`} disabled={slot.status !== 'Available' || (slot.type === 'Accessible' && !driver?.hasDisabilityPermit)} title={slot.type === 'Accessible' && !driver?.hasDisabilityPermit ? 'Requires a driver with a verified disability permit' : undefined} onClick={() => setSlotId(slot.id)}><strong>{slot.slotNumber}</strong><span>{slot.type}</span><small>{slot.status}</small></button>)}</div>}
+          {!loading && slots.length === 0 && zones.length > 0 && <EmptyState icon={Layers} title="No mapped bays" action={<Link className="btn btn-secondary" to={`/slot-mapping?zone=${zoneId}`}>Open slot mapping</Link>}>Add bays to this zone before taking reservations.</EmptyState>}
+          {!loading && !zones.length && <EmptyState title="No parking zones" action={<Link className="btn btn-primary" to="/zones">Create a zone</Link>}>Create a parking zone first.</EmptyState>}
+        </div>
+      </section>
+      <section className="card" style={{ position: 'sticky', top: 'calc(var(--topbar-h) + 16px)' }}>
+        <div className="card-header"><div><h2>2. Driver and time</h2><p>Only existing driver accounts can be booked.</p></div></div>
+        <div className="card-body stack">
+          <label className="field"><span className="field-label">Find driver</span><input type="search" placeholder="Search name or email" value={drivers.search} onChange={e => drivers.setSearch(e.target.value)} /></label>
+          <label className="field"><span className="field-label">Driver</span><select required value={driver?.id || ''} onChange={e => { setDriver(drivers.data?.items.find(item => item.id === e.target.value) || null); setSlotId(''); }}><option value="">{drivers.loading ? 'Loading drivers…' : 'Select a driver'}</option>{driver && !drivers.data?.items.some(item => item.id === driver.id) && <option value={driver.id}>{driver.fullName}</option>}{drivers.data?.items.map(item => <option key={item.id} value={item.id}>{item.fullName} · {item.email}</option>)}</select>{driver?.hasDisabilityPermit && <span className="field-hint">Verified permit: accessible bays are available.</span>}</label>
+          <label className="field"><span className="field-label">Vehicle plate</span><input required maxLength={32} placeholder="ABC-1234" style={{ textTransform: 'uppercase' }} value={plate} onChange={e => setPlate(e.target.value)} /></label>
+          <div className="form-grid">
+            <label className="field"><span className="field-label">Start</span><input type="datetime-local" required value={start} onChange={e => setStart(e.target.value)} /></label>
+            <label className="field"><span className="field-label">End</span><input type="datetime-local" required value={end} onChange={e => setEnd(e.target.value)} /></label>
+          </div>
+          <div>
+            <div className="summary-line"><span>Bay</span><strong>{selectedSlot ? `${selectedSlot.slotNumber} · ${selectedSlot.type}` : 'Not selected'}</strong></div>
+            <div className="summary-line"><span>Duration</span><strong>{duration > 0 ? `${duration.toFixed(duration % 1 ? 1 : 0)} h` : '—'}</strong></div>
+            <div className="summary-line" style={{ borderBottom: 0 }}><span>Base estimate</span><strong>{zone?.currency} {estimate.toFixed(2)}</strong></div>
+            <p className="subtle">The final estimate includes server pricing and eligible discounts.</p>
+          </div>
+        </div>
+        <div className="card-footer"><button className="btn btn-primary btn-block btn-lg" disabled={busy || !slotId || !driver}>{busy ? 'Creating…' : 'Confirm reservation'}</button></div>
+      </section>
     </form>}
   </>;
 }

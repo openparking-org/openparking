@@ -19,7 +19,7 @@ class _GateScannerScreenState extends State<GateScannerScreen> {
 
   void _onDetect(BarcodeCapture capture) async {
     if (_isProcessing) return;
-    
+
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
 
@@ -40,14 +40,14 @@ class _GateScannerScreenState extends State<GateScannerScreen> {
 
         if (!mounted) return;
         _controller.stop();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Gate opened successfully!'),
             backgroundColor: AppTheme.accentSuccess,
           ),
         );
-        
+
         Navigator.of(context).pop(true);
       } else {
         throw Exception("Invalid QR Code: gateId missing.");
@@ -56,7 +56,8 @@ class _GateScannerScreenState extends State<GateScannerScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed: ${e.toString().replaceAll('Exception: ', '')}'),
+          content:
+              Text('Failed: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppTheme.accentCritical,
         ),
       );

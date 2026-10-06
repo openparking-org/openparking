@@ -96,9 +96,9 @@ async def extract_permit(image: str) -> dict:
                 ) if isinstance(usage.get(name), int)},
             }
     except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
-        response = getattr(exc, "response", None)
+        err_response = getattr(exc, "response", None)
         logger.warning("Permit vision failed: type=%s status=%s", type(exc).__name__,
-                       response.status_code if response is not None else None)
+                       err_response.status_code if err_response is not None else None)
         # Never expose provider responses, API keys, or raw document bytes.
         raise PermitVisionUnavailable(
             "Document reading could not complete. Retry later or review the document manually."

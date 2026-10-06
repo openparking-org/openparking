@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+
 from agents.parking_finder import ParkingFinderAgent, ParkingRequest
 
 
@@ -47,6 +48,7 @@ def test_invalid_preference_rejected():
 
 def test_endpoint_requires_internal_auth(monkeypatch):
     from fastapi.testclient import TestClient
+
     from main import app
     monkeypatch.setenv('INTERNAL_API_TOKEN', 'parking-test')
     client = TestClient(app)

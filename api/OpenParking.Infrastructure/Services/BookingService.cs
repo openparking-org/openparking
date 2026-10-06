@@ -341,7 +341,7 @@ public class BookingService(
         if (booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.Cancelled)
             throw new AppException(ErrorCodes.ValidationFailed, $"Booking cannot be checked in because its status is {booking.Status}.");
 
-        if (booking.StartTime > DateTime.UtcNow || booking.EndTime <= DateTime.UtcNow || booking.Status == BookingStatus.Expired)
+        if (booking.StartTime > DateTime.UtcNow.AddMinutes(15) || booking.EndTime <= DateTime.UtcNow || booking.Status == BookingStatus.Expired)
             throw new AppException(ErrorCodes.ValidationFailed, "This reservation is not valid at the current time.", 409);
         if (booking.Slot?.Status is SlotStatus.Occupied or SlotStatus.Maintenance)
             throw new AppException(ErrorCodes.SlotUnavailable, "This space cannot accept the vehicle.", 409);
