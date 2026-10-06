@@ -13,13 +13,11 @@ class ZoneMapView extends ConsumerStatefulWidget {
 }
 
 class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
-  MapboxMap? _mapboxMap;
   PointAnnotationManager? _pointAnnotationManager;
   final String _token = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
   @override
   Widget build(BuildContext context) {
-    final zoneState = ref.watch(zoneListProvider);
     if (_token.isNotEmpty) {
       MapboxOptions.setAccessToken(_token);
     }
@@ -35,7 +33,6 @@ class _ZoneMapViewState extends ConsumerState<ZoneMapView> {
   }
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
-    _mapboxMap = mapboxMap;
     await mapboxMap.setCamera(CameraOptions(
       center: Point(coordinates: Position(103.851959, 1.290270)),
       zoom: 12.0,
