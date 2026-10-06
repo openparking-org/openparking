@@ -2,13 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OpenParking — Admin & Operations Dashboard</title>
+    <title>OpenParking Admin</title>
+    <meta name="color-scheme" content="light dark" />
     <meta name="description" content="AI-driven smart parking management and operations console." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      // Apply the saved theme before first paint so dark mode never flashes light.
+      try {
+        var mode = JSON.parse(localStorage.getItem('openparking-theme') || '{}').state?.mode;
+        if (mode === 'light' || mode === 'dark') document.documentElement.dataset.theme = mode;
+      } catch (e) { /* storage unavailable: follow the OS setting */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>
