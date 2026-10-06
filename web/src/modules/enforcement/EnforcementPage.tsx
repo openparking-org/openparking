@@ -1,8 +1,11 @@
-﻿import { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { SettingsContext } from '../../App';
 import { useAdminPage } from '../../hooks/useAdminPage';
 import { getData, postData, messageOf } from '../../services/adminService';
-import { Notice, PageHeading, Pagination } from '../../components/PageTools';
+import { EmptyState, Loading, Notice, PageHeading, Pagination, StatusBadge } from '../../components/PageTools';
+import { humanize } from '../../lib/status';
+import { useConfirm } from '../../components/ConfirmDialog';
+import { Bot, Check, MousePointerClick, RefreshCw, RotateCcw, ScanSearch, X } from 'lucide-react';
 
 interface Workflow { id: string; objective: string; workflowType: string; status: string; createdAt: string; decisionReason: string }
 interface Detail extends Workflow { sessionId?: string; zoneId?: string; stepResultsJson: string; planJson: string; errorLog?: string; updatedAt: string }
@@ -16,6 +19,7 @@ export function EnforcementPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const confirm = useConfirm();
   const scan = async () => {
     setBusy(true); setError(''); setMessage('');
     try { const result = await postData<{ triggeredCount: number }>('/api/agent/workflows/scan', {}); setMessage(`Overstay check completed. ${result.triggeredCount} workflows triggered.`); list.reload(); }
@@ -35,14 +39,57 @@ export function EnforcementPage() {
   const decide = async (action: 'approve' | 'reject') => {
     if (!detail) return;
     if (action === 'reject' && reason.trim().length < 5) { setError('Enter a rejection reason of at least 5 characters.'); return; }
-    if (!window.confirm(`${action === 'approve' ? 'Approve' : 'Reject'} this ${detail.workflowType} proposal?`)) return;
+    if (!await confirm({ title: `${action === 'approve' ? 'Approve' : 'Reject'} this ${humanize(detail.workflowType).toLowerCase()} proposal?`, body: action === 'approve' ? 'The agent will carry out the proposed action. This is recorded in the audit log.' : `Reason: “${reason.trim()}”`, confirmLabel: action === 'approve' ? 'Approve action' : 'Reject action', danger: action === 'reject' })) return;
     setBusy(true); setError(''); setMessage('');
     try { const updated = await postData<Detail>(`/api/agent/workflows/${detail.id}/${action}`, action === 'reject' ? { reason: reason.trim() } : {}); setDetail(updated); setMessage(`Decision recorded. Workflow status: ${updated.status}.`); list.reload(); }
     catch (err) { setError(messageOf(err)); list.reload(); } finally { setBusy(false); }
   };
-  return <><PageHeading title="AI Enforcement" description="Review proposed actions and inspect execution history."><button className="btn btn-primary" disabled={busy} onClick={() => void scan()}>Check overstays</button><select aria-label="Workflow status" value={status} onChange={e => { setStatus(e.target.value); list.setPage(1); setDetail(null); }}><option value="">All statuses</option>{['AwaitingApproval', 'Running', 'Approved', 'Rejected', 'Failed'].map(s => <option key={s}>{s}</option>)}</select><button className="btn btn-secondary" onClick={list.reload}>Refresh</button></PageHeading><Notice error={error || list.error} message={message} />
-    <div className="reservation-grid"><section className="glass-panel admin-panel"><h2>Workflow queue</h2>{list.loading ? <p role="status">Loading workflowsâ€¦</p> : !list.error && <>{list.data?.items.map(w => <button className={`workflow-row ${detail?.id === w.id ? 'selected' : ''}`} key={w.id} disabled={busy} onClick={() => void select(w.id)}><strong>{w.objective}</strong><small>{w.workflowType} Â· {w.status}</small><small>{new Date(w.createdAt).toLocaleString()}</small></button>)}{list.data?.items.length === 0 && <p>No workflows match this status.</p>}</>}<Pagination page={list.page} total={list.data?.totalCount || 0} onPage={list.setPage} /></section>
-    <section className="glass-panel admin-panel"><h2>Proposal details</h2>{detail ? <><p><strong>{detail.objective}</strong></p><p>Type: {detail.workflowType} Â· Status: {detail.status}</p><p>Created: {new Date(detail.createdAt).toLocaleString()}</p><p>Session: {detail.sessionId || 'Not linked'}</p><p>Zone: {detail.zoneId || 'Not linked'}</p><p>System currency: {settings.defaultCurrency}</p><h3>Agent evidence and proposed action</h3><pre className="proposal-json">{readableJson(detail.stepResultsJson)}</pre><details><summary>Execution plan</summary><pre className="proposal-json">{readableJson(detail.planJson)}</pre></details>{detail.decisionReason && <p>Decision: {detail.decisionReason}</p>}{detail.errorLog && <Notice error={detail.errorLog} />}{detail.status === 'Failed' && <button className="btn btn-secondary" disabled={busy} onClick={() => void retry()}>Retry workflow</button>}{detail.status === 'AwaitingApproval' && <><label>Rejection reason<textarea maxLength={1000} value={reason} onChange={e => setReason(e.target.value)} /></label><div className="admin-actions"><button className="btn btn-primary" disabled={busy} onClick={() => void decide('approve')}>Approve action</button><button className="btn btn-secondary" disabled={busy || reason.trim().length < 5} onClick={() => void decide('reject')}>Reject action</button></div></>}</> : <p>Select a workflow to inspect its proposal and evidence.</p>}</section></div>
+  return <>
+    <PageHeading title="AI Enforcement" description="Review agent proposals before they take effect and inspect execution history.">
+      <button className="btn btn-secondary" onClick={list.reload}><RefreshCw size={16} aria-hidden="true" />Refresh</button>
+      <button className="btn btn-primary" disabled={busy} onClick={() => void scan()}><ScanSearch size={16} aria-hidden="true" />Check overstays</button>
+    </PageHeading>
+    <Notice error={error || list.error} message={message} />
+    <div className="segmented" role="group" aria-label="Filter by status" style={{ marginBottom: 16 }}>{['AwaitingApproval', 'Running', 'Approved', 'Rejected', 'Failed', ''].map(s => <button key={s || 'all'} type="button" aria-pressed={status === s} onClick={() => { setStatus(s); list.setPage(1); setDetail(null); }}>{s ? humanize(s) : 'All'}</button>)}</div>
+    <div className="grid-split grid-queue">
+      <section className="card">
+        <div className="card-header" style={{ paddingBottom: 14, borderBottom: '1px solid var(--line)' }}><div><h2>Workflow queue</h2><p>{list.data?.totalCount ?? 0} {status ? humanize(status).toLowerCase() : 'total'}</p></div></div>
+        {list.loading ? <Loading label="Loading workflows…" /> : !list.error && (list.data?.items.length === 0
+          ? <EmptyState icon={Bot} title="Nothing in this queue">{status === 'AwaitingApproval' ? 'No proposals need your decision. Run “Check overstays” to scan active sessions.' : 'No workflows match this status.'}</EmptyState>
+          : <div className="queue">{list.data?.items.map(w => <button type="button" className="queue-item" aria-current={detail?.id === w.id} key={w.id} disabled={busy} onClick={() => void select(w.id)}>
+            <strong>{w.objective}</strong>
+            <span className="row"><StatusBadge status={w.status} /><span>{humanize(w.workflowType)}</span><span>·</span><span>{new Date(w.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span></span>
+          </button>)}</div>)}
+        <Pagination page={list.page} total={list.data?.totalCount || 0} onPage={list.setPage} />
+      </section>
+      <section className="card">
+        {detail ? <>
+          <div className="card-header"><div><h2>{detail.objective}</h2><p>{humanize(detail.workflowType)} workflow</p></div><StatusBadge status={detail.status} /></div>
+          <div className="card-body">
+            <dl className="kv">
+              <dt>Created</dt><dd>{new Date(detail.createdAt).toLocaleString()}</dd>
+              <dt>Session</dt><dd className="mono">{detail.sessionId || 'Not linked'}</dd>
+              <dt>Zone</dt><dd className="mono">{detail.zoneId || 'Not linked'}</dd>
+              <dt>Currency</dt><dd>{settings.defaultCurrency}</dd>
+              {detail.decisionReason && <><dt>Decision</dt><dd>{detail.decisionReason}</dd></>}
+            </dl>
+            <hr className="divider" />
+            <h3 style={{ marginBottom: 10 }}>Agent evidence and proposed action</h3>
+            <pre className="code-block">{readableJson(detail.stepResultsJson)}</pre>
+            <details className="disclosure" style={{ marginTop: 14 }}><summary>Execution plan</summary><div><pre className="code-block">{readableJson(detail.planJson)}</pre></div></details>
+            {detail.errorLog && <div style={{ marginTop: 14 }}><Notice error={detail.errorLog} /></div>}
+            {detail.status === 'AwaitingApproval' && <label className="field" style={{ marginTop: 14 }}><span className="field-label">Rejection reason</span><textarea maxLength={1000} placeholder="Required to reject (at least 5 characters)" value={reason} onChange={e => setReason(e.target.value)} /></label>}
+          </div>
+          {detail.status === 'Failed' && <div className="card-footer"><button className="btn btn-secondary" disabled={busy} onClick={() => void retry()}><RotateCcw size={16} aria-hidden="true" />Retry workflow</button></div>}
+          {detail.status === 'AwaitingApproval' && <div className="card-footer">
+            <span className="subtle">Human approval is required before this action runs.</span>
+            <div className="row" style={{ marginLeft: 'auto' }}>
+              <button className="btn btn-danger" disabled={busy || reason.trim().length < 5} onClick={() => void decide('reject')}><X size={16} aria-hidden="true" />Reject</button>
+              <button className="btn btn-primary" disabled={busy} onClick={() => void decide('approve')}><Check size={16} aria-hidden="true" />Approve action</button>
+            </div>
+          </div>}
+        </> : <EmptyState icon={MousePointerClick} title="Select a workflow">Choose an item from the queue to inspect the agent’s evidence and proposed action.</EmptyState>}
+      </section>
+    </div>
   </>;
 }
-
