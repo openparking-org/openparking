@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { LocateFixed, MapPin } from 'lucide-react';
 
 export interface EntranceLocation { lat: number; lng: number }
 interface Props { position: EntranceLocation | null; onChange: (position: EntranceLocation) => void; disabled: boolean }
 const defaultCenter = { lat: 6.9271, lng: 79.8612 };
-const mapStyle = { width: '100%', height: '360px' };
+const mapStyle = { width: '100%', height: '300px' };
 const mapOptions = { streetViewControl: false, fullscreenControl: false, clickableIcons: false };
 
 function EntranceMap({ position, onChange, disabled, apiKey }: Props & { apiKey: string }) {
@@ -14,11 +15,11 @@ function EntranceMap({ position, onChange, disabled, apiKey }: Props & { apiKey:
   const select = (event: google.maps.MapMouseEvent) => {
     if (!disabled && event.latLng) onChange({ lat: event.latLng.lat(), lng: event.latLng.lng() });
   };
-  if (loadError) return <p role="status">The map could not load. Use your location or enter coordinates below.</p>;
-  if (!isLoaded) return <p role="status">Loading entrance map…</p>;
-  return <GoogleMap mapContainerStyle={mapStyle} center={center} zoom={position ? 18 : 13} options={mapOptions} onClick={select}>
+  if (loadError) return <p role="status">The map could not load. Use your location or enter coordinates.</p>;
+  if (!isLoaded) return <div className="skeleton" style={{ height: 300 }} role="status" aria-label="Loading entrance map" />;
+  return <div className="entrance-map"><GoogleMap mapContainerStyle={mapStyle} center={center} zoom={position ? 18 : 13} options={mapOptions} onClick={select}>
     {position && <MarkerF position={position} title="Vehicle entrance" draggable={!disabled} onDragEnd={select} />}
-  </GoogleMap>;
+  </GoogleMap></div>;
 }
 
 export default function EntranceLocationPicker({ position, onChange, disabled }: Props) {
@@ -43,11 +44,11 @@ export default function EntranceLocationPicker({ position, onChange, disabled }:
       setLocating(false);
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   };
-  return <section className="zone-entrance-picker" aria-label="Parking entrance location">
-    <div className="admin-toolbar"><h3>Vehicle entrance</h3><button type="button" className="btn btn-secondary" disabled={disabled || locating} onClick={locate}>{locating ? 'Finding location…' : 'Use my location'}</button></div>
-    <p>Click the vehicle entrance on the map or drag the pin. Drivers will use this point to reach the parking zone.</p>
+  return <section className="entrance-picker" aria-label="Parking entrance location">
+    <div className="row-between"><h3>Vehicle entrance</h3><button type="button" className="btn btn-secondary btn-sm" disabled={disabled || locating} onClick={locate}><LocateFixed size={14} aria-hidden="true" />{locating ? 'Finding location…' : 'Use my location'}</button></div>
+    <p>Click the entrance on the map or drag the pin. Drivers navigate to this point.</p>
     {apiKey ? <EntranceMap position={position} onChange={onChange} disabled={disabled || locating} apiKey={apiKey} />
-      : <p>The map is unavailable. Use your location or enter latitude and longitude below.</p>}
-    <p role="status">{message || (position ? `Entrance: ${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}` : 'No entrance selected yet.')}</p>
+      : <p>The map is unavailable. Use your location or enter latitude and longitude.</p>}
+    <p role="status" className="row" style={{ gap: 6 }}><MapPin size={14} aria-hidden="true" />{message || (position ? `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}` : 'No entrance selected yet.')}</p>
   </section>;
 }
