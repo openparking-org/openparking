@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient, ApiError } from '../../lib/apiClient';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, Eye, EyeOff, Loader2, Lock, ShieldCheck, Activity } from 'lucide-react';
+import { ThemeToggle } from '../../components/ThemeToggle';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,113 +47,70 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="login-screen" style={{
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-      padding: '20px'
-    }}>
-      <div className="glass-panel" style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        padding: '40px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            background: 'rgba(99, 102, 241, 0.2)', 
-            width: '64px', 
-            height: '64px', 
-            borderRadius: '50%', 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            margin: '0 auto 16px',
-            color: '#818cf8'
-          }}>
-            <LogIn size={32} />
+    <div className="auth">
+      <aside className="auth-aside" aria-hidden="true">
+        <div className="brand"><span className="brand-mark">P</span><span className="brand-name">OpenParking<small>Admin console</small></span></div>
+        <div>
+          <h2>Every bay, booking and decision in one place.</h2>
+          <p>Run gates, review AI enforcement proposals, verify permits and keep pricing policy in check.</p>
+          <div className="auth-lot">
+            {['free', 'taken', 'taken', 'free', 'held', 'taken', 'taken', 'free', 'taken', 'taken', 'free', 'taken'].map((state, index) => <span key={index} className={state} />)}
           </div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>OpenParking Admin</h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Sign in to access the dashboard</p>
         </div>
+        <div className="auth-features">
+          <span><ShieldCheck size={14} />Human-in-the-loop AI</span>
+          <span><Activity size={14} />Live occupancy</span>
+          <span><Lock size={14} />Role-based access</span>
+        </div>
+      </aside>
 
-        {error && (
-          <div style={{ 
-            background: 'rgba(239, 68, 68, 0.1)', 
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#fca5a5',
-            padding: '12px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '0.9rem'
-          }}>
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
+      <main className="auth-main" style={{ position: 'relative' }}>
+        <div className="auth-theme"><ThemeToggle /></div>
+        <div className="auth-card">
+          <h1>Sign in</h1>
+          <p>Use your parking administrator account.</p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Email Address</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              placeholder="admin@openparking.local"
-              style={{
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid var(--border-color)',
-                color: '#fff',
-                padding: '12px',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                outline: 'none'
-              }}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Password</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              style={{
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid var(--border-color)',
-                color: '#fff',
-                padding: '12px',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                outline: 'none'
-              }}
-            />
-          </div>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {error && <div className="notice tone-crit" role="alert" style={{ margin: 0 }}><AlertCircle size={18} aria-hidden="true" /><div>{error}</div></div>}
+            <div className="field">
+              <label className="field-label" htmlFor="login-email">Email address</label>
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoFocus
+                placeholder="admin@openparking.local"
+              />
+            </div>
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="btn btn-primary"
-            style={{ 
-              marginTop: '8px', 
-              padding: '14px', 
-              fontSize: '1rem',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-      </div>
+            <div className="field">
+              <label className="field-label" htmlFor="login-password">Password</label>
+              <div className="password-field">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+                <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block">
+              {loading ? <><Loader2 size={18} className="spin" aria-hidden="true" />Signing in…</> : <><LogIn size={18} aria-hidden="true" />Sign in</>}
+            </button>
+          </form>
+
+          <p className="auth-foot"><Lock size={13} aria-hidden="true" />Driver accounts use the OpenParking mobile app.</p>
+        </div>
+      </main>
     </div>
   );
 };
