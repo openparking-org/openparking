@@ -123,7 +123,7 @@ jobs:
             docker pull ghcr.io/openparking-org/web:latest
 
             # Start / update all services
-            docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps api ai web
+            docker compose -f docker-compose.prod.yml --env-file .env up -d api ai web redis
 
             # Health check (allow 60s for startup)
             sleep 60
