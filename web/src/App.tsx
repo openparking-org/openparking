@@ -71,6 +71,13 @@ export default function App() {
   const updateSettings = useCallback((value: Partial<Settings>) => setSettings(previous => ({ ...previous, ...value })), []);
   return <SettingsContext.Provider value={{ settings, updateSettings }}><ConfirmProvider><BrowserRouter><Routes>
     <Route path="/login" element={<LoginPage />} />
+    
+    <Route element={<SessionGate><ProtectedRoute /></SessionGate>}>
+      <Route path="/book-parking" element={<CreateReservationPage />} />
+      <Route path="/gate" element={<GatePage />} />
+      <Route path="/bookings" element={<ReservationsPage />} />
+    </Route>
+
     <Route path="/*" element={<SessionGate><ProtectedRoute roles={['ParkingAdmin', 'SystemAdmin']}><Layout><Routes>
       <Route path="/" element={<OperationsDashboard />} />
       <Route path="/zones" element={<ZonesPage />} />
@@ -81,9 +88,6 @@ export default function App() {
       <Route path="/settings" element={<ProtectedRoute roles={['SystemAdmin']}><SettingsPage /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute roles={['SystemAdmin']}><UsersPage /></ProtectedRoute>} />
       <Route path="/slot-mapping" element={<MappingPage />} />
-      <Route path="/book-parking" element={<CreateReservationPage />} />
-      <Route path="/gate" element={<GatePage />} />
-      <Route path="/bookings" element={<ReservationsPage />} />
       <Route path="*" element={<div className="card"><EmptyState icon={Compass} title="Page not found" action={<Link className="btn btn-primary" to="/">Return to dashboard</Link>}>This page doesn’t exist or has moved.</EmptyState></div>} />
     </Routes></Layout></ProtectedRoute></SessionGate>} />
   </Routes></BrowserRouter></ConfirmProvider></SettingsContext.Provider>;
