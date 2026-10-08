@@ -72,7 +72,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORG }}/api
           
       - name: Build and push API image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./api
           push: true
@@ -86,7 +86,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORG }}/ai
           
       - name: Build and push AI image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./ai
           push: true
