@@ -18,6 +18,7 @@ import 'package:mobile/services/permit_service.dart';
 import 'package:mobile/services/session_service.dart';
 import 'package:mobile/services/parking_recommendation_service.dart';
 import 'package:mobile/services/zone_service.dart';
+import 'package:mobile/services/signalr_service.dart';
 
 const zone = {
   'id': 'zone',
@@ -48,6 +49,11 @@ class PreviewLocation extends ParkingLocationService {
   @override
   Future<ParkingLocation> current() async => throw Exception(
       'Location permission is needed for nearby recommendations.');
+}
+
+class MockSignalRService extends SignalRService {
+  @override
+  Future<void> connect() async {}
 }
 
 void main() {
@@ -129,6 +135,7 @@ void main() {
                 ..updateSession(null)),
           permitServiceProvider
               .overrideWithValue(PermitService(client: client)),
+          signalRServiceProvider.overrideWithValue(MockSignalRService()),
         ]);
         addTearDown(container.dispose);
         Future<void> show(Widget screen) async {
