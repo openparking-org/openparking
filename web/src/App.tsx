@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, createContext, useContext, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Outlet } from 'react-router-dom';
 import { Compass, Loader2 } from 'lucide-react';
 const AnalyticsDashboard = lazy(() => import('./modules/enforcement/AnalyticsDashboard').then(module => ({ default: module.AnalyticsDashboard })));
 import { OperationsDashboard } from './modules/enforcement/OperationsDashboard';
@@ -72,7 +72,7 @@ export default function App() {
   return <SettingsContext.Provider value={{ settings, updateSettings }}><ConfirmProvider><BrowserRouter><Routes>
     <Route path="/login" element={<LoginPage />} />
     
-    <Route element={<SessionGate><ProtectedRoute /></SessionGate>}>
+    <Route element={<SessionGate><ProtectedRoute><Outlet /></ProtectedRoute></SessionGate>}>
       <Route path="/book-parking" element={<CreateReservationPage />} />
       <Route path="/gate" element={<GatePage />} />
       <Route path="/bookings" element={<ReservationsPage />} />
