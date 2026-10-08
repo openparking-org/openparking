@@ -6,7 +6,7 @@ services:
       - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__Default=${NEON_DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL}
       - JWT__Secret=${JWT_SECRET}
       - JWT__ExpiryHours=24
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
@@ -14,14 +14,25 @@ services:
       - AI_SERVICE_URL=http://ai:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
       - REDIS_URL=redis:6379,abortConnect=false
+      - SIMULATION_API_KEY=${SIMULATION_API_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   ai:
     image: ghcr.io/openparking-org/ai:latest
@@ -40,13 +51,25 @@ services:
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:-}
       - API_BASE_URL=http://api:8080
       - BACKEND_API_URL=http://api:8080
-      - DATABASE_URL=${NEON_DATABASE_URL}
-      - API_KEY=${AI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SIMULATION_API_KEY=${SIMULATION_API_KEY:-}
+      - CF_AI_SEARCH_TOKEN=${CF_AI_SEARCH_TOKEN:-${CF_AI_TOKEN:-mock-token}}
+      - CF_AI_SEARCH_INSTANCE=${CF_AI_SEARCH_INSTANCE:-openparking-knowledge-base}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -54,13 +77,41 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 80M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  web:
+    image: ghcr.io/openparking-org/web:latest
+    restart: always
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=https://openparking.duckdns.org
+      - VITE_AI_BASE_URL=https://openparking.duckdns.org
+      - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY:-}
+    deploy:
+      resources:
+        limits:
+          memory: 80M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 volumes:
   redis_data:

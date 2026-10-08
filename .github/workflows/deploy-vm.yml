@@ -1,14 +1,13 @@
 # =============================================================================
-# Deploy — Oracle Cloud VM (ASP.NET Core API + Python AI Service)
+# Deploy — Oracle Cloud VM (ASP.NET Core API + Python AI Service + Web)
 # Strategy: Build Docker images → push to ghcr.io → SSH into Oracle VM → pull & restart
 #
 # Secrets required (set at GitHub Org level):
-#   ORACLE_VM_HOST      — Public IP or hostname of the Oracle VM
-#   ORACLE_VM_USER      — SSH user (e.g. ubuntu or opc)
-#   ORACLE_VM_SSH_KEY   — Private SSH key (PEM format, stored as org secret)
-#   GHCR_TOKEN          — GitHub token with packages:write (use secrets.GITHUB_TOKEN)
+#   VPS_HOST      — Public IP or hostname of the Oracle VM
+#   VPS_USER      — SSH user (ubuntu)
+#   VPS_SSH_KEY   — Private SSH key (PEM format, stored as org secret)
 # =============================================================================
-name: Deploy — Oracle VM (API + AI)
+name: Deploy — Oracle VM (API + AI + Web)
 
 on:
   push:
@@ -16,6 +15,7 @@ on:
     paths:
       - "api/**"
       - "ai/**"
+      - "web/**"
       - "docker-compose.prod.yml"
       - ".github/workflows/deploy-vm.yml"
   workflow_dispatch:
@@ -71,6 +71,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORG }}/web:latest
+            ${{ env.REGISTRY }}/${{ env.ORG }}/web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   # ---------------------------------------------------------------------------
   # Job 2: SSH into Oracle VM and pull new images
   # ---------------------------------------------------------------------------
@@ -84,32 +95,39 @@ jobs:
       - name: Checkout (for docker-compose.prod.yml)
         uses: actions/checkout@v4
 
+      - name: Copy docker-compose.prod.yml to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/openparking/"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.ORACLE_VM_HOST }}
-          username: ${{ secrets.ORACLE_VM_USER }}
-          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # Log in to ghcr.io on the VM
+            set -e
+            cd ~/openparking
+
+            # Log in to ghcr.io on the VM using the deploy token
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull the latest images
+            # Pull all latest images
             docker pull ghcr.io/openparking-org/api:latest
             docker pull ghcr.io/openparking-org/ai:latest
+            docker pull ghcr.io/openparking-org/web:latest
 
-            # Restart services with zero-downtime (docker compose rolling update)
-            cd ~/openparking
-            docker compose -f docker-compose.prod.yml up -d --no-deps api ai
+            # Start / update all services
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps api ai web
 
-            # Run EF Core migrations against Neon PostgreSQL
-            docker compose -f docker-compose.prod.yml exec -T api \
-              dotnet ef database update \
-              --project OpenParking.Infrastructure \
-              --startup-project OpenParking.Api
-
-            # Health check
-            sleep 5
-            curl -f http://localhost:5000/health || (echo "Health check failed!" && exit 1)
+            # Health check (allow 60s for startup)
+            sleep 60
+            curl -f http://localhost:5000/health || (echo "API health check failed!" && exit 1)
+            curl -f http://localhost:8000/health || (echo "AI health check failed!" && exit 1)
 
             echo "Deployment successful — $(date)"
